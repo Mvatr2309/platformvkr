@@ -1,216 +1,149 @@
-/* Hero */
-.hero {
-  background: var(--color-royal-blue);
-  color: #fff;
-  padding: 80px var(--container-padding) 64px;
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
 }
 
-.heroInner {
-  max-width: var(--container-max);
+.split {
+  display: flex;
+  width: 100%;
+  max-width: 900px;
+  min-height: 400px;
   margin: 0 auto;
+  padding: 0 var(--container-padding);
+  gap: var(--space-3xl);
+  align-items: center;
 }
 
-.heroTitle {
-  font-size: 48px;
+/* Left — platform info */
+.left {
+  flex: 1;
+}
+
+.title {
+  font-size: 40px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-deep-blue);
   line-height: 1.1;
   margin-bottom: var(--space-md);
 }
 
-.heroSubtitle {
+.subtitle {
   font-size: 18px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.8);
-  max-width: 600px;
+  color: var(--color-text-secondary);
   line-height: 1.5;
+}
+
+/* Right — login form */
+.right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2xl);
+}
+
+.formTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
   margin-bottom: var(--space-xl);
 }
 
-.heroCta {
+.form {
   display: flex;
-  gap: var(--space-md);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
-.ctaPrimary {
-  display: inline-block;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input {
+  border: none;
+  border-bottom: 2px solid var(--color-border);
+  padding: var(--space-sm) 0;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-bottom-color: var(--color-deep-blue);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-coral);
+  font-size: 14px;
+}
+
+.button {
   background: var(--color-coral);
   color: #fff;
+  border: none;
+  padding: 14px 28px;
   font-size: 15px;
-  font-weight: 700;
-  padding: 16px 32px;
-  text-decoration: none;
-  transition: background 0.2s;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: var(--space-sm);
 }
 
-.ctaPrimary:hover {
+.button:hover {
   background: var(--color-coral-dark);
-  text-decoration: none;
 }
 
-.ctaSecondary {
-  display: inline-block;
-  border: 2px solid #fff;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 14px 32px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.ctaSecondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  text-decoration: none;
-}
-
-/* Features section */
-.features {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: var(--space-3xl) var(--container-padding);
-}
-
-.featuresTitle {
-  font-size: 32px;
-  font-weight: 400;
-  text-align: center;
-  margin-bottom: var(--space-2xl);
-}
-
-.featuresGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-lg);
-}
-
-.featureCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  padding: var(--space-lg);
-}
-
-.featureIcon {
-  font-size: 28px;
-  margin-bottom: var(--space-md);
-  color: var(--color-deep-blue);
-}
-
-.featureTitle {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-deep-blue);
-  margin-bottom: var(--space-sm);
-}
-
-.featureText {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-
-/* Roles section */
-.roles {
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-3xl) var(--container-padding);
-}
-
-.rolesInner {
-  max-width: var(--container-max);
-  margin: 0 auto;
-}
-
-.rolesTitle {
-  font-size: 32px;
-  font-weight: 400;
-  text-align: center;
-  margin-bottom: var(--space-2xl);
-}
-
-.rolesGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-lg);
-}
-
-.roleCard {
-  padding: var(--space-lg);
-  border: 2px solid var(--color-border);
-  text-align: center;
-}
-
-.roleTitle {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-deep-blue);
-  margin-bottom: var(--space-sm);
-}
-
-.roleDesc {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-  margin-bottom: var(--space-md);
-}
-
-.roleLink {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-coral);
-  text-decoration: none;
-}
-
-.roleLink:hover {
-  text-decoration: underline;
-}
-
-/* Stats */
-.stats {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: var(--space-3xl) var(--container-padding);
-  text-align: center;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
-}
-
-.statItem {}
-
-.statValue {
-  font-size: 40px;
-  font-weight: 700;
-  color: var(--color-deep-blue);
-}
-
-.statLabel {
-  font-size: 14px;
-  color: var(--color-text-muted);
-  margin-top: 4px;
-}
-
-/* Footer */
-.footer {
-  background: var(--color-royal-blue);
-  color: rgba(255, 255, 255, 0.7);
-  padding: var(--space-xl) var(--container-padding);
-  text-align: center;
-  font-size: 13px;
-}
-
-.footer a {
-  color: #fff;
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .heroTitle { font-size: 32px; }
-  .featuresGrid, .rolesGrid { grid-template-columns: 1fr; }
-  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .split {
+    flex-direction: column;
+    gap: var(--space-xl);
+    padding-top: var(--space-3xl);
+    padding-bottom: var(--space-3xl);
+  }
+
+  .title {
+    font-size: 32px;
+    text-align: center;
+  }
+
+  .subtitle {
+    text-align: center;
+  }
+
+  .formCard {
+    max-width: 100%;
+  }
 }

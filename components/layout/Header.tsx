@@ -41,11 +41,6 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  // Don't show header on login/register pages
-  if (pathname === "/login" || pathname === "/register") return null;
-  // Don't show header inside admin layout (it has its own sidebar)
-  if (pathname.startsWith("/admin")) return null;
-
   const user = session?.user;
   const role = user?.role as string | undefined;
 
@@ -79,6 +74,11 @@ export default function Header() {
     if (bellOpen) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [bellOpen]);
+
+  // Don't show header on landing/login/register pages
+  if (pathname === "/" || pathname === "/login" || pathname === "/register") return null;
+  // Don't show header inside admin layout (it has its own sidebar)
+  if (pathname.startsWith("/admin")) return null;
 
   async function markAllRead() {
     await fetch("/api/notifications", {
