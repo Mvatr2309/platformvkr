@@ -9,6 +9,8 @@ const protectedPaths = [
   "/calendar",
   "/knowledge",
   "/profile",
+  "/my-projects",
+  "/notifications",
 ];
 
 // Маршруты, доступные только админам

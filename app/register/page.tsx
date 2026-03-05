@@ -14,6 +14,7 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("STUDENT");
+  const [agreement, setAgreement] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tokenLoading, setTokenLoading] = useState(!!token);
@@ -45,7 +46,7 @@ function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role, token }),
+        body: JSON.stringify({ name, email, password, role, token, agreement }),
       });
 
       const data = await res.json();
@@ -156,9 +157,22 @@ function RegisterForm() {
             </div>
           )}
 
+          <label className={styles.agreement}>
+            <input
+              type="checkbox"
+              checked={agreement}
+              onChange={(e) => setAgreement(e.target.checked)}
+              required
+            />
+            <span>
+              Я даю согласие на обработку персональных данных в соответствии
+              с политикой конфиденциальности платформы
+            </span>
+          </label>
+
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.button} disabled={loading}>
+          <button type="submit" className={styles.button} disabled={loading || !agreement}>
             {loading ? "Регистрация..." : "Зарегистрироваться"}
           </button>
         </form>

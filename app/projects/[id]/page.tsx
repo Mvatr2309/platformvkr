@@ -27,6 +27,7 @@ interface Project {
   direction: string | null;
   requiredRoles: string[];
   contact: string;
+  assignmentStatus: string;
   createdAt: string;
   supervisor: {
     id: string;
@@ -72,6 +73,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [applyErr, setApplyErr] = useState("");
   const [newEvent, setNewEvent] = useState({ title: "", date: "", eventType: "DEADLINE" });
   const [addingEvent, setAddingEvent] = useState(false);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
 
   const fetchProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -133,6 +135,19 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const canManage =
     session?.user?.role === "ADMIN" ||
     (session?.user?.role === "SUPERVISOR" && project?.supervisor?.user?.name === session?.user?.name);
+
+  async function handleAssignment(action: "confirm" | "decline") {
+    setAssignmentLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/assignment`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) fetchProject();
+    } catch { /* ignore */ }
+    finally { setAssignmentLoading(false); }
+  }
 
   async function handleAddEvent() {
     if (!newEvent.title || !newEvent.date) return;
@@ -200,6 +215,30 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   <div className={styles.supervisorMeta}>{project.supervisor.position}, {project.supervisor.workplace}</div>
                 </div>
               </a>
+            </div>
+          )}
+
+          {/* 04.03 — Подтверждение назначения НР */}
+          {project.assignmentStatus === "PENDING_SUPERVISOR" && session?.user?.role === "SUPERVISOR" && canManage && (
+            <div className={styles.section}>
+              <h2 className={styles.sectionTitle}>Подтверждение назначения</h2>
+              <p className={styles.text}>Вам предложено руководство этим проектом. Подтвердите или отклоните.</p>
+              <div className={styles.assignmentActions}>
+                <button
+                  onClick={() => handleAssignment("confirm")}
+                  className={styles.confirmBtn}
+                  disabled={assignmentLoading}
+                >
+                  Подтвердить
+                </button>
+                <button
+                  onClick={() => handleAssignment("decline")}
+                  className={styles.declineBtn}
+                  disabled={assignmentLoading}
+                >
+                  Отклонить
+                </button>
+              </div>
             </div>
           )}
 

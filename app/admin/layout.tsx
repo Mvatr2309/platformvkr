@@ -1,4 +1,5 @@
 import styles from "./admin.module.css";
+import LogoutButton from "./LogoutButton";
 
 export default function AdminLayout({
   children,
@@ -20,7 +21,10 @@ export default function AdminLayout({
             Приглашения
           </a>
           <a href="/admin/moderation" className={styles.navLink}>
-            Модерация
+            Модерация НР
+          </a>
+          <a href="/admin/projects" className={styles.navLink}>
+            Модерация проектов
           </a>
           <a href="/admin/matching" className={styles.navLink}>
             Метчинг
@@ -29,6 +33,9 @@ export default function AdminLayout({
             Справочники
           </a>
         </nav>
+        <div className={styles.sidebarFooter}>
+          <LogoutButton />
+        </div>
       </aside>
       <main className={styles.main}>{children}</main>
     </div>

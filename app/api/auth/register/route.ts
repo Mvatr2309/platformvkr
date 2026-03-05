@@ -4,11 +4,18 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, role, token } = await request.json();
+    const { email, password, name, role, token, agreement } = await request.json();
 
     if (!email || !password || !name || !role) {
       return NextResponse.json(
         { error: "Все поля обязательны" },
+        { status: 400 }
+      );
+    }
+
+    if (!agreement) {
+      return NextResponse.json(
+        { error: "Необходимо принять соглашение на обработку данных" },
         { status: 400 }
       );
     }
@@ -64,6 +71,7 @@ export async function POST(request: NextRequest) {
         passwordHash,
         name,
         role,
+        agreementAccepted: true,
       },
     });
 

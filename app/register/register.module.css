@@ -104,6 +104,23 @@
   border-color: var(--color-deep-blue);
 }
 
+/* Соглашение на обработку данных */
+.agreement {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.agreement input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--color-deep-blue);
+}
+
 .error {
   color: var(--color-coral);
   font-size: 14px;

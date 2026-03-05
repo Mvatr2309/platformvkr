@@ -37,6 +37,15 @@ export async function GET(request: NextRequest) {
       });
       if (profile) where.supervisorId = profile.id;
     }
+    if (session.user.role === "STUDENT") {
+      const profile = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (profile) {
+        where.members = { some: { studentId: profile.id } };
+      }
+    }
     delete where.status; // Показываем все статусы для своих
   }
 
@@ -102,6 +111,23 @@ export async function POST(request: NextRequest) {
         status,
       },
     });
+
+    // Автоматически добавляем создателя-студента как участника с ролью «Автор»
+    if (session.user.role === "STUDENT") {
+      const studentProfile = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (studentProfile) {
+        await prisma.projectMember.create({
+          data: {
+            projectId: project.id,
+            studentId: studentProfile.id,
+            role: "Автор",
+          },
+        });
+      }
+    }
 
     return NextResponse.json(project, { status: 201 });
   } catch {

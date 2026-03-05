@@ -1,6 +1,6 @@
-/* Admin layout — design-system.md: минимализм, прямые углы, whitespace */
+/* Sidebar layout for STUDENT / SUPERVISOR */
 
-.adminLayout {
+.layout {
   display: flex;
   min-height: 100vh;
 }
@@ -14,6 +14,10 @@
   flex-direction: column;
   gap: var(--space-lg);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebarHeader {
@@ -44,12 +48,15 @@
 }
 
 .navLink {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
   padding: var(--space-sm) var(--space-md);
   transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .navLink:hover {
@@ -57,8 +64,40 @@
   color: #fff;
 }
 
+.navLinkActive {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: var(--space-xs) 0;
+}
+
+.bellBadge {
+  background: var(--color-coral);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Footer */
 .sidebarFooter {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.userName {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0 var(--space-md);
 }
 
 .logoutBtn {
@@ -82,7 +121,34 @@
 
 .main {
   flex: 1;
-  padding: var(--space-2xl);
   background: var(--color-bg);
   overflow-y: auto;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sidebarFooter {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 0;
+  }
 }

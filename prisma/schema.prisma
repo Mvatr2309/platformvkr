@@ -143,6 +143,13 @@ enum ProjectStatus {
   COMPLETED    // Завершён
 }
 
+enum AssignmentStatus {
+  NONE                // Нет назначения / НР сам создал проект
+  PENDING_SUPERVISOR  // Ожидает подтверждения НР (04.03)
+  CONFIRMED           // НР подтвердил
+  DECLINED            // НР отклонил
+}
+
 model Project {
   id              String          @id @default(cuid())
   title           String          // Название проекта
@@ -152,6 +159,7 @@ model Project {
   direction       String?         // Направление (для классических диссертаций)
   requiredRoles   String[]        // Требуемые роли (мультиселект)
   contact         String          // Контакт для связи
+  assignmentStatus AssignmentStatus @default(NONE) // 04.03: статус назначения НР
 
   supervisorId    String?
   supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])

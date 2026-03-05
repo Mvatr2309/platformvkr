@@ -136,6 +136,25 @@
 }
 .addEventBtn:hover { background: var(--color-royal-blue); }
 
+/* 04.03 — Кнопки подтверждения/отклонения назначения */
+.assignmentActions {
+  display: flex; gap: var(--space-sm); margin-top: var(--space-md);
+}
+.confirmBtn {
+  background: var(--color-deep-blue); color: #fff; border: none;
+  padding: 10px 24px; font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.confirmBtn:hover { background: var(--color-royal-blue); }
+.confirmBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.declineBtn {
+  background: transparent; color: var(--color-coral); border: 2px solid var(--color-coral);
+  padding: 8px 24px; font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.declineBtn:hover { background: var(--color-coral); color: #fff; }
+.declineBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .meta { font-size: 13px; color: var(--color-text-muted); }
 
 @media (max-width: 768px) {
