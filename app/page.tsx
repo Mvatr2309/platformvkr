@@ -35,7 +35,9 @@ export default function Home() {
     const session = await res.json();
     const role = session?.user?.role;
 
-    router.push(role === "ADMIN" ? "/admin" : "/projects");
+    if (role === "ADMIN") router.push("/admin");
+    else if (role === "STUDENT") router.push("/my-projects");
+    else router.push("/my-projects");
     router.refresh();
   }
 

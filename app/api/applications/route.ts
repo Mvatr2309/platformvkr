@@ -5,13 +5,77 @@ import { notify } from "@/lib/notify";
 
 const MAX_ACTIVE_APPLICATIONS = 5; // 05.04
 
-// GET /api/applications — мои заявки (студент) или заявки на мои проекты (НР)
-export async function GET() {
+// GET /api/applications — мои заявки (студент), заявки на мои проекты (НР/автор), модерация (админ)
+// ?as=author — заявки на проекты где я автор (для студентов-авторов)
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
   }
 
+  const asAuthor = request.nextUrl.searchParams.get("as") === "author";
+
+  // Админ: заявки на модерацию (APPROVED_BY_AUTHOR)
+  if (session.user.role === "ADMIN") {
+    const applications = await prisma.application.findMany({
+      where: { status: "APPROVED_BY_AUTHOR" },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        project: { select: { id: true, title: true } },
+        student: {
+          select: {
+            id: true,
+            direction: true,
+            course: true,
+            competencies: true,
+            portfolioUrl: true,
+            contact: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return NextResponse.json(applications);
+  }
+
+  // Студент-автор: заявки на мои проекты (где я автор)
+  if (session.user.role === "STUDENT" && asAuthor) {
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!student) return NextResponse.json([]);
+
+    // Найти проекты где студент — автор
+    const authorProjects = await prisma.projectMember.findMany({
+      where: { studentId: student.id, role: "Автор" },
+      select: { projectId: true },
+    });
+    const projectIds = authorProjects.map((p) => p.projectId);
+    if (projectIds.length === 0) return NextResponse.json([]);
+
+    const applications = await prisma.application.findMany({
+      where: { projectId: { in: projectIds } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        project: { select: { id: true, title: true } },
+        student: {
+          select: {
+            id: true,
+            direction: true,
+            course: true,
+            competencies: true,
+            portfolioUrl: true,
+            contact: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return NextResponse.json(applications);
+  }
+
+  // Студент: мои поданные заявки
   if (session.user.role === "STUDENT") {
     const student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
@@ -29,6 +93,7 @@ export async function GET() {
     return NextResponse.json(applications);
   }
 
+  // НР: заявки на мои проекты
   if (session.user.role === "SUPERVISOR") {
     const supervisor = await prisma.supervisorProfile.findUnique({
       where: { userId: session.user.id },
@@ -126,6 +191,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Нельзя подавать заявку на свой проект
+    const isMember = await prisma.projectMember.findFirst({
+      where: { projectId, student: { userId: session.user.id } },
+    });
+    if (isMember) {
+      return NextResponse.json(
+        { error: "Вы уже являетесь участником этого проекта" },
+        { status: 400 }
+      );
+    }
+
     const application = await prisma.application.create({
       data: {
         projectId,
@@ -143,7 +219,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Уведомление НР о новой заявке
+    // Уведомление автору проекта о новой заявке
+    const authorMember = await prisma.projectMember.findFirst({
+      where: { projectId, role: "Автор" },
+      select: { student: { select: { userId: true } } },
+    });
+    if (authorMember) {
+      const proj = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { title: true },
+      });
+      notify({
+        userId: authorMember.student.userId,
+        type: "APPLICATION_NEW",
+        title: "Новая заявка",
+        message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
+        link: `/applications`,
+      }).catch(() => {});
+    }
+
+    // Уведомление НР о новой заявке (если есть)
     if (project.supervisorId) {
       const sup = await prisma.supervisorProfile.findUnique({
         where: { id: project.supervisorId },

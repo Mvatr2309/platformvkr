@@ -51,6 +51,22 @@ export async function GET(
   return NextResponse.json(project);
 }
 
+// Проверка прав на редактирование: админ, НР-руководитель, или участник проекта
+async function checkEditAccess(projectId: string, userId: string, userRole: string) {
+  if (userRole === "ADMIN") return true;
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { supervisor: { select: { userId: true } } },
+  });
+  if (project?.supervisor?.userId === userId) return true;
+
+  const member = await prisma.projectMember.findFirst({
+    where: { projectId, student: { userId } },
+  });
+  return !!member;
+}
+
 // PUT /api/projects/[id] — редактирование проекта (02.04)
 export async function PUT(
   request: NextRequest,
@@ -62,19 +78,14 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: { supervisor: { select: { userId: true } } },
-  });
+  const project = await prisma.project.findUnique({ where: { id } });
 
   if (!project) {
     return NextResponse.json({ error: "Проект не найден" }, { status: 404 });
   }
 
-  // Проверка прав: свой проект (НР) или админ
-  const isOwner = project.supervisor?.userId === session.user.id;
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isOwner && !isAdmin) {
+  const hasAccess = await checkEditAccess(id, session.user.id, session.user.role as string);
+  if (!hasAccess) {
     return NextResponse.json({ error: "Нет прав на редактирование" }, { status: 403 });
   }
 
@@ -102,4 +113,51 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+// DELETE /api/projects/[id] — удаление проекта
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: {
+      members: { select: { id: true, role: true, student: { select: { userId: true } } } },
+    },
+  });
+
+  if (!project) {
+    return NextResponse.json({ error: "Проект не найден" }, { status: 404 });
+  }
+
+  const isAdmin = session.user.role === "ADMIN";
+  const authorMember = project.members.find(
+    (m) => m.role === "Автор" && m.student.userId === session.user.id
+  );
+  const isAuthor = !!authorMember;
+
+  if (!isAdmin && !isAuthor) {
+    return NextResponse.json({ error: "Нет прав на удаление" }, { status: 403 });
+  }
+
+  // Автор может удалить только если нет других участников
+  if (isAuthor && !isAdmin) {
+    const otherMembers = project.members.filter((m) => m.role !== "Автор");
+    if (otherMembers.length > 0) {
+      return NextResponse.json(
+        { error: "Нельзя удалить проект с участниками. Сначала удалите участников." },
+        { status: 400 }
+      );
+    }
+  }
+
+  await prisma.project.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

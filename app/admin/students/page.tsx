@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import styles from "./invitations.module.css";
+import styles from "../invitations/invitations.module.css";
 
-interface Invitation {
+interface Student {
   id: string;
   name: string;
   email: string;
-  status: "SENT" | "ACCEPTED" | "EXPIRED";
   createdAt: string;
-  sentBy: { name: string };
 }
 
 interface CreatedAccount {
@@ -18,28 +16,22 @@ interface CreatedAccount {
   password: string;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  SENT: "Отправлено",
-  ACCEPTED: "Создан",
-  EXPIRED: "Истекло",
-};
-
 function downloadCredentials(accounts: CreatedAccount[]) {
   const lines = accounts.map(
     (a) => `${a.name}\nЛогин: ${a.email}\nПароль: ${a.password}\n`
   );
-  const text = "=== Доступы НР — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
+  const text = "=== Доступы студентов — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `vkr-credentials-${new Date().toISOString().slice(0, 10)}.txt`;
+  a.download = `vkr-students-${new Date().toISOString().slice(0, 10)}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-export default function InvitationsPage() {
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,16 +39,16 @@ export default function InvitationsPage() {
   const [success, setSuccess] = useState("");
   const [createdAccounts, setCreatedAccounts] = useState<CreatedAccount[]>([]);
 
-  const fetchInvitations = useCallback(async () => {
-    const res = await fetch("/api/admin/invitations");
+  const fetchStudents = useCallback(async () => {
+    const res = await fetch("/api/admin/students");
     if (res.ok) {
-      setInvitations(await res.json());
+      setStudents(await res.json());
     }
   }, []);
 
   useEffect(() => {
-    fetchInvitations();
-  }, [fetchInvitations]);
+    fetchStudents();
+  }, [fetchStudents]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,7 +57,7 @@ export default function InvitationsPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/invitations", {
+      const res = await fetch("/api/admin/students", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
@@ -88,7 +80,7 @@ export default function InvitationsPage() {
       setSuccess(`Аккаунт создан: ${email} / ${data.generatedPassword}`);
       setName("");
       setEmail("");
-      fetchInvitations();
+      fetchStudents();
     } catch {
       setError("Ошибка сети");
     } finally {
@@ -98,9 +90,8 @@ export default function InvitationsPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Приглашения научных руководителей</h1>
+      <h1 className={styles.title}>Управление студентами</h1>
 
-      {/* Форма создания аккаунта */}
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formRow}>
           <div className={styles.field}>
@@ -109,7 +100,7 @@ export default function InvitationsPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Иванов Иван Иванович"
+              placeholder="Петров Пётр Петрович"
               className={styles.input}
               required
             />
@@ -120,7 +111,7 @@ export default function InvitationsPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ivanov@mipt.ru"
+              placeholder="petrov@phystech.edu"
               className={styles.input}
               required
             />
@@ -134,7 +125,6 @@ export default function InvitationsPage() {
       {error && <p className={styles.error}>{error}</p>}
       {success && <p className={styles.success}>{success}</p>}
 
-      {/* Блок с созданными аккаунтами за сессию */}
       {createdAccounts.length > 0 && (
         <div className={styles.credentialsBlock}>
           <div className={styles.credentialsHeader}>
@@ -161,34 +151,27 @@ export default function InvitationsPage() {
         </div>
       )}
 
-      {/* Таблица приглашений */}
       <table className={styles.table}>
         <thead>
           <tr>
             <th>ФИО</th>
             <th>E-mail</th>
-            <th>Статус</th>
-            <th>Дата</th>
+            <th>Дата создания</th>
           </tr>
         </thead>
         <tbody>
-          {invitations.length === 0 && (
+          {students.length === 0 && (
             <tr>
-              <td colSpan={4} className={styles.empty}>
-                Приглашений пока нет
+              <td colSpan={3} className={styles.empty}>
+                Студентов пока нет
               </td>
             </tr>
           )}
-          {invitations.map((inv) => (
-            <tr key={inv.id}>
-              <td>{inv.name}</td>
-              <td>{inv.email}</td>
-              <td>
-                <span className={`${styles.status} ${styles[`status_${inv.status}`]}`}>
-                  {STATUS_LABELS[inv.status]}
-                </span>
-              </td>
-              <td>{new Date(inv.createdAt).toLocaleDateString("ru-RU")}</td>
+          {students.map((s) => (
+            <tr key={s.id}>
+              <td>{s.name}</td>
+              <td>{s.email}</td>
+              <td>{new Date(s.createdAt).toLocaleDateString("ru-RU")}</td>
             </tr>
           ))}
         </tbody>

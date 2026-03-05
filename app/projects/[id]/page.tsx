@@ -132,9 +132,51 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     finally { setApplying(false); }
   }
 
-  const canManage =
-    session?.user?.role === "ADMIN" ||
-    (session?.user?.role === "SUPERVISOR" && project?.supervisor?.user?.name === session?.user?.name);
+  const userId = session?.user?.id;
+  const userRole = session?.user?.role;
+  const isAdmin = userRole === "ADMIN";
+  const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.user?.name === session?.user?.name;
+  const isMember = project?.members.some((m) => m.student.user.name === session?.user?.name);
+  const isAuthor = project?.members.some((m) => m.role === "Автор" && m.student.user.name === session?.user?.name);
+  const canManage = isAdmin || isSupervisorOwner || isMember;
+  const otherMembers = project?.members.filter((m) => m.role !== "Автор") || [];
+  const canDelete = isAdmin || (isAuthor && otherMembers.length === 0);
+
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({ title: "", description: "", contact: "" });
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleSaveEdit() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editData),
+      });
+      if (res.ok) {
+        setEditing(false);
+        fetchProject();
+      }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Вы уверены, что хотите удалить этот проект?")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.href = "/my-projects";
+      } else {
+        const data = await res.json();
+        alert(data.error || "Ошибка удаления");
+      }
+    } catch { alert("Ошибка сети"); }
+    finally { setDeleting(false); }
+  }
 
   async function handleAssignment(action: "confirm" | "decline") {
     setAssignmentLoading(true);
@@ -180,7 +222,24 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
         {/* 03.01 — Информационный блок */}
         <div className={styles.header}>
-          <h1 className={styles.title}>{project.title}</h1>
+          <div className={styles.headerRow}>
+            <h1 className={styles.title}>{project.title}</h1>
+            {canManage && (
+              <div className={styles.headerActions}>
+                <button
+                  onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact }); }}
+                  className={styles.editBtn}
+                >
+                  Редактировать
+                </button>
+                {canDelete && (
+                  <button onClick={handleDelete} className={styles.deleteBtn} disabled={deleting}>
+                    {deleting ? "Удаление..." : "Удалить"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div className={styles.badges}>
             <span className={styles.typeBadge}>{TYPE_LABELS[project.projectType]}</span>
             <span className={`${styles.statusBadge} ${styles[`status_${project.status}`]}`}>
@@ -190,6 +249,45 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           </div>
         </div>
 
+        {/* Форма редактирования */}
+        {editing && (
+          <div className={styles.editBlock}>
+            <div className={styles.editField}>
+              <label className={styles.editLabel}>Название</label>
+              <input
+                type="text"
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                className={styles.editInput}
+              />
+            </div>
+            <div className={styles.editField}>
+              <label className={styles.editLabel}>Описание</label>
+              <textarea
+                value={editData.description}
+                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                className={styles.editTextarea}
+                rows={6}
+              />
+            </div>
+            <div className={styles.editField}>
+              <label className={styles.editLabel}>Контакт для связи</label>
+              <input
+                type="text"
+                value={editData.contact}
+                onChange={(e) => setEditData({ ...editData, contact: e.target.value })}
+                className={styles.editInput}
+              />
+            </div>
+            <div className={styles.editActions}>
+              <button onClick={handleSaveEdit} className={styles.confirmBtn} disabled={saving}>
+                {saving ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button onClick={() => setEditing(false)} className={styles.declineBtn}>Отмена</button>
+            </div>
+          </div>
+        )}
+
         <div className={styles.grid}>
           {/* Описание */}
           <div className={styles.sectionFull}>
@@ -197,10 +295,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <p className={styles.text}>{project.description}</p>
           </div>
 
-          {/* 03.02 — Блок руководителя (мини-карточка) */}
-          {project.supervisor && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Научный руководитель</h2>
+          {/* 03.02 — Блок руководителя */}
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Научный руководитель</h2>
+            {project.supervisor ? (
               <a href={`/supervisors/${project.supervisor.id}`} className={styles.supervisorCard}>
                 {project.supervisor.photoUrl ? (
                   <img src={project.supervisor.photoUrl} alt="" className={styles.supervisorPhoto} />
@@ -215,8 +313,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   <div className={styles.supervisorMeta}>{project.supervisor.position}, {project.supervisor.workplace}</div>
                 </div>
               </a>
-            </div>
-          )}
+            ) : (
+              <p className={styles.muted}>Не назначен</p>
+            )}
+          </div>
 
           {/* 04.03 — Подтверждение назначения НР */}
           {project.assignmentStatus === "PENDING_SUPERVISOR" && session?.user?.role === "SUPERVISOR" && canManage && (
@@ -397,7 +497,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Блок подачи заявки (05.01) — только для студентов, только открытые проекты */}
-        {session?.user?.role === "STUDENT" && project.status === "OPEN" && (
+        {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && (
           <div className={styles.applyBlock}>
             <h2 className={styles.sectionTitle}>Подать заявку</h2>
             {applyMsg ? (

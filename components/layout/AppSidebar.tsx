@@ -37,10 +37,11 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
     return () => clearInterval(interval);
   }, [user, fetchUnreadCount]);
 
-  // Don't show sidebar on landing, login, register, admin pages
+  // Don't show sidebar on landing, login, register pages
   if (pathname === "/" || pathname === "/login" || pathname === "/register") {
     return <>{children}</>;
   }
+  // Admin pages have their own layout
   if (pathname.startsWith("/admin")) {
     return <>{children}</>;
   }
@@ -48,6 +49,39 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   // Not authenticated yet — just show content
   if (!user) {
     return <>{children}</>;
+  }
+
+  // Admin on non-admin pages (e.g. /projects/[id]) — redirect-style sidebar
+  if (role === "ADMIN") {
+    return (
+      <div className={styles.layout}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>
+            <span className={styles.logo}>ВКР</span>
+            <span className={styles.badge}>Админ</span>
+          </div>
+          <nav className={styles.nav}>
+            <a href="/admin/dashboard" className={styles.navLink}>Дашборд</a>
+            <a href="/admin/invitations" className={styles.navLink}>Научные руководители</a>
+            <a href="/admin/students" className={styles.navLink}>Студенты</a>
+            <a href="/admin/moderation" className={styles.navLink}>Модерация НР</a>
+            <a href="/admin/projects" className={styles.navLink}>Модерация проектов</a>
+            <a href="/admin/applications" className={styles.navLink}>Модерация заявок</a>
+            <a href="/admin/matching" className={styles.navLink}>Метчинг</a>
+          </nav>
+          <div className={styles.sidebarFooter}>
+            <div className={styles.userName}>{user.name}</div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className={styles.logoutBtn}
+            >
+              Выйти
+            </button>
+          </div>
+        </aside>
+        <main className={styles.main}>{children}</main>
+      </div>
+    );
   }
 
   function navClass(href: string) {
@@ -75,7 +109,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <>
               <div className={styles.divider} />
               <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")}>Мои заявки</a>
+              <a href="/applications" className={navClass("/applications")}>Заявки</a>
               <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
             </>
           )}

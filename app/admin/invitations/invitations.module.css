@@ -146,18 +146,61 @@
   color: #e65100;
 }
 
-.resendButton {
-  background: none;
-  border: 1px solid var(--color-border);
-  padding: 6px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+/* Блок созданных аккаунтов */
+.credentialsBlock {
+  background: #f0f7ff;
+  border: 1px solid var(--color-deep-blue);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
-.resendButton:hover {
-  border-color: var(--color-deep-blue);
+.credentialsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.credentialsTitle {
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-deep-blue);
+}
+
+.downloadBtn {
+  background: var(--color-deep-blue);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.downloadBtn:hover { opacity: 0.9; }
+
+.credentialsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.credentialCard {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.credentialName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.credentialInfo {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-family: monospace;
 }

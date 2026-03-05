@@ -18,13 +18,19 @@ export default function AdminLayout({
             Дашборд
           </a>
           <a href="/admin/invitations" className={styles.navLink}>
-            Приглашения
+            Научные руководители
+          </a>
+          <a href="/admin/students" className={styles.navLink}>
+            Студенты
           </a>
           <a href="/admin/moderation" className={styles.navLink}>
             Модерация НР
           </a>
           <a href="/admin/projects" className={styles.navLink}>
             Модерация проектов
+          </a>
+          <a href="/admin/applications" className={styles.navLink}>
+            Модерация заявок
           </a>
           <a href="/admin/matching" className={styles.navLink}>
             Метчинг

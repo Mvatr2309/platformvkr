@@ -220,6 +220,7 @@ model Activity {
 
 enum ApplicationStatus {
   PENDING
+  APPROVED_BY_AUTHOR
   ACCEPTED
   REJECTED
 }
