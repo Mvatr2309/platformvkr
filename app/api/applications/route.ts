@@ -1,0 +1,174 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
+
+const MAX_ACTIVE_APPLICATIONS = 5; // 05.04
+
+// GET /api/applications — мои заявки (студент) или заявки на мои проекты (НР)
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
+  if (session.user.role === "STUDENT") {
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!student) return NextResponse.json([]);
+
+    const applications = await prisma.application.findMany({
+      where: { studentId: student.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        project: { select: { id: true, title: true, status: true } },
+      },
+    });
+    return NextResponse.json(applications);
+  }
+
+  if (session.user.role === "SUPERVISOR") {
+    const supervisor = await prisma.supervisorProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!supervisor) return NextResponse.json([]);
+
+    const applications = await prisma.application.findMany({
+      where: { supervisorId: supervisor.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        project: { select: { id: true, title: true } },
+        student: {
+          select: {
+            id: true,
+            direction: true,
+            course: true,
+            competencies: true,
+            portfolioUrl: true,
+            contact: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return NextResponse.json(applications);
+  }
+
+  return NextResponse.json([]);
+}
+
+// POST /api/applications — подача заявки студентом (05.01)
+export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+  }
+
+  try {
+    const { projectId, motivation } = await request.json();
+
+    if (!projectId || !motivation) {
+      return NextResponse.json(
+        { error: "Выберите проект и напишите мотивационное письмо" },
+        { status: 400 }
+      );
+    }
+
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+
+    if (!student) {
+      return NextResponse.json(
+        { error: "Сначала заполните профиль студента" },
+        { status: 400 }
+      );
+    }
+
+    // 05.04 — ограничение на кол-во активных заявок
+    const activeCount = await prisma.application.count({
+      where: { studentId: student.id, status: "PENDING" },
+    });
+
+    if (activeCount >= MAX_ACTIVE_APPLICATIONS) {
+      return NextResponse.json(
+        { error: `Максимум ${MAX_ACTIVE_APPLICATIONS} активных заявок одновременно` },
+        { status: 400 }
+      );
+    }
+
+    // Проверка дубликата
+    const existing = await prisma.application.findUnique({
+      where: { projectId_studentId: { projectId, studentId: student.id } },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Вы уже подали заявку на этот проект" },
+        { status: 409 }
+      );
+    }
+
+    // Определяем НР проекта
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { supervisorId: true, status: true },
+    });
+
+    if (!project || project.status !== "OPEN") {
+      return NextResponse.json(
+        { error: "Проект не найден или не принимает заявки" },
+        { status: 400 }
+      );
+    }
+
+    const application = await prisma.application.create({
+      data: {
+        projectId,
+        studentId: student.id,
+        supervisorId: project.supervisorId,
+        motivation,
+      },
+    });
+
+    // Запись в ленту активности
+    await prisma.activity.create({
+      data: {
+        projectId,
+        action: "Новая заявка от студента",
+      },
+    });
+
+    // Уведомление НР о новой заявке
+    if (project.supervisorId) {
+      const sup = await prisma.supervisorProfile.findUnique({
+        where: { id: project.supervisorId },
+        select: { userId: true },
+      });
+      if (sup) {
+        const proj = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { title: true },
+        });
+        notify({
+          userId: sup.userId,
+          type: "APPLICATION_NEW",
+          title: "Новая заявка",
+          message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
+          link: `/applications`,
+        }).catch(() => {});
+      }
+    }
+
+    return NextResponse.json(application, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Ошибка подачи заявки" },
+      { status: 500 }
+    );
+  }
+}

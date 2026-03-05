@@ -1,0 +1,227 @@
+/* Детальный просмотр профиля — design-system.md */
+
+.back {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  margin-bottom: var(--space-lg);
+}
+
+.back:hover {
+  color: var(--color-deep-blue);
+}
+
+.header {
+  margin-bottom: var(--space-xl);
+}
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.photo {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.email {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* Сетка карточек */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-md);
+}
+
+.dl {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-sm) var(--space-md);
+  font-size: 14px;
+}
+
+.dl dt {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.dl dd {
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  background: #EEF2FF;
+  color: var(--color-deep-blue);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.list li::before {
+  content: "— ";
+  color: var(--color-text-muted);
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+}
+
+.fileLink {
+  color: var(--color-deep-blue);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+/* Блок модерации */
+.moderationBlock {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+}
+
+.commentField {
+  margin-bottom: var(--space-md);
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-xs);
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  padding: var(--space-sm);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: var(--color-deep-blue);
+}
+
+.error {
+  color: var(--color-coral);
+  font-size: 14px;
+  margin-bottom: var(--space-md);
+}
+
+.success {
+  color: #2a7d2a;
+  font-size: 14px;
+  margin-bottom: var(--space-md);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.approveButton {
+  background: #2a7d2a;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.approveButton:hover {
+  background: #1b5e1b;
+}
+
+.approveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rejectButton {
+  background: var(--color-coral);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rejectButton:hover {
+  background: var(--color-coral-dark);
+}
+
+.rejectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

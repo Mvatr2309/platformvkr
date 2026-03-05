@@ -1,0 +1,167 @@
+/* Форма создания проекта — design-system.md */
+
+.wrapper {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: var(--space-2xl) var(--space-md);
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  margin-bottom: var(--space-xl);
+}
+
+.section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input {
+  border: none;
+  border-bottom: 2px solid var(--color-border);
+  padding: var(--space-sm) 0;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus { border-bottom-color: var(--color-deep-blue); }
+.input::placeholder { color: var(--color-text-muted); }
+
+.select {
+  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  outline: none;
+  max-width: 300px;
+}
+
+.textarea {
+  border: 1px solid var(--color-border);
+  padding: var(--space-sm);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.textarea:focus { border-color: var(--color-deep-blue); }
+.textarea::placeholder { color: var(--color-text-muted); }
+
+/* Тип работы */
+.typeGroup {
+  display: flex;
+  gap: 0;
+}
+
+.typeOption {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.typeOption + .typeOption {
+  border-left: none;
+}
+
+.typeActive {
+  background: var(--color-deep-blue);
+  color: #fff;
+  border-color: var(--color-deep-blue);
+}
+
+/* Чекбоксы */
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+/* Кнопки и сообщения */
+.error { color: var(--color-coral); font-size: 14px; margin-bottom: var(--space-md); }
+.success { color: #2a7d2a; font-size: 14px; margin-bottom: var(--space-md); }
+
+.actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.saveButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.saveButton:hover { border-color: var(--color-deep-blue); color: var(--color-deep-blue); }
+.saveButton:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.submitButton {
+  background: var(--color-coral);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.submitButton:hover { background: var(--color-coral-dark); }
+.submitButton:disabled { opacity: 0.6; cursor: not-allowed; }

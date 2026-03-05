@@ -1,0 +1,216 @@
+/* Hero */
+.hero {
+  background: var(--color-royal-blue);
+  color: #fff;
+  padding: 80px var(--container-padding) 64px;
+}
+
+.heroInner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: var(--space-md);
+}
+
+.heroSubtitle {
+  font-size: 18px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 600px;
+  line-height: 1.5;
+  margin-bottom: var(--space-xl);
+}
+
+.heroCta {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.ctaPrimary {
+  display: inline-block;
+  background: var(--color-coral);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 16px 32px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.ctaPrimary:hover {
+  background: var(--color-coral-dark);
+  text-decoration: none;
+}
+
+.ctaSecondary {
+  display: inline-block;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 32px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ctaSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+}
+
+/* Features section */
+.features {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--container-padding);
+}
+
+.featuresTitle {
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.featureCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+}
+
+.featureIcon {
+  font-size: 28px;
+  margin-bottom: var(--space-md);
+  color: var(--color-deep-blue);
+}
+
+.featureTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  margin-bottom: var(--space-sm);
+}
+
+.featureText {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Roles section */
+.roles {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3xl) var(--container-padding);
+}
+
+.rolesInner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.rolesTitle {
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.rolesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.roleCard {
+  padding: var(--space-lg);
+  border: 2px solid var(--color-border);
+  text-align: center;
+}
+
+.roleTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  margin-bottom: var(--space-sm);
+}
+
+.roleDesc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+.roleLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-coral);
+  text-decoration: none;
+}
+
+.roleLink:hover {
+  text-decoration: underline;
+}
+
+/* Stats */
+.stats {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--container-padding);
+  text-align: center;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+
+.statItem {}
+
+.statValue {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+}
+
+.statLabel {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* Footer */
+.footer {
+  background: var(--color-royal-blue);
+  color: rgba(255, 255, 255, 0.7);
+  padding: var(--space-xl) var(--container-padding);
+  text-align: center;
+  font-size: 13px;
+}
+
+.footer a {
+  color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heroTitle { font-size: 32px; }
+  .featuresGrid, .rolesGrid { grid-template-columns: 1fr; }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}

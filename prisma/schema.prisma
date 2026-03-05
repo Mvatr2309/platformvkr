@@ -1,0 +1,339 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Пользователи и роли
+// Источник: 00-overview.md (раздел 5)
+// ============================================
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  STUDENT
+}
+
+enum ProfileStatus {
+  DRAFT
+  PENDING      // На модерации
+  APPROVED     // Подтверждён
+  REJECTED     // Отклонён
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          Role
+  name          String    // ФИО
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  agreementAccepted Boolean @default(false) // Соглашение на обработку ПДн (01.06)
+
+  supervisor    SupervisorProfile?
+  student       StudentProfile?
+  invitations   Invitation[]       // Приглашения, отправленные админом
+}
+
+// ============================================
+// FR-01: Профиль научного руководителя
+// Источник: 01-FR-01-supervisors.md (раздел 2)
+// ============================================
+
+enum RecruitmentStatus {
+  OPEN
+  CLOSED
+}
+
+model SupervisorProfile {
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workplace       String            // Место работы
+  position        String            // Должность
+  academicTitle   String            // Учёное звание (Доцент, Профессор, Нет)
+  academicDegree  String            // Учёная степень (текст — к.н. каких наук и т.д.)
+  resumeUrl       String?           // Ссылка на резюме или путь к файлу
+  photoUrl        String?           // Путь к фото
+  expertise       String[]          // Доменная экспертиза (теги)
+  workPreferences String[]          // Готов работать с (мультиселект)
+  proposedTopics  String?           // Предлагаемые темы (длинный текст)
+  directions      String[]          // Направления студентов (мультиселект)
+  maxSlots        Int               @default(3) // Макс. одновременных проектов
+  contact         String            // Контакт (e-mail, Telegram, телефон)
+
+  status          ProfileStatus     @default(DRAFT)
+  recruitmentStatus RecruitmentStatus @default(OPEN)
+  moderationComment String?         // Комментарий при отклонении (01.05)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  projects        Project[]         // Связь с проектами (FR-02)
+  applications    Application[]     // Заявки на рассмотрение
+}
+
+// ============================================
+// FR-05: Профиль студента
+// Источник: 05-FR-05-matching-students.md (05.06)
+// ============================================
+
+model StudentProfile {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  direction     String        // Направление (образовательная программа)
+  course        Int           // Курс
+  competencies  String[]      // Компетенции
+  portfolioUrl  String?       // Портфолио (ссылка)
+  contact       String        // Контакт для связи
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  projects      ProjectMember[]  // Участие в проектах
+  applications  Application[]    // Поданные заявки
+}
+
+// ============================================
+// FR-01: Приглашения научных руководителей
+// Источник: 01-FR-01-supervisors.md (01.01)
+// ============================================
+
+enum InvitationStatus {
+  SENT
+  ACCEPTED
+  EXPIRED
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  email       String
+  name        String           // ФИО приглашаемого
+  token       String           @unique @default(cuid()) // Уникальная ссылка
+  status      InvitationStatus @default(SENT)
+  sentById    String
+  sentBy      User             @relation(fields: [sentById], references: [id])
+  createdAt   DateTime         @default(now())
+}
+
+// ============================================
+// FR-02: Проекты
+// Источник: 02-FR-02-projects.md (раздел 2)
+// ============================================
+
+enum ProjectType {
+  CLASSIC_DISSERTATION  // Классическая диссертация
+  STARTUP               // Стартап
+  CORPORATE_STARTUP     // Корпоративный стартап
+}
+
+enum ProjectStatus {
+  DRAFT
+  PENDING      // На модерации
+  OPEN         // Открыт (ищет участников)
+  ACTIVE       // Активный (в работе)
+  COMPLETED    // Завершён
+}
+
+model Project {
+  id              String          @id @default(cuid())
+  title           String          // Название проекта
+  description     String          // Описание (длинный текст)
+  projectType     ProjectType     // Тип работы
+  status          ProjectStatus   @default(DRAFT)
+  direction       String?         // Направление (для классических диссертаций)
+  requiredRoles   String[]        // Требуемые роли (мультиселект)
+  contact         String          // Контакт для связи
+
+  supervisorId    String?
+  supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  members         ProjectMember[]  // Участники (студенты)
+  applications    Application[]    // Заявки на проект
+  files           ProjectFile[]    // Файлы и материалы (03.04)
+  events          Event[]          // Привязанные события (06.03)
+  activities      Activity[]       // Лента активности (03.06)
+}
+
+model ProjectMember {
+  id          String         @id @default(cuid())
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  role        String?        // Роль в проекте
+  joinedAt    DateTime       @default(now())
+
+  @@unique([projectId, studentId])
+}
+
+// ============================================
+// FR-03: Файлы проекта
+// Источник: 03-FR-03-project-page.md (03.04)
+// ============================================
+
+model ProjectFile {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filename    String   // Имя файла
+  filepath    String   // Путь на диске
+  uploadedAt  DateTime @default(now())
+}
+
+// ============================================
+// FR-03: Лента активности проекта
+// Источник: 03-FR-03-project-page.md (03.06)
+// ============================================
+
+model Activity {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  action      String   // Описание действия
+  createdAt   DateTime @default(now())
+}
+
+// ============================================
+// FR-05: Заявки (студент → проект)
+// Источник: 05-FR-05-matching-students.md (05.01–05.05)
+// ============================================
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  projectId       String
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile    @relation(fields: [studentId], references: [id])
+  supervisorId    String?
+  supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])
+
+  motivation      String            // Мотивационное письмо (05.01)
+  status          ApplicationStatus @default(PENDING)
+  comment         String?           // Комментарий при принятии/отклонении (05.02)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([projectId, studentId])
+}
+
+// ============================================
+// FR-06: Календарь событий
+// Источник: 06-FR-06-calendar.md (06.01–06.03)
+// ============================================
+
+enum EventType {
+  DEADLINE
+  DEFENSE       // Защита
+  CONSULTATION  // Консультация
+  OTHER
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  eventType   EventType
+  direction   String?   // Привязка к направлению
+  projectId   String?   // Привязка к проекту (06.03)
+  project     Project?  @relation(fields: [projectId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+// ============================================
+// FR-07: База знаний
+// Источник: 07-FR-07-knowledge-base.md (07.01–07.05)
+// ============================================
+
+enum ArticleCategory {
+  REGULATION    // Регламенты
+  TEMPLATE      // Шаблоны
+  FAQ           // FAQ
+  INSTRUCTION   // Инструкции
+}
+
+model Article {
+  id          String          @id @default(cuid())
+  title       String
+  content     String          // Содержимое (HTML из WYSIWYG)
+  category    ArticleCategory
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  files       ArticleFile[]   // Прикреплённые шаблоны (07.04)
+}
+
+model ArticleFile {
+  id          String   @id @default(cuid())
+  articleId   String
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  filename    String
+  filepath    String
+  uploadedAt  DateTime @default(now())
+}
+
+// ============================================
+// Справочники (для админа)
+// Источник: 11-CJM-admin.md (этап 1)
+// ============================================
+
+model Dictionary {
+  id      String           @id @default(cuid())
+  type    String           @unique // directions, competencies, workTypes, roles
+  values  DictionaryValue[]
+}
+
+model DictionaryValue {
+  id           String     @id @default(cuid())
+  dictionaryId String
+  dictionary   Dictionary @relation(fields: [dictionaryId], references: [id], onDelete: Cascade)
+  value        String
+  sortOrder    Int        @default(0)
+}
+
+// ============================================
+// Уведомления (in-app)
+// ============================================
+
+enum NotificationType {
+  APPLICATION_NEW        // Новая заявка (для НР)
+  APPLICATION_ACCEPTED   // Заявка принята (для студента)
+  APPLICATION_REJECTED   // Заявка отклонена (для студента)
+  PROFILE_APPROVED       // Профиль одобрен (для НР)
+  PROFILE_REJECTED       // Профиль отклонён (для НР)
+  PROJECT_STATUS         // Изменение статуса проекта
+  DEADLINE_REMINDER      // Напоминание о дедлайне
+  SYSTEM                 // Системное уведомление
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?          // Ссылка для перехода
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}

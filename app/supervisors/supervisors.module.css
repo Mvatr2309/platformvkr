@@ -1,0 +1,212 @@
+/* Каталог НР — design-system.md */
+
+.wrapper {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: var(--space-2xl) var(--space-md);
+}
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xl);
+}
+
+/* Фильтры */
+.filters {
+  margin-bottom: var(--space-xl);
+}
+
+.searchInput {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--color-border);
+  padding: var(--space-md) 0;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: var(--space-md);
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-bottom-color: var(--color-deep-blue);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterRow {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.select {
+  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.select:focus {
+  border-color: var(--color-deep-blue);
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.clearButton:hover {
+  color: var(--color-coral);
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  padding: var(--space-3xl) 0;
+}
+
+/* Сетка карточек */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-md);
+}
+
+.card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--color-deep-blue);
+}
+
+.cardTop {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.avatarPlaceholder {
+  width: 56px;
+  height: 56px;
+  background: var(--color-deep-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cardName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.cardMeta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.tag {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  background: #EEF2FF;
+  color: var(--color-deep-blue);
+}
+
+.tagMore {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 3px 8px;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recruitment {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.recruitmentOpen {
+  background: #E8F5E9;
+  color: #2a7d2a;
+}
+
+.recruitmentClosed {
+  background: #FFF3E0;
+  color: #e65100;
+}
+
+.slots {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .filterRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .select {
+    min-width: auto;
+  }
+}

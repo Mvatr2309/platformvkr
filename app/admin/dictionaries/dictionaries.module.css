@@ -1,0 +1,126 @@
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-lg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-lg);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg);
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  margin-bottom: var(--space-md);
+}
+
+.valueList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.valueItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.valueInput {
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 6px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border-light);
+  background: transparent;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.valueInput:focus {
+  border-bottom-color: var(--color-deep-blue);
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--color-coral);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.removeBtn:hover {
+  opacity: 0.7;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.addBtn {
+  background: none;
+  border: 1px dashed var(--color-border-light);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.addBtn:hover {
+  border-color: var(--color-deep-blue);
+  color: var(--color-deep-blue);
+}
+
+.saveBtn {
+  background: var(--color-deep-blue);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: var(--color-royal-blue);
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.success {
+  color: var(--color-deep-blue);
+  font-size: 13px;
+  margin-top: var(--space-sm);
+}
+
+.error {
+  color: var(--color-coral);
+  font-size: 13px;
+  margin-top: var(--space-sm);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}

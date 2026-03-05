@@ -1,0 +1,65 @@
+/* Заявки — design-system.md */
+
+.wrapper { min-height: 100vh; background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
+.container { max-width: var(--container-max); margin: 0 auto; }
+
+.title { font-size: 28px; font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xl); }
+.subtitle { font-size: 18px; font-weight: 600; color: var(--color-text-primary); margin: var(--space-xl) 0 var(--space-md); }
+
+.empty { color: var(--color-text-muted); font-size: 15px; padding: var(--space-2xl) 0; text-align: center; }
+.link { color: var(--color-deep-blue); text-decoration: none; font-weight: 600; }
+.link:hover { text-decoration: underline; }
+
+.success { color: #2a7d2a; font-size: 14px; margin-bottom: var(--space-md); }
+
+/* Список */
+.list { display: flex; flex-direction: column; gap: var(--space-md); }
+
+.card { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); }
+.cardResolved { opacity: 0.7; }
+
+.cardHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+
+.projectLink { font-size: 16px; font-weight: 600; color: var(--color-deep-blue); text-decoration: none; }
+.projectLink:hover { text-decoration: underline; }
+
+.studentName { font-size: 16px; font-weight: 600; color: var(--color-text-primary); }
+.projectBadge { font-size: 12px; padding: 3px 8px; background: #EEF2FF; color: var(--color-deep-blue); }
+
+.status { font-size: 12px; font-weight: 600; padding: 4px 10px; }
+.status_PENDING { background: #FFF3E0; color: #e65100; }
+.status_ACCEPTED { background: #E8F5E9; color: #2a7d2a; }
+.status_REJECTED { background: #FFEBEE; color: #c62828; }
+
+.studentInfo { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; font-size: 13px; color: var(--color-text-secondary); margin-bottom: var(--space-sm); }
+.contact { font-size: 12px; color: var(--color-text-muted); }
+
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 11px; padding: 2px 6px; background: #EEF2FF; color: var(--color-deep-blue); }
+
+.motivation { font-size: 14px; color: var(--color-text-primary); line-height: 1.5; margin-bottom: var(--space-sm); white-space: pre-wrap; }
+.comment { font-size: 13px; color: var(--color-text-secondary); font-style: italic; margin-bottom: var(--space-sm); }
+.date { font-size: 12px; color: var(--color-text-muted); }
+
+/* Действия НР */
+.reviewButton {
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  padding: 8px 16px; font-size: 13px; font-family: inherit; color: var(--color-text-secondary);
+  cursor: pointer; margin-top: var(--space-sm);
+}
+.reviewButton:hover { border-color: var(--color-deep-blue); color: var(--color-deep-blue); }
+
+.actionBlock { margin-top: var(--space-md); }
+.textarea {
+  width: 100%; border: 1px solid var(--color-border); padding: var(--space-sm);
+  font-size: 14px; font-family: inherit; resize: vertical; outline: none;
+  margin-bottom: var(--space-sm); box-sizing: border-box;
+}
+.textarea:focus { border-color: var(--color-deep-blue); }
+
+.actionButtons { display: flex; gap: var(--space-sm); }
+.acceptButton { background: #2a7d2a; color: #fff; border: none; padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 600; }
+.acceptButton:hover { background: #1b5e1b; }
+.rejectButton { background: var(--color-coral); color: #fff; border: none; padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 600; }
+.rejectButton:hover { background: var(--color-coral-dark); }
+.cancelButton { background: none; border: 1px solid var(--color-border); padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--color-text-muted); }
