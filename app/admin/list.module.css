@@ -1,0 +1,128 @@
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-lg);
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.searchInput {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  min-width: 240px;
+  color: var(--color-text-primary);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterSelect {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.count {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--color-deep-blue);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.table th:hover {
+  background: rgba(0, 48, 146, 0.04);
+}
+
+.table td {
+  font-size: 14px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.table tr:hover td {
+  background: rgba(0, 48, 146, 0.02);
+}
+
+.link {
+  color: var(--color-deep-blue);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  background: #EEF2FF;
+  color: var(--color-deep-blue);
+  padding: 2px 6px;
+  margin: 1px 2px;
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  display: inline-block;
+}
+
+.status_DRAFT { background: #F5F5F5; color: var(--color-text-muted); }
+.status_PENDING { background: #FFF3E0; color: #e65100; }
+.status_OPEN { background: #E8F5E9; color: #2a7d2a; }
+.status_ACTIVE { background: #EEF2FF; color: var(--color-deep-blue); }
+.status_COMPLETED { background: #F5F5F5; color: var(--color-text-secondary); }
+
+.empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-xl) 0;
+}
+
+.sortArrow {
+  margin-left: 4px;
+  font-size: 10px;
+}

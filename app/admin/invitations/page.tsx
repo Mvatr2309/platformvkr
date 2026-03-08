@@ -13,7 +13,6 @@ interface Invitation {
 }
 
 interface CreatedAccount {
-  name: string;
   email: string;
   password: string;
   role: string;
@@ -27,7 +26,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function downloadCredentials(accounts: CreatedAccount[]) {
   const lines = accounts.map(
-    (a) => `${a.name} (${a.role === "STUDENT" ? "Студент" : "НР"})\nЛогин: ${a.email}\nПароль: ${a.password}\n`
+    (a) => `${a.role === "STUDENT" ? "Студент" : "НР"}\nЛогин: ${a.email}\nПароль: ${a.password}\n`
   );
   const text = "=== Доступы — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -41,7 +40,6 @@ function downloadCredentials(accounts: CreatedAccount[]) {
 
 export default function InvitationsPage() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("SUPERVISOR");
   const [loading, setLoading] = useState(false);
@@ -70,7 +68,7 @@ export default function InvitationsPage() {
       const res = await fetch("/api/admin/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, role }),
+        body: JSON.stringify({ email, role }),
       });
 
       const data = await res.json();
@@ -81,7 +79,6 @@ export default function InvitationsPage() {
       }
 
       const account: CreatedAccount = {
-        name,
         email,
         password: data.generatedPassword,
         role,
@@ -93,7 +90,6 @@ export default function InvitationsPage() {
       } else {
         setSuccess(`Аккаунт создан и письмо отправлено: ${email}`);
       }
-      setName("");
       setEmail("");
       fetchInvitations();
     } catch {
@@ -110,17 +106,6 @@ export default function InvitationsPage() {
       {/* Форма создания аккаунта */}
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formRow}>
-          <div className={styles.field}>
-            <label className={styles.label}>ФИО</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Иванов Иван Иванович"
-              className={styles.input}
-              required
-            />
-          </div>
           <div className={styles.field}>
             <label className={styles.label}>E-mail (логин)</label>
             <input
@@ -170,13 +155,13 @@ export default function InvitationsPage() {
             {createdAccounts.map((acc, i) => (
               <div key={i} className={styles.credentialCard}>
                 <div className={styles.credentialName}>
-                  {acc.name}
+                  {acc.email}
                   <span style={{ fontSize: 12, color: "#666", marginLeft: 8 }}>
                     {acc.role === "STUDENT" ? "Студент" : "НР"}
                   </span>
                 </div>
                 <div className={styles.credentialInfo}>
-                  Логин: <strong>{acc.email}</strong> &nbsp;|&nbsp; Пароль: <strong>{acc.password}</strong>
+                  Пароль: <strong>{acc.password}</strong>
                 </div>
               </div>
             ))}
@@ -188,7 +173,6 @@ export default function InvitationsPage() {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>ФИО</th>
             <th>E-mail</th>
             <th>Статус</th>
             <th>Дата</th>
@@ -197,14 +181,13 @@ export default function InvitationsPage() {
         <tbody>
           {invitations.length === 0 && (
             <tr>
-              <td colSpan={4} className={styles.empty}>
+              <td colSpan={3} className={styles.empty}>
                 Аккаунтов пока нет
               </td>
             </tr>
           )}
           {invitations.map((inv) => (
             <tr key={inv.id}>
-              <td>{inv.name}</td>
               <td>{inv.email}</td>
               <td>
                 <span className={`${styles.status} ${styles[`status_${inv.status}`]}`}>

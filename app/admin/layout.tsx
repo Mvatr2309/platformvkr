@@ -20,11 +20,14 @@ export default function AdminLayout({
           <a href="/admin/invitations" className={styles.navLink}>
             Создание аккаунтов
           </a>
-          <a href="/admin/moderation" className={styles.navLink}>
-            Модерация НР
+          <a href="/admin/students-list" className={styles.navLink}>
+            Список студентов
           </a>
-          <a href="/admin/projects" className={styles.navLink}>
-            Модерация проектов
+          <a href="/admin/supervisors-list" className={styles.navLink}>
+            Список НР
+          </a>
+          <a href="/admin/projects-list" className={styles.navLink}>
+            Список проектов
           </a>
           <a href="/admin/applications" className={styles.navLink}>
             Обзор заявок

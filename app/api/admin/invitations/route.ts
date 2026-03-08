@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email, role } = await request.json();
+    const { email, role } = await request.json();
 
-    if (!name || !email) {
+    if (!email) {
       return NextResponse.json(
-        { error: "ФИО и e-mail обязательны" },
+        { error: "E-mail обязателен" },
         { status: 400 }
       );
     }
@@ -72,16 +72,13 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         passwordHash,
-        name,
         role: userRole,
         emailVerified: true,
-        agreementAccepted: true,
       },
     });
 
     const invitation = await prisma.invitation.create({
       data: {
-        name,
         email,
         sentById: session.user.id,
         status: "ACCEPTED",
@@ -99,20 +96,18 @@ export async function POST(request: NextRequest) {
         html: `
           <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px;">
             <h2 style="color: #003092; margin-bottom: 16px;">Добро пожаловать на платформу ВКР</h2>
-            <p>Здравствуйте, ${name}!</p>
+            <p>Здравствуйте!</p>
             <p>Для вас создан аккаунт ${roleLabel} на платформе управления ВКР.</p>
             <div style="background: #f0f4ff; padding: 20px; margin: 16px 0;">
               <p style="margin: 0 0 8px 0;"><strong>Логин:</strong> ${email}</p>
               <p style="margin: 0;"><strong>Пароль:</strong> ${password}</p>
             </div>
+            <p>После входа необходимо заполнить профиль — без этого доступ к платформе будет ограничен.</p>
             <p>
               <a href="${platformUrl}/login"
                  style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">
                 Войти на платформу
               </a>
-            </p>
-            <p style="color: #666; font-size: 14px; margin-top: 16px;">
-              Рекомендуем сменить пароль после первого входа.
             </p>
           </div>
         `,

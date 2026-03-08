@@ -30,8 +30,9 @@ model User {
   email         String    @unique
   passwordHash  String
   role          Role
-  name          String    // ФИО
+  name          String    @default("") // ФИО — заполняется при заполнении профиля
   emailVerified Boolean   @default(false) // Подтверждение email
+  profileCompleted Boolean @default(false) // Профиль заполнен — доступ к платформе
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   agreementAccepted Boolean @default(false) // Соглашение на обработку ПДн (01.06)
@@ -103,6 +104,7 @@ model StudentProfile {
 
   direction     String        // Направление (образовательная программа)
   course        Int           // Курс
+  cohort        String        @default("") // Когорта (Поток2025, Поток2026)
   competencies  String[]      // Компетенции
   desiredRoles  String[]      // Желаемые роли в проекте
   portfolioUrl  String?       // Портфолио (ссылка)
@@ -129,7 +131,7 @@ enum InvitationStatus {
 model Invitation {
   id          String           @id @default(cuid())
   email       String
-  name        String           // ФИО приглашаемого
+  name        String           @default("") // ФИО (необязательно при создании)
   token       String           @unique @default(cuid()) // Уникальная ссылка
   status      InvitationStatus @default(SENT)
   sentById    String

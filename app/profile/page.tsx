@@ -61,7 +61,6 @@ export default function ProfilePage() {
   const [agreement, setAgreement] = useState(false);
   const [expertiseInput, setExpertiseInput] = useState("");
   const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -137,6 +136,21 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
+    if (!name.trim()) {
+      setError("Укажите ФИО");
+      return;
+    }
+    if (!agreement) {
+      setError("Необходимо принять соглашение на обработку данных");
+      return;
+    }
+    if (!profile.workplace || !profile.position || !profile.academicTitle ||
+        !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
+        profile.workPreferences.length === 0 || profile.directions.length === 0) {
+      setError("Заполните все обязательные поля");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
     setError("");
@@ -144,11 +158,13 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile/supervisor", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement, submit: false }),
+        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement }),
       });
       if (res.ok) {
         await updateSession();
-        setMessage("Черновик сохранён");
+        setMessage("Профиль сохранён");
+        loadProfile();
+        router.refresh();
       } else {
         const data = await res.json();
         setError(data.error || "Ошибка сохранения");
@@ -160,62 +176,14 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleSubmit() {
-    if (!agreement) {
-      setError("Необходимо принять соглашение на обработку данных");
-      return;
-    }
-    // Валидация обязательных полей
-    if (!profile.workplace || !profile.position || !profile.academicTitle ||
-        !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
-        profile.workPreferences.length === 0 || profile.directions.length === 0) {
-      setError("Заполните все обязательные поля");
-      return;
-    }
-
-    setSubmitting(true);
-    setMessage("");
-    setError("");
-    try {
-      const res = await fetch("/api/profile/supervisor", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement, submit: true }),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        await updateSession();
-        if (result.status === "APPROVED") {
-          setMessage("Профиль сохранён и активирован. Вы видны студентам!");
-        } else {
-          setMessage("Профиль отправлен на модерацию");
-        }
-        loadProfile();
-        router.refresh();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Ошибка отправки");
-      }
-    } catch {
-      setError("Ошибка сети");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   if (!loaded) {
     return <div className={styles.wrapper}><p>Загрузка...</p></div>;
   }
-
-  const isPending = profile.status === "PENDING";
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <h1 className={styles.title}>Профиль научного руководителя</h1>
-        {isPending && (
-          <div className={styles.notice}>Профиль на модерации. Редактирование ограничено.</div>
-        )}
 
         {/* Секция 1: Основная информация */}
         <section className={styles.section}>
@@ -229,7 +197,6 @@ export default function ProfilePage() {
               onChange={(e) => setName(e.target.value)}
               className={styles.input}
               placeholder="Иванов Иван Иванович"
-              disabled={isPending}
             />
           </div>
 
@@ -242,8 +209,7 @@ export default function ProfilePage() {
                 onChange={(e) => updateField("workplace", e.target.value)}
                 className={styles.input}
                 placeholder="МФТИ, Сколтех, ВШЭ..."
-                disabled={isPending}
-              />
+                />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Должность *</label>
@@ -253,8 +219,7 @@ export default function ProfilePage() {
                 onChange={(e) => updateField("position", e.target.value)}
                 className={styles.input}
                 placeholder="Профессор кафедры..."
-                disabled={isPending}
-              />
+                />
             </div>
           </div>
 
@@ -265,8 +230,7 @@ export default function ProfilePage() {
                 value={profile.academicTitle}
                 onChange={(e) => updateField("academicTitle", e.target.value)}
                 className={styles.select}
-                disabled={isPending}
-              >
+                >
                 <option value="">Выберите...</option>
                 {ACADEMIC_TITLES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -281,8 +245,7 @@ export default function ProfilePage() {
                 onChange={(e) => updateField("academicDegree", e.target.value)}
                 className={styles.input}
                 placeholder="к.т.н., д.ф.-м.н...."
-                disabled={isPending}
-              />
+                />
             </div>
           </div>
 
@@ -294,7 +257,6 @@ export default function ProfilePage() {
               onChange={(e) => updateField("contact", e.target.value)}
               className={styles.input}
               placeholder="E-mail, Telegram или телефон"
-              disabled={isPending}
             />
           </div>
         </section>
@@ -309,21 +271,17 @@ export default function ProfilePage() {
               {profile.expertise.map((tag) => (
                 <span key={tag} className={styles.tag}>
                   {tag}
-                  {!isPending && (
-                    <button type="button" onClick={() => removeExpertise(tag)} className={styles.tagRemove}>×</button>
-                  )}
+                      <button type="button" onClick={() => removeExpertise(tag)} className={styles.tagRemove}>×</button>
                 </span>
               ))}
-              {!isPending && (
-                <input
-                  type="text"
-                  value={expertiseInput}
-                  onChange={(e) => setExpertiseInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addExpertise(); } }}
-                  className={styles.tagInput}
-                  placeholder={profile.expertise.length === 0 ? "ML, NLP, Computer Vision..." : ""}
-                />
-              )}
+              <input
+                type="text"
+                value={expertiseInput}
+                onChange={(e) => setExpertiseInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addExpertise(); } }}
+                className={styles.tagInput}
+                placeholder={profile.expertise.length === 0 ? "ML, NLP, Computer Vision..." : ""}
+              />
             </div>
           </div>
 
@@ -336,8 +294,7 @@ export default function ProfilePage() {
                     type="checkbox"
                     checked={profile.workPreferences.includes(pref)}
                     onChange={() => toggleArrayItem("workPreferences", pref)}
-                    disabled={isPending}
-                  />
+                        />
                   <span>{pref}</span>
                 </label>
               ))}
@@ -353,8 +310,7 @@ export default function ProfilePage() {
                     type="checkbox"
                     checked={profile.directions.includes(dir)}
                     onChange={() => toggleArrayItem("directions", dir)}
-                    disabled={isPending}
-                  />
+                        />
                   <span>{dir}</span>
                 </label>
               ))}
@@ -369,7 +325,6 @@ export default function ProfilePage() {
               className={styles.textarea}
               rows={4}
               placeholder="Опишите темы, которые готовы предложить студентам..."
-              disabled={isPending}
             />
           </div>
 
@@ -382,7 +337,6 @@ export default function ProfilePage() {
               className={styles.input}
               min={1}
               max={10}
-              disabled={isPending}
             />
           </div>
         </section>
@@ -399,18 +353,16 @@ export default function ProfilePage() {
                   <img src={profile.photoUrl} alt="Фото" className={styles.photoPreview} />
                 </div>
               )}
-              {!isPending && (
-                <label className={styles.fileButton}>
-                  {photoUploading ? "Загрузка..." : "Загрузить фото"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "photo")}
-                    hidden
-                    disabled={photoUploading}
-                  />
-                </label>
-              )}
+              <label className={styles.fileButton}>
+                {photoUploading ? "Загрузка..." : "Загрузить фото"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "photo")}
+                  hidden
+                  disabled={photoUploading}
+                />
+              </label>
               <span className={styles.hint}>JPG, PNG, до 5 МБ</span>
             </div>
 
@@ -423,18 +375,16 @@ export default function ProfilePage() {
                   </a>
                 </div>
               )}
-              {!isPending && (
-                <label className={styles.fileButton}>
-                  {resumeUploading ? "Загрузка..." : "Загрузить резюме"}
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,image/jpeg,image/png"
-                    onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "resume")}
-                    hidden
-                    disabled={resumeUploading}
-                  />
-                </label>
-              )}
+              <label className={styles.fileButton}>
+                {resumeUploading ? "Загрузка..." : "Загрузить резюме"}
+                <input
+                  type="file"
+                  accept=".pdf,.docx,image/jpeg,image/png"
+                  onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "resume")}
+                  hidden
+                  disabled={resumeUploading}
+                />
+              </label>
               <span className={styles.hint}>PDF, DOCX, до 5 МБ</span>
             </div>
           </div>
@@ -447,7 +397,6 @@ export default function ProfilePage() {
               type="checkbox"
               checked={agreement}
               onChange={(e) => setAgreement(e.target.checked)}
-              disabled={isPending}
             />
             <span>
               Я даю согласие на обработку персональных данных в соответствии с политикой конфиденциальности *
@@ -459,17 +408,12 @@ export default function ProfilePage() {
         {error && <p className={styles.error}>{error}</p>}
         {message && <p className={styles.success}>{message}</p>}
 
-        {/* Кнопки */}
-        {!isPending && (
-          <div className={styles.actions}>
-            <button onClick={handleSave} className={styles.saveButton} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить черновик"}
-            </button>
-            <button onClick={handleSubmit} className={styles.submitButton} disabled={submitting}>
-              {submitting ? "Отправка..." : "Отправить на модерацию"}
-            </button>
-          </div>
-        )}
+        {/* Кнопка сохранения */}
+        <div className={styles.actions}>
+          <button onClick={handleSave} className={styles.submitButton} disabled={saving}>
+            {saving ? "Сохранение..." : "Сохранить профиль"}
+          </button>
+        </div>
       </div>
     </div>
   );

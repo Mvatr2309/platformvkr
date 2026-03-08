@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import styles from "../profile.module.css";
 
 const DIRECTIONS = [
@@ -8,6 +10,8 @@ const DIRECTIONS = [
   "Разработка IT-продуктов",
   "Науки о данных",
 ];
+
+const COHORTS = ["Поток2025", "Поток2026"];
 
 const ROLES = [
   "Разработчик",
@@ -20,6 +24,7 @@ const ROLES = [
 interface StudentData {
   direction: string;
   course: number;
+  cohort: string;
   competencies: string[];
   desiredRoles: string[];
   portfolioUrl: string | null;
@@ -29,6 +34,7 @@ interface StudentData {
 const EMPTY: StudentData = {
   direction: "",
   course: 1,
+  cohort: "",
   competencies: [],
   desiredRoles: [],
   portfolioUrl: null,
@@ -36,7 +42,10 @@ const EMPTY: StudentData = {
 };
 
 export default function StudentProfilePage() {
+  const router = useRouter();
+  const { data: session, update: updateSession } = useSession();
   const [profile, setProfile] = useState<StudentData>(EMPTY);
+  const [name, setName] = useState("");
   const [compInput, setCompInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -54,6 +63,12 @@ export default function StudentProfilePage() {
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
+  useEffect(() => {
+    if (session?.user?.name && !name) {
+      setName(session.user.name);
+    }
+  }, [session, name]);
+
   function addCompetency() {
     const tag = compInput.trim();
     if (tag && !profile.competencies.includes(tag)) {
@@ -67,7 +82,11 @@ export default function StudentProfilePage() {
   }
 
   async function handleSave() {
-    if (!profile.direction || !profile.contact) {
+    if (!name.trim()) {
+      setError("Укажите ФИО");
+      return;
+    }
+    if (!profile.direction || !profile.cohort || !profile.contact) {
       setError("Заполните обязательные поля");
       return;
     }
@@ -76,10 +95,13 @@ export default function StudentProfilePage() {
       const res = await fetch("/api/profile/student", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({ ...profile, name }),
       });
-      if (res.ok) setMessage("Профиль сохранён");
-      else {
+      if (res.ok) {
+        await updateSession();
+        setMessage("Профиль сохранён");
+        router.refresh();
+      } else {
         const data = await res.json();
         setError(data.error || "Ошибка");
       }
@@ -96,6 +118,17 @@ export default function StudentProfilePage() {
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Основная информация</h2>
+
+          <div className={styles.field}>
+            <label className={styles.label}>ФИО *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={styles.input}
+              placeholder="Иванов Иван Иванович"
+            />
+          </div>
 
           <div className={styles.row}>
             <div className={styles.field}>
@@ -118,6 +151,17 @@ export default function StudentProfilePage() {
                 className={styles.input}
                 min={1} max={6}
               />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Когорта *</label>
+              <select
+                value={profile.cohort}
+                onChange={(e) => setProfile((p) => ({ ...p, cohort: e.target.value }))}
+                className={styles.select}
+              >
+                <option value="">Выберите...</option>
+                {COHORTS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           </div>
 

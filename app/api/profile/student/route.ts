@@ -33,6 +33,7 @@ export async function PUT(request: NextRequest) {
     const profileData = {
       direction: data.direction || "",
       course: data.course || 1,
+      cohort: data.cohort || "",
       competencies: data.competencies || [],
       desiredRoles: data.desiredRoles || [],
       portfolioUrl: data.portfolioUrl || null,
@@ -54,6 +55,17 @@ export async function PUT(request: NextRequest) {
         data: { ...profileData, userId: session.user.id },
       });
     }
+
+    // Обновляем User (ФИО, profileCompleted)
+    const userUpdate: Record<string, unknown> = {
+      profileCompleted: true,
+      agreementAccepted: true,
+    };
+    if (data.name && data.name.trim()) userUpdate.name = data.name.trim();
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: userUpdate,
+    });
 
     return NextResponse.json(profile);
   } catch {

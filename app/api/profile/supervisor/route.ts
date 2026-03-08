@@ -49,19 +49,8 @@ export async function PUT(request: NextRequest) {
       contact: data.contact || "",
     };
 
-    // Приглашённый НР? Если есть Invitation — профиль сразу APPROVED
-    const invitation = await prisma.invitation.findFirst({
-      where: { email: session.user.email!, status: "ACCEPTED" },
-    });
-    const isInvited = !!invitation;
-
-    // Определяем статус:
-    // - Приглашённый НР: при submit → сразу APPROVED (модерация не нужна)
-    // - Самостоятельная регистрация: submit → PENDING (модерация)
-    // - Без submit: DRAFT (черновик)
-    const status = !data.submit ? "DRAFT" as const
-      : isInvited ? "APPROVED" as const
-      : "PENDING" as const;
+    // Без модерации — профиль сразу APPROVED при сохранении
+    const status = "APPROVED" as const;
 
     const existing = await prisma.supervisorProfile.findUnique({
       where: { userId: session.user.id },
@@ -70,14 +59,6 @@ export async function PUT(request: NextRequest) {
     let profile;
 
     if (existing) {
-      // Нельзя редактировать профиль, уже находящийся на модерации
-      if (existing.status === "PENDING" && data.submit) {
-        return NextResponse.json(
-          { error: "Профиль уже на модерации" },
-          { status: 400 }
-        );
-      }
-
       profile = await prisma.supervisorProfile.update({
         where: { userId: session.user.id },
         data: { ...profileData, status },
@@ -92,16 +73,16 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    // Обновляем User (соглашение + ФИО)
-    const userUpdate: Record<string, unknown> = {};
-    if (data.agreementAccepted !== undefined) userUpdate.agreementAccepted = data.agreementAccepted;
+    // Обновляем User (ФИО, соглашение, profileCompleted)
+    const userUpdate: Record<string, unknown> = {
+      profileCompleted: true,
+      agreementAccepted: true,
+    };
     if (data.name && data.name.trim()) userUpdate.name = data.name.trim();
-    if (Object.keys(userUpdate).length > 0) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: userUpdate,
-      });
-    }
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: userUpdate,
+    });
 
     return NextResponse.json(profile);
   } catch {
