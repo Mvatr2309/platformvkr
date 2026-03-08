@@ -27,6 +27,7 @@ export async function GET(
           student: {
             select: {
               id: true,
+              userId: true,
               direction: true,
               course: true,
               contact: true,
@@ -129,7 +130,7 @@ export async function DELETE(
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      members: { select: { id: true, role: true, student: { select: { userId: true } } } },
+      members: { select: { id: true, isCreator: true, student: { select: { userId: true } } } },
     },
   });
 
@@ -138,10 +139,9 @@ export async function DELETE(
   }
 
   const isAdmin = session.user.role === "ADMIN";
-  const authorMember = project.members.find(
-    (m) => m.role === "Автор" && m.student.userId === session.user.id
+  const isAuthor = project.members.some(
+    (m) => m.isCreator && m.student.userId === session.user.id
   );
-  const isAuthor = !!authorMember;
 
   if (!isAdmin && !isAuthor) {
     return NextResponse.json({ error: "Нет прав на удаление" }, { status: 403 });
@@ -149,7 +149,7 @@ export async function DELETE(
 
   // Автор может удалить только если нет других участников
   if (isAuthor && !isAdmin) {
-    const otherMembers = project.members.filter((m) => m.role !== "Автор");
+    const otherMembers = project.members.filter((m) => !m.isCreator);
     if (otherMembers.length > 0) {
       return NextResponse.json(
         { error: "Нельзя удалить проект с участниками. Сначала удалите участников." },

@@ -43,6 +43,7 @@ interface Project {
     isCreator: boolean;
     student: {
       id: string;
+      userId: string;
       direction: string;
       course: number;
       contact: string;
@@ -77,6 +78,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [newEvent, setNewEvent] = useState({ title: "", date: "", eventType: "DEADLINE" });
   const [addingEvent, setAddingEvent] = useState(false);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   const fetchProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -130,6 +132,22 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       setUploading(false);
       e.target.value = "";
     }
+  }
+
+  async function handleRemoveMember(memberId: string, memberName: string) {
+    if (!confirm(`Удалить ${memberName} из команды?`)) return;
+    setRemovingMemberId(memberId);
+    try {
+      const res = await fetch(`/api/projects/${id}/members/${memberId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchProject();
+        fetchActivities();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Ошибка удаления");
+      }
+    } catch { alert("Ошибка сети"); }
+    finally { setRemovingMemberId(null); }
   }
 
   async function handleApply() {
@@ -424,19 +442,41 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               <p className={styles.muted}>Пока нет участников</p>
             ) : (
               <div className={styles.memberCards}>
-                {project.members.map((m) => (
-                  <div key={m.id} className={styles.memberCard}>
-                    <div className={styles.memberName}>{m.student.user.name}</div>
-                    <div className={styles.memberMeta}>
-                      {m.student.direction}, {m.student.course} курс
+                {project.members.map((m) => {
+                  const isSelf = m.student.userId === userId;
+                  // Кто может удалить этого участника:
+                  const canRemove =
+                    (isAdmin) || // Админ — всех
+                    (isAuthor && !isSelf) || // Автор — всех кроме себя
+                    (isSupervisorOwner && !m.isCreator) || // НР — всех кроме автора
+                    (isSelf && !m.isCreator); // Сам себя, если не автор
+
+                  return (
+                    <div key={m.id} className={styles.memberCard}>
+                      <div className={styles.memberCardHeader}>
+                        <div className={styles.memberName}>{m.student.user.name}</div>
+                        {canRemove && (
+                          <button
+                            onClick={() => handleRemoveMember(m.id, m.student.user.name)}
+                            className={styles.removeMemberBtn}
+                            disabled={removingMemberId === m.id}
+                            title={isSelf ? "Покинуть проект" : "Удалить из команды"}
+                          >
+                            {removingMemberId === m.id ? "..." : "×"}
+                          </button>
+                        )}
+                      </div>
+                      <div className={styles.memberMeta}>
+                        {m.student.direction}, {m.student.course} курс
+                      </div>
+                      <div className={styles.memberBadges}>
+                        {m.isCreator && <span className={styles.creatorBadge}>Автор</span>}
+                        {m.role && <span className={styles.memberRoleBadge}>{m.role}</span>}
+                      </div>
+                      <div className={styles.memberContact}>{m.student.contact}</div>
                     </div>
-                    <div className={styles.memberBadges}>
-                      {m.isCreator && <span className={styles.creatorBadge}>Автор</span>}
-                      {m.role && <span className={styles.memberRoleBadge}>{m.role}</span>}
-                    </div>
-                    <div className={styles.memberContact}>{m.student.contact}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -53,7 +53,13 @@
 /* 03.03 — Участники */
 .memberCards { display: flex; flex-direction: column; gap: var(--space-sm); }
 .memberCard { padding: var(--space-sm); border: 1px solid var(--color-border); }
+.memberCardHeader { display: flex; align-items: center; justify-content: space-between; }
 .memberName { font-size: 14px; font-weight: 600; color: var(--color-text-primary); }
+.removeMemberBtn {
+  background: none; border: none; font-size: 18px; color: var(--color-text-muted);
+  cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.removeMemberBtn:hover { color: var(--color-coral); }
 .memberMeta { font-size: 13px; color: var(--color-text-secondary); }
 .memberBadges { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .memberRoleBadge { display: inline-block; font-size: 12px; padding: 2px 8px; background: #EEF2FF; color: var(--color-deep-blue); }
