@@ -73,6 +73,7 @@ export default function ProfilePage() {
       const data = await res.json();
       if (data) {
         setProfile(data);
+        if (data.name) setName(data.name);
       }
     }
     setLoaded(true);

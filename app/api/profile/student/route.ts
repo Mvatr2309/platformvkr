@@ -13,7 +13,13 @@ export async function GET() {
     where: { userId: session.user.id },
   });
 
-  return NextResponse.json(profile);
+  // Добавляем ФИО из User — оно не хранится в StudentProfile
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true },
+  });
+
+  return NextResponse.json(profile ? { ...profile, name: user?.name || "" } : null);
 }
 
 // PUT — создать или обновить профиль студента (05.06)

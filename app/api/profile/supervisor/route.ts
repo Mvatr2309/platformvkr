@@ -17,7 +17,13 @@ export async function GET() {
     return NextResponse.json(null);
   }
 
-  return NextResponse.json(profile);
+  // Добавляем ФИО из User
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true },
+  });
+
+  return NextResponse.json({ ...profile, name: user?.name || "" });
 }
 
 // PUT — создать или обновить профиль НР
