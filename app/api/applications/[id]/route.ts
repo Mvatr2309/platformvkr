@@ -52,7 +52,7 @@ export async function PUT(
   const isAdmin = session.user.role === "ADMIN";
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
   const isProjectAuthor = application.project.members.some(
-    (m) => m.role === "Автор" && m.student.userId === session.user.id
+    (m) => m.student.userId === session.user.id
   );
   const canReview = isAdmin || isSupervisorOwner || isProjectAuthor;
 

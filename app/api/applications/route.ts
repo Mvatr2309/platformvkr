@@ -45,9 +45,9 @@ export async function GET(request: NextRequest) {
     });
     if (!student) return NextResponse.json([]);
 
-    // Найти проекты где студент — автор
+    // Найти проекты где студент — участник (автор мог выбрать любую роль)
     const authorProjects = await prisma.projectMember.findMany({
-      where: { studentId: student.id, role: "Автор" },
+      where: { studentId: student.id },
       select: { projectId: true },
     });
     const projectIds = authorProjects.map((p) => p.projectId);
@@ -218,23 +218,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Уведомление автору проекта о новой заявке
-    const authorMember = await prisma.projectMember.findFirst({
-      where: { projectId, role: "Автор" },
+    // Уведомление всем участникам проекта о новой заявке
+    const projectMembers = await prisma.projectMember.findMany({
+      where: { projectId },
       select: { student: { select: { userId: true } } },
     });
-    if (authorMember) {
-      const proj = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { title: true },
-      });
-      notify({
-        userId: authorMember.student.userId,
-        type: "APPLICATION_NEW",
-        title: "Новая заявка",
-        message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
-        link: `/applications`,
-      }).catch(() => {});
+    const proj = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { title: true },
+    });
+    for (const member of projectMembers) {
+      // Не уведомляем самого подающего
+      if (member.student.userId !== session.user.id) {
+        notify({
+          userId: member.student.userId,
+          type: "APPLICATION_NEW",
+          title: "Новая заявка",
+          message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
+          link: `/applications`,
+        }).catch(() => {});
+      }
     }
 
     // Уведомление НР о новой заявке (если есть)
@@ -244,10 +247,6 @@ export async function POST(request: NextRequest) {
         select: { userId: true },
       });
       if (sup) {
-        const proj = await prisma.project.findUnique({
-          where: { id: projectId },
-          select: { title: true },
-        });
         notify({
           userId: sup.userId,
           type: "APPLICATION_NEW",
