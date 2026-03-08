@@ -24,6 +24,7 @@ export async function PUT(
     where: { id },
     include: {
       supervisor: { select: { userId: true, user: { select: { name: true } } } },
+      members: { select: { student: { select: { userId: true } } } },
     },
   });
 
@@ -52,6 +53,19 @@ export async function PUT(
   if (project.supervisor) {
     notify({
       userId: project.supervisor.userId,
+      type: "PROJECT_STATUS",
+      title: action === "approve" ? "Проект одобрен" : "Проект отклонён",
+      message: action === "approve"
+        ? `Проект «${project.title}» одобрен и открыт для заявок.`
+        : `Проект «${project.title}» отклонён.${comment ? ` Комментарий: ${comment}` : ""} Отредактируйте и отправьте повторно.`,
+      link: `/projects/${id}`,
+    }).catch(() => {});
+  }
+
+  // Уведомление участникам проекта (студентам-авторам)
+  for (const member of project.members) {
+    notify({
+      userId: member.student.userId,
       type: "PROJECT_STATUS",
       title: action === "approve" ? "Проект одобрен" : "Проект отклонён",
       message: action === "approve"

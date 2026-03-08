@@ -22,7 +22,6 @@ const ROLES = [
   "Data Engineer",
   "Data Scientist",
   "Product-менеджер",
-  "Научный руководитель",
 ];
 
 export default function NewProjectPage() {

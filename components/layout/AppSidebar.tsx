@@ -89,7 +89,6 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <a href="/admin/students-list" className={styles.navLink}>Список студентов</a>
             <a href="/admin/supervisors-list" className={styles.navLink}>Список НР</a>
             <a href="/admin/projects-list" className={styles.navLink}>Список проектов</a>
-            <a href="/admin/applications" className={styles.navLink}>Обзор заявок</a>
           </nav>
           <div className={styles.sidebarFooter}>
             <div className={styles.userName}>{user.name}</div>

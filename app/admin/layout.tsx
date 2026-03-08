@@ -26,11 +26,11 @@ export default function AdminLayout({
           <a href="/admin/supervisors-list" className={styles.navLink}>
             Список НР
           </a>
+          <a href="/admin/projects" className={styles.navLink}>
+            Модерация проектов
+          </a>
           <a href="/admin/projects-list" className={styles.navLink}>
             Список проектов
-          </a>
-          <a href="/admin/applications" className={styles.navLink}>
-            Обзор заявок
           </a>
           <a href="/admin/dictionaries" className={styles.navLink}>
             Справочники
