@@ -87,6 +87,7 @@ export async function PUT(
       data: {
         projectId: application.project.id,
         studentId: application.student.id,
+        role: application.role || null,
       },
     });
 

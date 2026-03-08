@@ -251,6 +251,7 @@ model Application {
   supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])
 
   motivation      String            // Мотивационное письмо (05.01)
+  role            String?           // Желаемая роль в проекте
   status          ApplicationStatus @default(PENDING)
   comment         String?           // Комментарий при принятии/отклонении (05.02)
 

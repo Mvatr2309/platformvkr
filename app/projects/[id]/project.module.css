@@ -95,6 +95,13 @@
   background: var(--color-surface); border: 1px solid var(--color-border);
   padding: var(--space-lg); margin-bottom: var(--space-xl);
 }
+.applyField { margin-bottom: var(--space-sm); }
+.applyLabel { display: block; font-size: 13px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 4px; }
+.applySelect {
+  width: 100%; border: 1px solid var(--color-border); padding: var(--space-sm);
+  font-size: 14px; font-family: inherit; outline: none; background: #fff;
+}
+.applySelect:focus { border-color: var(--color-deep-blue); }
 .applyTextarea {
   width: 100%; border: 1px solid var(--color-border); padding: var(--space-sm);
   font-size: 14px; font-family: inherit; resize: vertical; outline: none;

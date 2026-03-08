@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { projectId, motivation } = await request.json();
+    const { projectId, motivation, role } = await request.json();
 
     if (!projectId || !motivation) {
       return NextResponse.json(
@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
         studentId: student.id,
         supervisorId: project.supervisorId,
         motivation,
+        role: role || null,
       },
     });
 

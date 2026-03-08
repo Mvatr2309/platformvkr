@@ -69,6 +69,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [motivation, setMotivation] = useState("");
+  const [applyRole, setApplyRole] = useState("");
   const [applying, setApplying] = useState(false);
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
@@ -138,7 +139,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: id, motivation }),
+        body: JSON.stringify({ projectId: id, motivation, role: applyRole || undefined }),
       });
       const data = await res.json();
       if (res.ok) { setApplyMsg("Заявка отправлена!"); setMotivation(""); }
@@ -556,6 +557,21 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             ) : (
               <>
                 <h2 className={styles.sectionTitle}>Подать заявку</h2>
+                {project.requiredRoles.length > 0 && (
+                  <div className={styles.applyField}>
+                    <label className={styles.applyLabel}>Желаемая роль</label>
+                    <select
+                      value={applyRole}
+                      onChange={(e) => setApplyRole(e.target.value)}
+                      className={styles.applySelect}
+                    >
+                      <option value="">Выберите роль...</option>
+                      {openRoles.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <textarea
                   value={motivation}
                   onChange={(e) => setMotivation(e.target.value)}

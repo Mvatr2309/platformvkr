@@ -22,6 +22,7 @@ interface StudentApplication {
 interface AuthorApplication {
   id: string;
   motivation: string;
+  role: string | null;
   status: string;
   comment: string | null;
   createdAt: string;
@@ -247,6 +248,7 @@ export default function ApplicationsPage() {
           )}
           <span className={styles.contact}>Контакт: {app.student.contact}</span>
         </div>
+        {app.role && <p className={styles.roleBadge}>Роль: {app.role}</p>}
         <p className={styles.motivation}><strong>Мотивация:</strong> {app.motivation}</p>
 
         {actionId === app.id ? (
