@@ -34,6 +34,7 @@ export async function PUT(request: NextRequest) {
       direction: data.direction || "",
       course: data.course || 1,
       competencies: data.competencies || [],
+      desiredRoles: data.desiredRoles || [],
       portfolioUrl: data.portfolioUrl || null,
       contact: data.contact || "",
     };

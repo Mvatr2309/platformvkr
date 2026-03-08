@@ -4,8 +4,13 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_DOC = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 МБ
+const ALLOWED_DOC = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+const MAX_SIZE = 10 * 1024 * 1024; // 10 МБ
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -23,10 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Файл слишком большой (макс. 5 МБ)" }, { status: 400 });
+      return NextResponse.json({ error: "Файл слишком большой (макс. 10 МБ)" }, { status: 400 });
     }
 
-    const allowed = type === "photo" ? ALLOWED_IMAGE : [...ALLOWED_IMAGE, ...ALLOWED_DOC];
+    const allowed = type === "photo" ? ALLOWED_IMAGE
+      : type === "project" ? [...ALLOWED_IMAGE, ...ALLOWED_DOC]
+      : [...ALLOWED_IMAGE, ...ALLOWED_DOC];
     if (!allowed.includes(file.type)) {
       return NextResponse.json({ error: "Недопустимый формат файла" }, { status: 400 });
     }

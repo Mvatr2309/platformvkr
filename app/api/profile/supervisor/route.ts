@@ -49,8 +49,19 @@ export async function PUT(request: NextRequest) {
       contact: data.contact || "",
     };
 
-    // Определяем статус: если submit — на модерацию, иначе черновик
-    const status = data.submit ? "PENDING" : "DRAFT";
+    // Приглашённый НР? Если есть Invitation — профиль сразу APPROVED
+    const invitation = await prisma.invitation.findFirst({
+      where: { email: session.user.email!, status: "ACCEPTED" },
+    });
+    const isInvited = !!invitation;
+
+    // Определяем статус:
+    // - Приглашённый НР: при submit → сразу APPROVED (модерация не нужна)
+    // - Самостоятельная регистрация: submit → PENDING (модерация)
+    // - Без submit: DRAFT (черновик)
+    const status = !data.submit ? "DRAFT" as const
+      : isInvited ? "APPROVED" as const
+      : "PENDING" as const;
 
     const existing = await prisma.supervisorProfile.findUnique({
       where: { userId: session.user.id },
@@ -81,11 +92,14 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    // Обновляем соглашение на User
-    if (data.agreementAccepted !== undefined) {
+    // Обновляем User (соглашение + ФИО)
+    const userUpdate: Record<string, unknown> = {};
+    if (data.agreementAccepted !== undefined) userUpdate.agreementAccepted = data.agreementAccepted;
+    if (data.name && data.name.trim()) userUpdate.name = data.name.trim();
+    if (Object.keys(userUpdate).length > 0) {
       await prisma.user.update({
         where: { id: session.user.id },
-        data: { agreementAccepted: data.agreementAccepted },
+        data: userUpdate,
       });
     }
 

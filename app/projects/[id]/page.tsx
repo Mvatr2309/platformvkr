@@ -71,6 +71,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [applying, setApplying] = useState(false);
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
+  const [myApplication, setMyApplication] = useState<{ status: string } | null>(null);
   const [newEvent, setNewEvent] = useState({ title: "", date: "", eventType: "DEADLINE" });
   const [addingEvent, setAddingEvent] = useState(false);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -86,10 +87,23 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     if (res.ok) setActivities(await res.json());
   }, [id]);
 
+  const checkMyApplication = useCallback(async () => {
+    if (!session?.user || session.user.role !== "STUDENT") return;
+    try {
+      const res = await fetch("/api/applications");
+      if (res.ok) {
+        const apps = await res.json();
+        const found = apps.find((a: { project: { id: string }; status: string }) => a.project.id === id);
+        if (found) setMyApplication({ status: found.status });
+      }
+    } catch { /* ignore */ }
+  }, [session, id]);
+
   useEffect(() => {
     fetchProject();
     fetchActivities();
-  }, [fetchProject, fetchActivities]);
+    checkMyApplication();
+  }, [fetchProject, fetchActivities, checkMyApplication]);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -146,6 +160,25 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [editData, setEditData] = useState({ title: "", description: "", contact: "" });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmitForModeration() {
+    if (!confirm("Отправить проект на модерацию?")) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submit: true }),
+      });
+      if (res.ok) fetchProject();
+      else {
+        const data = await res.json();
+        alert(data.error || "Ошибка");
+      }
+    } catch { alert("Ошибка сети"); }
+    finally { setSubmitting(false); }
+  }
 
   async function handleSaveEdit() {
     setSaving(true);
@@ -226,6 +259,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <h1 className={styles.title}>{project.title}</h1>
             {canManage && (
               <div className={styles.headerActions}>
+                {project.status === "DRAFT" && (isAuthor || isSupervisorOwner || isAdmin) && (
+                  <button onClick={handleSubmitForModeration} className={styles.editBtn} disabled={submitting} style={{ background: "#003092", color: "#fff" }}>
+                    {submitting ? "Отправка..." : "Отправить на модерацию"}
+                  </button>
+                )}
                 <button
                   onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact }); }}
                   className={styles.editBtn}
@@ -499,11 +537,21 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         {/* Блок подачи заявки (05.01) — только для студентов, только открытые проекты */}
         {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && (
           <div className={styles.applyBlock}>
-            <h2 className={styles.sectionTitle}>Подать заявку</h2>
-            {applyMsg ? (
+            {myApplication ? (
+              <>
+                <h2 className={styles.sectionTitle}>Ваша заявка</h2>
+                <p className={styles.applySuccess}>
+                  {myApplication.status === "PENDING" && "Заявка ожидает рассмотрения"}
+                  {myApplication.status === "ACCEPTED" && "Заявка принята!"}
+                  {myApplication.status === "REJECTED" && "Заявка отклонена"}
+                  {myApplication.status === "APPROVED_BY_AUTHOR" && "Заявка одобрена автором, ожидает подтверждения"}
+                </p>
+              </>
+            ) : applyMsg ? (
               <p className={styles.applySuccess}>{applyMsg}</p>
             ) : (
               <>
+                <h2 className={styles.sectionTitle}>Подать заявку</h2>
                 <textarea
                   value={motivation}
                   onChange={(e) => setMotivation(e.target.value)}

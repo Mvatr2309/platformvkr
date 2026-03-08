@@ -18,11 +18,11 @@ const DIRECTIONS = [
 
 const ROLES = [
   "Разработчик",
-  "Дизайнер",
-  "Аналитик",
-  "Продакт-менеджер",
-  "Маркетолог",
-  "Тестировщик",
+  "ML-инженер",
+  "Data Engineer",
+  "Data Scientist",
+  "Product-менеджер",
+  "Научный руководитель",
 ];
 
 export default function NewProjectPage() {
@@ -32,7 +32,10 @@ export default function NewProjectPage() {
   const [projectType, setProjectType] = useState("");
   const [direction, setDirection] = useState("");
   const [requiredRoles, setRequiredRoles] = useState<string[]>([]);
+  const [authorRole, setAuthorRole] = useState("");
   const [contact, setContact] = useState("");
+  const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -41,6 +44,30 @@ export default function NewProjectPage() {
     setRequiredRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
+  }
+
+  async function handleUpload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "project");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        setFiles((prev) => [...prev, { name: file.name, url: data.url }]);
+      } else {
+        setError(data.error || "Ошибка загрузки файла");
+      }
+    } catch {
+      setError("Ошибка загрузки файла");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeFile(url: string) {
+    setFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
   async function handleSave(submit: boolean) {
@@ -57,7 +84,7 @@ export default function NewProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, description, projectType, direction, requiredRoles, contact, submit,
+          title, description, projectType, direction, requiredRoles, authorRole, contact, submit, files,
         }),
       });
       const data = await res.json();
@@ -162,6 +189,20 @@ export default function NewProjectPage() {
           </div>
 
           <div className={styles.field}>
+            <label className={styles.label}>Моя роль в проекте</label>
+            <select
+              value={authorRole}
+              onChange={(e) => setAuthorRole(e.target.value)}
+              className={styles.select}
+            >
+              <option value="">Автор (по умолчанию)</option>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.field}>
             <label className={styles.label}>Контакт для связи *</label>
             <input
               type="text"
@@ -170,6 +211,35 @@ export default function NewProjectPage() {
               className={styles.input}
               placeholder="E-mail, Telegram или телефон"
             />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.field}>
+            <label className={styles.label}>Файлы (паспорт проекта, презентация и др.)</label>
+            {files.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                {files.map((f) => (
+                  <div key={f.url} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className={styles.label} style={{ color: "#003092" }}>
+                      {f.name}
+                    </a>
+                    <button type="button" onClick={() => removeFile(f.url)} style={{ background: "none", border: "none", color: "#E8375A", cursor: "pointer", fontSize: 16 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className={styles.saveButton} style={{ display: "inline-block", cursor: "pointer", textAlign: "center" }}>
+              {uploading ? "Загрузка..." : "Прикрепить файл"}
+              <input
+                type="file"
+                accept=".pdf,.docx,.pptx,.xlsx,image/jpeg,image/png"
+                onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+                hidden
+                disabled={uploading}
+              />
+            </label>
+            <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>PDF, DOCX, PPTX, до 5 МБ</span>
           </div>
         </div>
 

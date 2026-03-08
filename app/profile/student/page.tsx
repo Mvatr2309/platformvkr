@@ -9,10 +9,19 @@ const DIRECTIONS = [
   "Науки о данных",
 ];
 
+const ROLES = [
+  "Разработчик",
+  "ML-инженер",
+  "Data Engineer",
+  "Data Scientist",
+  "Product-менеджер",
+];
+
 interface StudentData {
   direction: string;
   course: number;
   competencies: string[];
+  desiredRoles: string[];
   portfolioUrl: string | null;
   contact: string;
 }
@@ -21,6 +30,7 @@ const EMPTY: StudentData = {
   direction: "",
   course: 1,
   competencies: [],
+  desiredRoles: [],
   portfolioUrl: null,
   contact: "",
 };
@@ -153,6 +163,31 @@ export default function StudentProfilePage() {
                 className={styles.tagInput}
                 placeholder={profile.competencies.length === 0 ? "Python, React, SQL..." : ""}
               />
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Желаемые роли в проекте</h2>
+          <div className={styles.field}>
+            <div className={styles.checkboxGroup}>
+              {ROLES.map((role) => (
+                <label key={role} className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={profile.desiredRoles.includes(role)}
+                    onChange={() => {
+                      setProfile((p) => ({
+                        ...p,
+                        desiredRoles: p.desiredRoles.includes(role)
+                          ? p.desiredRoles.filter((r) => r !== role)
+                          : [...p.desiredRoles, role],
+                      }));
+                    }}
+                  />
+                  <span>{role}</span>
+                </label>
+              ))}
             </div>
           </div>
         </section>

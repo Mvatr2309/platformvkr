@@ -6,7 +6,6 @@ import styles from "./applications.module.css";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "На рассмотрении",
-  APPROVED_BY_AUTHOR: "Одобрена автором",
   ACCEPTED: "Принята",
   REJECTED: "Отклонена",
 };
@@ -75,7 +74,7 @@ export default function ApplicationsPage() {
       body: JSON.stringify({ action, comment }),
     });
     if (res.ok) {
-      setMessage(action === "accept" ? "Заявка одобрена и отправлена на модерацию" : "Заявка отклонена");
+      setMessage(action === "accept" ? "Заявка принята, студент добавлен в команду" : "Заявка отклонена");
       setActionId(null);
       setComment("");
       fetchApps();
@@ -260,7 +259,7 @@ export default function ApplicationsPage() {
               rows={2}
             />
             <div className={styles.actionButtons}>
-              <button onClick={() => handleAction(app.id, "accept")} className={styles.acceptButton}>Одобрить</button>
+              <button onClick={() => handleAction(app.id, "accept")} className={styles.acceptButton}>Принять</button>
               <button onClick={() => handleAction(app.id, "reject")} className={styles.rejectButton}>Отклонить</button>
               <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
             </div>

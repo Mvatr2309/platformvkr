@@ -19,9 +19,10 @@ export async function GET() {
     pendingModeration,
     upcomingDeadlines,
   ] = await Promise.all([
-    prisma.project.count(),
+    prisma.project.count({ where: { status: { not: "DRAFT" } } }),
     prisma.project.groupBy({
       by: ["status"],
+      where: { status: { not: "DRAFT" } },
       _count: true,
     }),
     prisma.supervisorProfile.count({ where: { status: "APPROVED" } }),
@@ -42,9 +43,9 @@ export async function GET() {
     }),
   ]);
 
-  // Проекты без руководителя
+  // Проекты без руководителя (не считая черновики)
   const unassignedProjects = await prisma.project.count({
-    where: { supervisorId: null },
+    where: { supervisorId: null, status: { not: "DRAFT" } },
   });
 
   // Проекты без участников
@@ -55,8 +56,9 @@ export async function GET() {
     },
   });
 
-  // Все проекты (сводный список)
+  // Все проекты кроме черновиков
   const projects = await prisma.project.findMany({
+    where: { status: { not: "DRAFT" } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

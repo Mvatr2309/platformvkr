@@ -33,7 +33,6 @@ interface DashboardData {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Черновик",
   PENDING: "На модерации",
   OPEN: "Открыт",
   ACTIVE: "Активный",

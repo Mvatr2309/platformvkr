@@ -30,10 +30,7 @@ export default function AdminLayout({
             Модерация проектов
           </a>
           <a href="/admin/applications" className={styles.navLink}>
-            Модерация заявок
-          </a>
-          <a href="/admin/matching" className={styles.navLink}>
-            Метчинг
+            Обзор заявок
           </a>
           <a href="/admin/dictionaries" className={styles.navLink}>
             Справочники

@@ -4,9 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 
-// PUT /api/applications/[id] — двухэтапная модерация заявки
-// Этап 1: Автор проекта (или НР) → accept/reject (PENDING → APPROVED_BY_AUTHOR / REJECTED)
-// Этап 2: Админ → approve/reject (APPROVED_BY_AUTHOR → ACCEPTED / REJECTED)
+// PUT /api/applications/[id] — принять или отклонить заявку
+// Автор проекта, НР или админ принимает → студент сразу в команде
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,7 +18,7 @@ export async function PUT(
   const { id } = await params;
   const { action, comment } = await request.json();
 
-  if (!["accept", "reject", "approve"].includes(action)) {
+  if (!["accept", "reject"].includes(action)) {
     return NextResponse.json({ error: "Недопустимое действие" }, { status: 400 });
   }
 
@@ -49,6 +48,7 @@ export async function PUT(
     return NextResponse.json({ error: "Заявка не найдена" }, { status: 404 });
   }
 
+  // Проверка прав: админ, НР проекта, или автор проекта
   const isAdmin = session.user.role === "ADMIN";
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
   const isProjectAuthor = application.project.members.some(
@@ -60,53 +60,12 @@ export async function PUT(
     return NextResponse.json({ error: "Нет прав" }, { status: 403 });
   }
 
-  // Этап 1: Автор/НР принимает или отклоняет (PENDING → APPROVED_BY_AUTHOR / REJECTED)
-  if (action === "accept") {
-    if (application.status !== "PENDING") {
-      return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
-    }
-
-    const updated = await prisma.application.update({
-      where: { id },
-      data: { status: "APPROVED_BY_AUTHOR", comment: comment || null },
-    });
-
-    // Уведомление студенту
-    notify({
-      userId: application.student.userId,
-      type: "APPLICATION_ACCEPTED",
-      title: "Заявка одобрена автором",
-      message: `Ваша заявка на проект «${application.project.title}» одобрена автором и отправлена на модерацию администратору.`,
-      link: `/projects/${application.project.id}`,
-    }).catch(() => {});
-
-    // Уведомление всем админам
-    const admins = await prisma.user.findMany({
-      where: { role: "ADMIN" },
-      select: { id: true },
-    });
-    for (const admin of admins) {
-      notify({
-        userId: admin.id,
-        type: "APPLICATION_NEW",
-        title: "Заявка на модерацию",
-        message: `Автор проекта «${application.project.title}» одобрил заявку студента ${application.student.user.name}. Требуется модерация.`,
-        link: `/admin/applications`,
-      }).catch(() => {});
-    }
-
-    return NextResponse.json(updated);
+  if (application.status !== "PENDING") {
+    return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
   }
 
-  // Этап 2: Админ одобряет (APPROVED_BY_AUTHOR → ACCEPTED)
-  if (action === "approve") {
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Только админ может финально одобрить заявку" }, { status: 403 });
-    }
-    if (application.status !== "APPROVED_BY_AUTHOR") {
-      return NextResponse.json({ error: "Заявка не одобрена автором" }, { status: 400 });
-    }
-
+  // Принятие — студент сразу в команде
+  if (action === "accept") {
     const updated = await prisma.application.update({
       where: { id },
       data: { status: "ACCEPTED", comment: comment || null },
@@ -132,7 +91,7 @@ export async function PUT(
       userId: application.student.userId,
       type: "APPLICATION_ACCEPTED",
       title: "Заявка принята",
-      message: `Ваша заявка на проект «${application.project.title}» принята администратором. Вы в команде!`,
+      message: `Ваша заявка на проект «${application.project.title}» принята. Вы в команде!`,
       link: `/projects/${application.project.id}`,
     }).catch(() => {});
 
@@ -164,23 +123,13 @@ export async function PUT(
     return NextResponse.json(updated);
   }
 
-  // Отклонение (на любом этапе: автором или админом)
+  // Отклонение
   if (action === "reject") {
-    if (application.status !== "PENDING" && application.status !== "APPROVED_BY_AUTHOR") {
-      return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
-    }
-
-    // Автор/НР может отклонить только PENDING, админ — и APPROVED_BY_AUTHOR
-    if (application.status === "APPROVED_BY_AUTHOR" && !isAdmin) {
-      return NextResponse.json({ error: "Только админ может отклонить одобренную заявку" }, { status: 403 });
-    }
-
     const updated = await prisma.application.update({
       where: { id },
       data: { status: "REJECTED", comment: comment || null },
     });
 
-    // Уведомление студенту
     notify({
       userId: application.student.userId,
       type: "APPLICATION_REJECTED",
@@ -189,7 +138,6 @@ export async function PUT(
       link: `/projects/${application.project.id}`,
     }).catch(() => {});
 
-    // Email
     try {
       await sendMail({
         to: application.student.user.email,

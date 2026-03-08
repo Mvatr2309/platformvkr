@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./profile.module.css";
 
@@ -54,7 +55,9 @@ const EMPTY_PROFILE: ProfileData = {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: session, update: updateSession } = useSession();
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [name, setName] = useState("");
   const [agreement, setAgreement] = useState(false);
   const [expertiseInput, setExpertiseInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -79,6 +82,12 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    if (session?.user?.name && !name) {
+      setName(session.user.name);
+    }
+  }, [session, name]);
 
   function updateField<K extends keyof ProfileData>(key: K, value: ProfileData[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
@@ -135,9 +144,10 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile/supervisor", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, agreementAccepted: agreement, submit: false }),
+        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement, submit: false }),
       });
       if (res.ok) {
+        await updateSession();
         setMessage("Черновик сохранён");
       } else {
         const data = await res.json();
@@ -170,10 +180,17 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile/supervisor", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, agreementAccepted: agreement, submit: true }),
+        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement, submit: true }),
       });
       if (res.ok) {
-        setMessage("Профиль отправлен на модерацию");
+        const result = await res.json();
+        await updateSession();
+        if (result.status === "APPROVED") {
+          setMessage("Профиль сохранён и активирован. Вы видны студентам!");
+        } else {
+          setMessage("Профиль отправлен на модерацию");
+        }
+        loadProfile();
         router.refresh();
       } else {
         const data = await res.json();
@@ -203,6 +220,18 @@ export default function ProfilePage() {
         {/* Секция 1: Основная информация */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Основная информация</h2>
+
+          <div className={styles.field}>
+            <label className={styles.label}>ФИО *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={styles.input}
+              placeholder="Иванов Иван Иванович"
+              disabled={isPending}
+            />
+          </div>
 
           <div className={styles.row}>
             <div className={styles.field}>

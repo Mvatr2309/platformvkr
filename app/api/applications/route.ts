@@ -15,11 +15,10 @@ export async function GET(request: NextRequest) {
 
   const asAuthor = request.nextUrl.searchParams.get("as") === "author";
 
-  // Админ: заявки на модерацию (APPROVED_BY_AUTHOR)
+  // Админ: все заявки (для обзора)
   if (session.user.role === "ADMIN") {
     const applications = await prisma.application.findMany({
-      where: { status: "APPROVED_BY_AUTHOR" },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       include: {
         project: { select: { id: true, title: true } },
         student: {

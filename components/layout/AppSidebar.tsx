@@ -15,27 +15,43 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const { data: session } = useSession();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingAppsCount, setPendingAppsCount] = useState(0);
 
   const user = session?.user;
   const role = user?.role as string | undefined;
 
-  const fetchUnreadCount = useCallback(async () => {
-    if (!user) return;
+  const fetchCounts = useCallback(async () => {
+    if (!user || !role) return;
     try {
-      const res = await fetch("/api/notifications?limit=1");
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.unreadCount);
+      const notifRes = await fetch("/api/notifications?limit=1");
+      if (notifRes.ok) {
+        const data = await notifRes.json();
+        setUnreadCount(data.unreadCount ?? 0);
       }
     } catch { /* ignore */ }
-  }, [user]);
+    try {
+      if (role === "SUPERVISOR") {
+        const appsRes = await fetch("/api/applications");
+        if (appsRes.ok) {
+          const apps = await appsRes.json();
+          setPendingAppsCount(Array.isArray(apps) ? apps.filter((a: { status: string }) => a.status === "PENDING").length : 0);
+        }
+      } else if (role === "STUDENT") {
+        const authorRes = await fetch("/api/applications?as=author");
+        if (authorRes.ok) {
+          const authorApps = await authorRes.json();
+          setPendingAppsCount(Array.isArray(authorApps) ? authorApps.filter((a: { status: string }) => a.status === "PENDING").length : 0);
+        }
+      }
+    } catch { /* ignore */ }
+  }, [user, role]);
 
   useEffect(() => {
     if (!user) return;
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
-  }, [user, fetchUnreadCount]);
+  }, [user, fetchCounts]);
 
   // Don't show sidebar on landing, login, register pages
   if (pathname === "/" || pathname === "/login" || pathname === "/register") {
@@ -66,8 +82,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <a href="/admin/students" className={styles.navLink}>Студенты</a>
             <a href="/admin/moderation" className={styles.navLink}>Модерация НР</a>
             <a href="/admin/projects" className={styles.navLink}>Модерация проектов</a>
-            <a href="/admin/applications" className={styles.navLink}>Модерация заявок</a>
-            <a href="/admin/matching" className={styles.navLink}>Метчинг</a>
+            <a href="/admin/applications" className={styles.navLink}>Обзор заявок</a>
           </nav>
           <div className={styles.sidebarFooter}>
             <div className={styles.userName}>{user.name}</div>
@@ -98,28 +113,38 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         </div>
 
         <nav className={styles.nav}>
-          <a href="/projects" className={navClass("/projects")}>Проекты</a>
-          {role === "STUDENT" && (
-            <a href="/supervisors" className={navClass("/supervisors")}>Руководители</a>
-          )}
-          <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
-          <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
-
           {role === "STUDENT" && (
             <>
-              <div className={styles.divider} />
-              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")}>Заявки</a>
               <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
+              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
+              <a href="/applications" className={navClass("/applications")}>
+                Заявки
+                {pendingAppsCount > 0 && (
+                  <span className={styles.bellBadge}>{pendingAppsCount}</span>
+                )}
+              </a>
+              <div className={styles.divider} />
+              <a href="/projects" className={navClass("/projects")}>Проекты</a>
+              <a href="/supervisors" className={navClass("/supervisors")}>Руководители</a>
+              <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
+              <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
             </>
           )}
 
           {role === "SUPERVISOR" && (
             <>
-              <div className={styles.divider} />
-              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")}>Заявки</a>
               <a href="/profile" className={navClass("/profile")}>Профиль</a>
+              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
+              <a href="/applications" className={navClass("/applications")}>
+                Заявки
+                {pendingAppsCount > 0 && (
+                  <span className={styles.bellBadge}>{pendingAppsCount}</span>
+                )}
+              </a>
+              <div className={styles.divider} />
+              <a href="/projects" className={navClass("/projects")}>Проекты</a>
+              <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
+              <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
             </>
           )}
 

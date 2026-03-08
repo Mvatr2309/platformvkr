@@ -53,6 +53,26 @@ export async function POST(
       return NextResponse.json({ error: "Файл слишком большой (макс. 10 МБ)" }, { status: 400 });
     }
 
+    // Проверка общего размера файлов проекта (макс. 100 МБ)
+    const existingFiles = await prisma.projectFile.findMany({
+      where: { projectId: id },
+      select: { filepath: true },
+    });
+    const fs = await import("fs");
+    let totalSize = 0;
+    for (const f of existingFiles) {
+      try {
+        const stat = fs.statSync(path.join(process.cwd(), "public", f.filepath));
+        totalSize += stat.size;
+      } catch { /* файл мог быть удалён */ }
+    }
+    if (totalSize + file.size > 100 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Превышен лимит хранилища проекта (100 МБ). Удалите ненужные файлы." },
+        { status: 400 }
+      );
+    }
+
     const ext = file.name.split(".").pop() || "bin";
     const filename = `${id}-${Date.now()}.${ext}`;
     const uploadDir = path.join(process.cwd(), "public", "uploads", "projects");

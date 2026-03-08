@@ -112,20 +112,36 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Автоматически добавляем создателя-студента как участника с ролью «Автор»
+    // Автоматически добавляем создателя-студента как участника
     if (session.user.role === "STUDENT") {
       const studentProfile = await prisma.studentProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
       if (studentProfile) {
+        const memberRole = data.authorRole || "Автор";
         await prisma.projectMember.create({
           data: {
             projectId: project.id,
             studentId: studentProfile.id,
-            role: "Автор",
+            role: memberRole,
           },
         });
+      }
+    }
+
+    // Прикрепляем файлы, если переданы
+    if (data.files && Array.isArray(data.files)) {
+      for (const file of data.files) {
+        if (file.url && file.name) {
+          await prisma.projectFile.create({
+            data: {
+              projectId: project.id,
+              filename: file.name,
+              filepath: file.url,
+            },
+          });
+        }
       }
     }
 

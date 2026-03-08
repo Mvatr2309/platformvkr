@@ -92,6 +92,7 @@ model StudentProfile {
   direction     String        // Направление (образовательная программа)
   course        Int           // Курс
   competencies  String[]      // Компетенции
+  desiredRoles  String[]      // Желаемые роли в проекте
   portfolioUrl  String?       // Портфолио (ссылка)
   contact       String        // Контакт для связи
 
