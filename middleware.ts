@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 // Маршруты, доступные только авторизованным
@@ -20,7 +19,7 @@ const adminPaths = ["/admin"];
 // Маршруты, доступные без заполненного профиля (но с авторизацией)
 const profileExemptPaths = ["/profile", "/api/profile", "/api/upload", "/api/auth"];
 
-export default auth(async (req) => {
+export default auth((req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
 
@@ -39,22 +38,18 @@ export default auth(async (req) => {
 
   // Проверка заполненности профиля (не для админов и не для exempt-путей)
   if (user && !user.profileCompleted && user.role !== "ADMIN") {
-    // JWT может быть устаревшим — перепроверяем в БД
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id as string },
-      select: { profileCompleted: true },
-    });
+    // JWT может быть устаревшим — проверяем cookie-флаг (ставится API при сохранении профиля)
+    const profileCookie = req.cookies.get("profile_completed")?.value;
+    if (profileCookie === "1") {
+      return NextResponse.next();
+    }
 
-    const actuallyCompleted = dbUser?.profileCompleted ?? false;
+    const isExempt = profileExemptPaths.some((path) => pathname.startsWith(path));
+    const isPublic = ["/login", "/register", "/"].includes(pathname);
 
-    if (!actuallyCompleted) {
-      const isExempt = profileExemptPaths.some((path) => pathname.startsWith(path));
-      const isPublic = ["/login", "/register", "/"].includes(pathname);
-
-      if (isProtected && !isExempt && !isPublic) {
-        const profileUrl = user.role === "STUDENT" ? "/profile/student" : "/profile";
-        return NextResponse.redirect(new URL(profileUrl, req.url));
-      }
+    if (isProtected && !isExempt && !isPublic) {
+      const profileUrl = user.role === "STUDENT" ? "/profile/student" : "/profile";
+      return NextResponse.redirect(new URL(profileUrl, req.url));
     }
   }
 

@@ -71,7 +71,14 @@ export async function PUT(request: NextRequest) {
       data: userUpdate,
     });
 
-    return NextResponse.json(profile);
+    const response = NextResponse.json(profile);
+    // Cookie-флаг для middleware — JWT может быть устаревшим
+    response.cookies.set("profile_completed", "1", {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    return response;
   } catch {
     return NextResponse.json(
       { error: "Ошибка сохранения профиля" },
