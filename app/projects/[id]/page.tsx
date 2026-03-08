@@ -40,6 +40,7 @@ interface Project {
   members: Array<{
     id: string;
     role: string | null;
+    isCreator: boolean;
     student: {
       id: string;
       direction: string;
@@ -151,9 +152,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const isAdmin = userRole === "ADMIN";
   const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.user?.name === session?.user?.name;
   const isMember = project?.members.some((m) => m.student.user.name === session?.user?.name);
-  const isAuthor = project?.members.some((m) => m.role === "Автор" && m.student.user.name === session?.user?.name);
+  const isAuthor = project?.members.some((m) => m.isCreator && m.student.user.name === session?.user?.name);
   const canManage = isAdmin || isSupervisorOwner || isMember;
-  const otherMembers = project?.members.filter((m) => m.role !== "Автор") || [];
+  const otherMembers = project?.members.filter((m) => !m.isCreator) || [];
   const canDelete = isAdmin || (isAuthor && otherMembers.length === 0);
 
   const [editing, setEditing] = useState(false);
@@ -428,7 +429,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     <div className={styles.memberMeta}>
                       {m.student.direction}, {m.student.course} курс
                     </div>
-                    {m.role && <span className={styles.memberRoleBadge}>{m.role}</span>}
+                    <div className={styles.memberBadges}>
+                      {m.isCreator && <span className={styles.creatorBadge}>Автор</span>}
+                      {m.role && <span className={styles.memberRoleBadge}>{m.role}</span>}
+                    </div>
                     <div className={styles.memberContact}>{m.student.contact}</div>
                   </div>
                 ))}

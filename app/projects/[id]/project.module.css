@@ -55,7 +55,9 @@
 .memberCard { padding: var(--space-sm); border: 1px solid var(--color-border); }
 .memberName { font-size: 14px; font-weight: 600; color: var(--color-text-primary); }
 .memberMeta { font-size: 13px; color: var(--color-text-secondary); }
-.memberRoleBadge { display: inline-block; font-size: 12px; padding: 2px 8px; background: #EEF2FF; color: var(--color-deep-blue); margin-top: 4px; }
+.memberBadges { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.memberRoleBadge { display: inline-block; font-size: 12px; padding: 2px 8px; background: #EEF2FF; color: var(--color-deep-blue); }
+.creatorBadge { display: inline-block; font-size: 12px; padding: 2px 8px; background: #E8375A; color: #fff; font-weight: 600; }
 .memberContact { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
 
 /* 03.04 — Файлы */
