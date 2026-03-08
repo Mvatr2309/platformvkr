@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./new-project.module.css";
 
@@ -25,7 +26,9 @@ const ROLES = [
 ];
 
 export default function NewProjectPage() {
+  const { data: session } = useSession();
   const router = useRouter();
+  const isStudent = session?.user?.role === "STUDENT";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectType, setProjectType] = useState("");
@@ -187,19 +190,21 @@ export default function NewProjectPage() {
             </div>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Моя роль в проекте</label>
-            <select
-              value={authorRole}
-              onChange={(e) => setAuthorRole(e.target.value)}
-              className={styles.select}
-            >
-              <option value="">Автор (по умолчанию)</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </div>
+          {isStudent && (
+            <div className={styles.field}>
+              <label className={styles.label}>Моя роль в проекте</label>
+              <select
+                value={authorRole}
+                onChange={(e) => setAuthorRole(e.target.value)}
+                className={styles.select}
+              >
+                <option value="">Выберите роль...</option>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className={styles.field}>
             <label className={styles.label}>Контакт для связи *</label>
