@@ -93,7 +93,6 @@ export async function PUT(request: NextRequest) {
     const response = NextResponse.json(profile);
     // Cookie-флаг для middleware — JWT может быть устаревшим
     response.cookies.set("profile_completed", "1", {
-      httpOnly: true,
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
     });

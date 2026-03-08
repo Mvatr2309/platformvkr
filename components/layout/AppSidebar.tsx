@@ -59,7 +59,9 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   }
 
   // Если профиль не заполнен — показываем страницу профиля без сайдбара (как попап)
-  if (user && !user.profileCompleted && (pathname === "/profile" || pathname === "/profile/student")) {
+  // Проверяем и cookie (JWT может быть устаревшим)
+  const profileDone = user?.profileCompleted || (typeof document !== "undefined" && document.cookie.includes("profile_completed=1"));
+  if (user && !profileDone && (pathname === "/profile" || pathname === "/profile/student")) {
     return <>{children}</>;
   }
   // Admin pages have their own layout
