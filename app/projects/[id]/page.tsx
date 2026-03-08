@@ -406,28 +406,16 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <p className={styles.text}>{project.contact}</p>
           </div>
 
-          {/* Незакрытые роли */}
-          {openRoles.length > 0 && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Ищем в команду</h2>
-              <div className={styles.tags}>
-                {openRoles.map((r) => (
-                  <span key={r} className={styles.openRoleTag}>{r}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Все требуемые роли */}
+          {/* Требуемые роли — динамически: занятые отмечены, открытые выделены */}
           {project.requiredRoles.length > 0 && (
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Все требуемые роли</h2>
+              <h2 className={styles.sectionTitle}>Роли в команде</h2>
               <div className={styles.tags}>
                 {project.requiredRoles.map((r) => {
                   const filled = filledRoles.includes(r);
                   return (
-                    <span key={r} className={filled ? styles.filledRoleTag : styles.tag}>
-                      {r} {filled && "✓"}
+                    <span key={r} className={filled ? styles.filledRoleTag : styles.openRoleTag}>
+                      {filled ? `${r} — занята` : `${r} — ищем`}
                     </span>
                   );
                 })}
