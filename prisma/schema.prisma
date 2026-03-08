@@ -31,6 +31,7 @@ model User {
   passwordHash  String
   role          Role
   name          String    // ФИО
+  emailVerified Boolean   @default(false) // Подтверждение email
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   agreementAccepted Boolean @default(false) // Соглашение на обработку ПДн (01.06)
@@ -38,6 +39,17 @@ model User {
   supervisor    SupervisorProfile?
   student       StudentProfile?
   invitations   Invitation[]       // Приглашения, отправленные админом
+}
+
+// Токены подтверждения email
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  code      String   // 6-значный код
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, code])
 }
 
 // ============================================

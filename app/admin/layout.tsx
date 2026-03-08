@@ -18,10 +18,7 @@ export default function AdminLayout({
             Дашборд
           </a>
           <a href="/admin/invitations" className={styles.navLink}>
-            Научные руководители
-          </a>
-          <a href="/admin/students" className={styles.navLink}>
-            Студенты
+            Создание аккаунтов
           </a>
           <a href="/admin/moderation" className={styles.navLink}>
             Модерация НР

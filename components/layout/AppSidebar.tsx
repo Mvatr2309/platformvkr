@@ -54,7 +54,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   }, [user, fetchCounts]);
 
   // Don't show sidebar on landing, login, register pages
-  if (pathname === "/" || pathname === "/login" || pathname === "/register") {
+  if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname === "/verify-email") {
     return <>{children}</>;
   }
   // Admin pages have their own layout
@@ -78,8 +78,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
           </div>
           <nav className={styles.nav}>
             <a href="/admin/dashboard" className={styles.navLink}>Дашборд</a>
-            <a href="/admin/invitations" className={styles.navLink}>Научные руководители</a>
-            <a href="/admin/students" className={styles.navLink}>Студенты</a>
+            <a href="/admin/invitations" className={styles.navLink}>Создание аккаунтов</a>
             <a href="/admin/moderation" className={styles.navLink}>Модерация НР</a>
             <a href="/admin/projects" className={styles.navLink}>Модерация проектов</a>
             <a href="/admin/applications" className={styles.navLink}>Обзор заявок</a>

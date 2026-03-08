@@ -16,6 +16,7 @@ interface CreatedAccount {
   name: string;
   email: string;
   password: string;
+  role: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,9 +27,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 function downloadCredentials(accounts: CreatedAccount[]) {
   const lines = accounts.map(
-    (a) => `${a.name}\nЛогин: ${a.email}\nПароль: ${a.password}\n`
+    (a) => `${a.name} (${a.role === "STUDENT" ? "Студент" : "НР"})\nЛогин: ${a.email}\nПароль: ${a.password}\n`
   );
-  const text = "=== Доступы НР — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
+  const text = "=== Доступы — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -42,6 +43,7 @@ export default function InvitationsPage() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("SUPERVISOR");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -68,7 +70,7 @@ export default function InvitationsPage() {
       const res = await fetch("/api/admin/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, role }),
       });
 
       const data = await res.json();
@@ -82,10 +84,11 @@ export default function InvitationsPage() {
         name,
         email,
         password: data.generatedPassword,
+        role,
       };
 
       setCreatedAccounts((prev) => [...prev, account]);
-      setSuccess(`Аккаунт создан: ${email} / ${data.generatedPassword}`);
+      setSuccess(`Аккаунт создан и письмо отправлено: ${email}`);
       setName("");
       setEmail("");
       fetchInvitations();
@@ -98,7 +101,7 @@ export default function InvitationsPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Приглашения научных руководителей</h1>
+      <h1 className={styles.title}>Создание аккаунтов</h1>
 
       {/* Форма создания аккаунта */}
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -124,6 +127,17 @@ export default function InvitationsPage() {
               className={styles.input}
               required
             />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Роль</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "SUPERVISOR" | "STUDENT")}
+              className={styles.input}
+            >
+              <option value="SUPERVISOR">Научный руководитель</option>
+              <option value="STUDENT">Студент</option>
+            </select>
           </div>
           <button type="submit" className={styles.button} disabled={loading}>
             {loading ? "Создание..." : "Создать аккаунт"}
@@ -151,7 +165,12 @@ export default function InvitationsPage() {
           <div className={styles.credentialsList}>
             {createdAccounts.map((acc, i) => (
               <div key={i} className={styles.credentialCard}>
-                <div className={styles.credentialName}>{acc.name}</div>
+                <div className={styles.credentialName}>
+                  {acc.name}
+                  <span style={{ fontSize: 12, color: "#666", marginLeft: 8 }}>
+                    {acc.role === "STUDENT" ? "Студент" : "НР"}
+                  </span>
+                </div>
                 <div className={styles.credentialInfo}>
                   Логин: <strong>{acc.email}</strong> &nbsp;|&nbsp; Пароль: <strong>{acc.password}</strong>
                 </div>
@@ -175,7 +194,7 @@ export default function InvitationsPage() {
           {invitations.length === 0 && (
             <tr>
               <td colSpan={4} className={styles.empty}>
-                Приглашений пока нет
+                Аккаунтов пока нет
               </td>
             </tr>
           )}

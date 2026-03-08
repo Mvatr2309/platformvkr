@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendMail } from "@/lib/mail";
 
 // Генерация случайного пароля
 function generatePassword(length = 10) {
@@ -24,7 +25,7 @@ export async function GET() {
   return NextResponse.json(invitations);
 }
 
-// POST /api/admin/invitations — создать и отправить приглашение
+// POST /api/admin/invitations — создать аккаунт и отправить данные на почту
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email } = await request.json();
+    const { name, email, role } = await request.json();
 
     if (!name || !email) {
       return NextResponse.json(
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const userRole = role === "STUDENT" ? "STUDENT" : "SUPERVISOR";
 
     // Проверяем, не зарегистрирован ли уже пользователь с таким email
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Генерируем пароль и создаём аккаунт сразу
+    // Генерируем пароль и создаём аккаунт
     const password = generatePassword();
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -70,7 +73,8 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         name,
-        role: "SUPERVISOR",
+        role: userRole,
+        emailVerified: true,
         agreementAccepted: true,
       },
     });
@@ -84,13 +88,47 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Отправляем письмо с данными для входа
+    const roleLabel = userRole === "SUPERVISOR" ? "научного руководителя" : "студента";
+    const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
+
+    try {
+      await sendMail({
+        to: email,
+        subject: "Доступ к платформе ВКР",
+        html: `
+          <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px;">
+            <h2 style="color: #003092; margin-bottom: 16px;">Добро пожаловать на платформу ВКР</h2>
+            <p>Здравствуйте, ${name}!</p>
+            <p>Для вас создан аккаунт ${roleLabel} на платформе управления ВКР.</p>
+            <div style="background: #f0f4ff; padding: 20px; margin: 16px 0;">
+              <p style="margin: 0 0 8px 0;"><strong>Логин:</strong> ${email}</p>
+              <p style="margin: 0;"><strong>Пароль:</strong> ${password}</p>
+            </div>
+            <p>
+              <a href="${platformUrl}/login"
+                 style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">
+                Войти на платформу
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px; margin-top: 16px;">
+              Рекомендуем сменить пароль после первого входа.
+            </p>
+          </div>
+        `,
+      });
+    } catch (mailErr) {
+      console.error("Failed to send invitation email:", mailErr);
+      // Аккаунт создан, но письмо не отправлено — не критично
+    }
+
     return NextResponse.json(
       { ...invitation, userId: user.id, generatedPassword: password },
       { status: 201 }
     );
   } catch {
     return NextResponse.json(
-      { error: "Ошибка при отправке приглашения" },
+      { error: "Ошибка при создании аккаунта" },
       { status: 500 }
     );
   }
