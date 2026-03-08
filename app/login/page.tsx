@@ -30,7 +30,19 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    // Получаем сессию, чтобы узнать роль и статус профиля
+    const res = await fetch("/api/auth/session");
+    const session = await res.json();
+    const role = session?.user?.role;
+    const profileCompleted = session?.user?.profileCompleted;
+
+    if (role === "ADMIN") {
+      router.push("/admin");
+    } else if (!profileCompleted) {
+      router.push(role === "STUDENT" ? "/profile/student" : "/profile");
+    } else {
+      router.push("/my-projects");
+    }
     router.refresh();
   }
 

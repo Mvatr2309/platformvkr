@@ -1,16 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./landing.module.css";
 
 export default function Home() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Если уже залогинен — редирект
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const role = session.user.role;
+      const profileCompleted = session.user.profileCompleted;
+      if (role === "ADMIN") router.push("/admin");
+      else if (!profileCompleted) router.push(role === "STUDENT" ? "/profile/student" : "/profile");
+      else router.push("/my-projects");
+    }
+  }, [status, session, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

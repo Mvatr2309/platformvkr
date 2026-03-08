@@ -162,9 +162,13 @@ export default function ProfilePage() {
       });
       if (res.ok) {
         await updateSession();
+        // Если профиль заполняется впервые — перенаправляем на платформу
+        if (!session?.user?.profileCompleted) {
+          window.location.href = "/my-projects";
+          return;
+        }
         setMessage("Профиль сохранён");
         loadProfile();
-        router.refresh();
       } else {
         const data = await res.json();
         setError(data.error || "Ошибка сохранения");

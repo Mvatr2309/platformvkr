@@ -11,8 +11,6 @@ const DIRECTIONS = [
   "Науки о данных",
 ];
 
-const COHORTS = ["Поток2025", "Поток2026"];
-
 const ROLES = [
   "Разработчик",
   "ML-инженер",
@@ -24,7 +22,6 @@ const ROLES = [
 interface StudentData {
   direction: string;
   course: number;
-  cohort: string;
   competencies: string[];
   desiredRoles: string[];
   portfolioUrl: string | null;
@@ -34,7 +31,6 @@ interface StudentData {
 const EMPTY: StudentData = {
   direction: "",
   course: 1,
-  cohort: "",
   competencies: [],
   desiredRoles: [],
   portfolioUrl: null,
@@ -86,7 +82,7 @@ export default function StudentProfilePage() {
       setError("Укажите ФИО");
       return;
     }
-    if (!profile.direction || !profile.cohort || !profile.contact) {
+    if (!profile.direction || !profile.contact) {
       setError("Заполните обязательные поля");
       return;
     }
@@ -99,8 +95,12 @@ export default function StudentProfilePage() {
       });
       if (res.ok) {
         await updateSession();
+        // Если профиль заполняется впервые — перенаправляем на платформу
+        if (!session?.user?.profileCompleted) {
+          window.location.href = "/my-projects";
+          return;
+        }
         setMessage("Профиль сохранён");
-        router.refresh();
       } else {
         const data = await res.json();
         setError(data.error || "Ошибка");
@@ -151,17 +151,6 @@ export default function StudentProfilePage() {
                 className={styles.input}
                 min={1} max={6}
               />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Когорта *</label>
-              <select
-                value={profile.cohort}
-                onChange={(e) => setProfile((p) => ({ ...p, cohort: e.target.value }))}
-                className={styles.select}
-              >
-                <option value="">Выберите...</option>
-                {COHORTS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
             </div>
           </div>
 

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, role } = await request.json();
+    const { email, role, cohort } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -76,6 +76,21 @@ export async function POST(request: NextRequest) {
         emailVerified: true,
       },
     });
+
+    // Для студентов создаём профиль с когортой
+    if (userRole === "STUDENT" && cohort) {
+      await prisma.studentProfile.create({
+        data: {
+          userId: user.id,
+          cohort,
+          direction: "",
+          course: 1,
+          competencies: [],
+          desiredRoles: [],
+          contact: "",
+        },
+      });
+    }
 
     const invitation = await prisma.invitation.create({
       data: {

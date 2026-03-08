@@ -57,6 +57,11 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname === "/verify-email") {
     return <>{children}</>;
   }
+
+  // Если профиль не заполнен — показываем страницу профиля без сайдбара (как попап)
+  if (user && !user.profileCompleted && (pathname === "/profile" || pathname === "/profile/student")) {
+    return <>{children}</>;
+  }
   // Admin pages have their own layout
   if (pathname.startsWith("/admin")) {
     return <>{children}</>;

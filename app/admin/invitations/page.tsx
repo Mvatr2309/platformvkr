@@ -12,10 +12,13 @@ interface Invitation {
   sentBy: { name: string };
 }
 
+const COHORTS = ["Поток2025", "Поток2026"];
+
 interface CreatedAccount {
   email: string;
   password: string;
   role: string;
+  cohort?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -42,6 +45,7 @@ export default function InvitationsPage() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("SUPERVISOR");
+  const [cohort, setCohort] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -68,7 +72,7 @@ export default function InvitationsPage() {
       const res = await fetch("/api/admin/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, cohort: role === "STUDENT" ? cohort : undefined }),
       });
 
       const data = await res.json();
@@ -82,6 +86,7 @@ export default function InvitationsPage() {
         email,
         password: data.generatedPassword,
         role,
+        cohort: role === "STUDENT" ? cohort : undefined,
       };
 
       setCreatedAccounts((prev) => [...prev, account]);
@@ -121,13 +126,27 @@ export default function InvitationsPage() {
             <label className={styles.label}>Роль</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as "SUPERVISOR" | "STUDENT")}
+              onChange={(e) => { setRole(e.target.value as "SUPERVISOR" | "STUDENT"); if (e.target.value !== "STUDENT") setCohort(""); }}
               className={styles.input}
             >
               <option value="SUPERVISOR">Научный руководитель</option>
               <option value="STUDENT">Студент</option>
             </select>
           </div>
+          {role === "STUDENT" && (
+            <div className={styles.field}>
+              <label className={styles.label}>Когорта</label>
+              <select
+                value={cohort}
+                onChange={(e) => setCohort(e.target.value)}
+                className={styles.input}
+                required
+              >
+                <option value="">Выберите...</option>
+                {COHORTS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
           <button type="submit" className={styles.button} disabled={loading}>
             {loading ? "Создание..." : "Создать аккаунт"}
           </button>

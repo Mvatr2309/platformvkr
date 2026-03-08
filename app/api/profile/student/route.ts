@@ -30,10 +30,10 @@ export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
 
-    const profileData = {
+    // Когорта устанавливается только админом при создании аккаунта
+    const profileFields = {
       direction: data.direction || "",
       course: data.course || 1,
-      cohort: data.cohort || "",
       competencies: data.competencies || [],
       desiredRoles: data.desiredRoles || [],
       portfolioUrl: data.portfolioUrl || null,
@@ -48,11 +48,15 @@ export async function PUT(request: NextRequest) {
     if (existing) {
       profile = await prisma.studentProfile.update({
         where: { userId: session.user.id },
-        data: profileData,
+        data: profileFields,
       });
     } else {
       profile = await prisma.studentProfile.create({
-        data: { ...profileData, userId: session.user.id },
+        data: {
+          ...profileFields,
+          cohort: "",
+          userId: session.user.id,
+        },
       });
     }
 
