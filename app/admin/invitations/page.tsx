@@ -50,6 +50,7 @@ export default function InvitationsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [createdAccounts, setCreatedAccounts] = useState<CreatedAccount[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchInvitations = useCallback(async () => {
     const res = await fetch("/api/admin/invitations");
@@ -101,6 +102,29 @@ export default function InvitationsPage() {
       setError("Ошибка сети");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(id: string, email: string) {
+    if (!confirm(`Удалить аккаунт ${email}? Это действие необратимо.`)) return;
+    setDeleting(id);
+    try {
+      const res = await fetch("/api/admin/invitations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId: id }),
+      });
+      if (res.ok) {
+        setSuccess(`Аккаунт ${email} удалён`);
+        fetchInvitations();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Ошибка удаления");
+      }
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -195,12 +219,13 @@ export default function InvitationsPage() {
             <th>E-mail</th>
             <th>Статус</th>
             <th>Дата</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {invitations.length === 0 && (
             <tr>
-              <td colSpan={3} className={styles.empty}>
+              <td colSpan={4} className={styles.empty}>
                 Аккаунтов пока нет
               </td>
             </tr>
@@ -214,6 +239,15 @@ export default function InvitationsPage() {
                 </span>
               </td>
               <td>{new Date(inv.createdAt).toLocaleDateString("ru-RU")}</td>
+              <td>
+                <button
+                  onClick={() => handleDelete(inv.id, inv.email)}
+                  className={styles.deleteBtn}
+                  disabled={deleting === inv.id}
+                >
+                  {deleting === inv.id ? "..." : "Удалить"}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

@@ -10,6 +10,70 @@ function generatePassword(length = 10) {
   return crypto.randomBytes(length).toString("base64url").slice(0, length);
 }
 
+// DELETE /api/admin/invitations — удалить аккаунт и приглашение
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+  }
+
+  try {
+    const { invitationId } = await request.json();
+
+    if (!invitationId) {
+      return NextResponse.json({ error: "ID приглашения обязателен" }, { status: 400 });
+    }
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+    });
+
+    if (!invitation) {
+      return NextResponse.json({ error: "Приглашение не найдено" }, { status: 404 });
+    }
+
+    // Находим пользователя по email из приглашения
+    const user = await prisma.user.findUnique({
+      where: { email: invitation.email },
+      include: {
+        student: { select: { id: true } },
+        supervisor: { select: { id: true } },
+      },
+    });
+
+    if (user) {
+      // Удаляем связанные записи перед удалением пользователя
+      if (user.student) {
+        await prisma.projectMember.deleteMany({ where: { studentId: user.student.id } });
+        await prisma.application.deleteMany({ where: { studentId: user.student.id } });
+      }
+      if (user.supervisor) {
+        await prisma.application.deleteMany({ where: { supervisorId: user.supervisor.id } });
+        // Убираем НР из проектов
+        await prisma.project.updateMany({
+          where: { supervisorId: user.supervisor.id },
+          data: { supervisorId: null },
+        });
+      }
+      // Удаляем уведомления
+      await prisma.notification.deleteMany({ where: { userId: user.id } });
+      // Удаляем пользователя (каскадно удалит профили)
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+
+    // Удаляем приглашение
+    await prisma.invitation.delete({ where: { id: invitationId } });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting account:", err);
+    return NextResponse.json(
+      { error: "Ошибка при удалении аккаунта" },
+      { status: 500 }
+    );
+  }
+}
+
 // GET /api/admin/invitations — список приглашений
 export async function GET() {
   const session = await auth();
