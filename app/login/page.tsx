@@ -23,10 +23,9 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    setLoading(false);
-
     if (result?.error) {
       setError("Неверный e-mail или пароль");
+      setLoading(false);
       return;
     }
 
@@ -37,13 +36,14 @@ export default function LoginPage() {
     const profileCompleted = session?.user?.profileCompleted;
 
     if (role === "ADMIN") {
-      router.push("/admin");
+      window.location.href = "/admin";
     } else if (!profileCompleted) {
-      router.push(role === "STUDENT" ? "/profile/student" : "/profile");
+      // Очищаем cookie от предыдущих сессий, чтобы profile gate работал корректно
+      document.cookie = "profile_completed=; path=/; max-age=0";
+      window.location.href = role === "STUDENT" ? "/profile/student" : "/profile";
     } else {
-      router.push("/my-projects");
+      window.location.href = "/my-projects";
     }
-    router.refresh();
   }
 
   return (

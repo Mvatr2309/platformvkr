@@ -205,6 +205,32 @@
   font-family: monospace;
 }
 
+/* Фильтр */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* Бейджи ролей */
+.roleBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  display: inline-block;
+}
+
+.roleBadgeStudent {
+  background: #EEF2FF;
+  color: var(--color-deep-blue);
+}
+
+.roleBadgeSupervisor {
+  background: #FFF8E1;
+  color: #f57f17;
+}
+
 /* Кнопка удаления */
 .deleteBtn {
   background: none;

@@ -35,16 +35,16 @@ export async function GET(request: NextRequest) {
         where: { userId: session.user.id },
         select: { id: true },
       });
-      if (profile) where.supervisorId = profile.id;
+      if (!profile) return NextResponse.json([]);
+      where.supervisorId = profile.id;
     }
     if (session.user.role === "STUDENT") {
       const profile = await prisma.studentProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
-      if (profile) {
-        where.members = { some: { studentId: profile.id } };
-      }
+      if (!profile) return NextResponse.json([]);
+      where.members = { some: { studentId: profile.id } };
     }
     delete where.status; // Показываем все статусы для своих
   }

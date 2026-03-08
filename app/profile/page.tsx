@@ -205,6 +205,16 @@ export default function ProfilePage() {
             />
           </div>
 
+          <div className={styles.field}>
+            <label className={styles.label}>E-mail</label>
+            <input
+              type="email"
+              value={session?.user?.email || ""}
+              className={styles.input}
+              disabled
+            />
+          </div>
+
           <div className={styles.row}>
             <div className={styles.field}>
               <label className={styles.label}>Место работы *</label>

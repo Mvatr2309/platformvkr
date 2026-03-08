@@ -86,7 +86,20 @@ export async function GET() {
     include: { sentBy: { select: { name: true } } },
   });
 
-  return NextResponse.json(invitations);
+  // Получаем роли пользователей по email
+  const emails = invitations.map((inv) => inv.email);
+  const users = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, role: true },
+  });
+  const roleMap = new Map(users.map((u) => [u.email, u.role]));
+
+  const result = invitations.map((inv) => ({
+    ...inv,
+    role: roleMap.get(inv.email) || null,
+  }));
+
+  return NextResponse.json(result);
 }
 
 // POST /api/admin/invitations — создать аккаунт и отправить данные на почту

@@ -8,6 +8,7 @@ interface Invitation {
   name: string;
   email: string;
   status: "SENT" | "ACCEPTED" | "EXPIRED";
+  role: "STUDENT" | "SUPERVISOR" | null;
   createdAt: string;
   sentBy: { name: string };
 }
@@ -51,6 +52,7 @@ export default function InvitationsPage() {
   const [success, setSuccess] = useState("");
   const [createdAccounts, setCreatedAccounts] = useState<CreatedAccount[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "STUDENT" | "SUPERVISOR">("ALL");
 
   const fetchInvitations = useCallback(async () => {
     const res = await fetch("/api/admin/invitations");
@@ -212,27 +214,50 @@ export default function InvitationsPage() {
         </div>
       )}
 
+      {/* Фильтр по роли */}
+      <div className={styles.filterRow}>
+        <label className={styles.label}>Фильтр по роли:</label>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as "ALL" | "STUDENT" | "SUPERVISOR")}
+          className={styles.input}
+          style={{ width: "auto", minWidth: 200 }}
+        >
+          <option value="ALL">Все</option>
+          <option value="STUDENT">Студенты</option>
+          <option value="SUPERVISOR">Научные руководители</option>
+        </select>
+      </div>
+
       {/* Таблица приглашений */}
       <table className={styles.table}>
         <thead>
           <tr>
             <th>E-mail</th>
+            <th>Роль</th>
             <th>Статус</th>
             <th>Дата</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {invitations.length === 0 && (
+          {invitations.filter((inv) => roleFilter === "ALL" || inv.role === roleFilter).length === 0 && (
             <tr>
-              <td colSpan={4} className={styles.empty}>
+              <td colSpan={5} className={styles.empty}>
                 Аккаунтов пока нет
               </td>
             </tr>
           )}
-          {invitations.map((inv) => (
+          {invitations
+            .filter((inv) => roleFilter === "ALL" || inv.role === roleFilter)
+            .map((inv) => (
             <tr key={inv.id}>
               <td>{inv.email}</td>
+              <td>
+                <span className={`${styles.roleBadge} ${inv.role === "STUDENT" ? styles.roleBadgeStudent : styles.roleBadgeSupervisor}`}>
+                  {inv.role === "STUDENT" ? "Студент" : inv.role === "SUPERVISOR" ? "НР" : "—"}
+                </span>
+              </td>
               <td>
                 <span className={`${styles.status} ${styles[`status_${inv.status}`]}`}>
                   {STATUS_LABELS[inv.status]}

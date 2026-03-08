@@ -18,9 +18,14 @@ export default function Home() {
     if (status === "authenticated" && session?.user) {
       const role = session.user.role;
       const profileCompleted = session.user.profileCompleted;
-      if (role === "ADMIN") router.push("/admin");
-      else if (!profileCompleted) router.push(role === "STUDENT" ? "/profile/student" : "/profile");
-      else router.push("/my-projects");
+      if (role === "ADMIN") {
+        router.push("/admin");
+      } else if (!profileCompleted) {
+        document.cookie = "profile_completed=; path=/; max-age=0";
+        router.push(role === "STUDENT" ? "/profile/student" : "/profile");
+      } else {
+        router.push("/my-projects");
+      }
     }
   }, [status, session, router]);
 
@@ -35,22 +40,27 @@ export default function Home() {
       redirect: false,
     });
 
-    setLoading(false);
-
     if (result?.error) {
       setError("Неверный e-mail или пароль");
+      setLoading(false);
       return;
     }
 
-    // Получаем сессию, чтобы узнать роль
+    // Получаем сессию, чтобы узнать роль и статус профиля
     const res = await fetch("/api/auth/session");
-    const session = await res.json();
-    const role = session?.user?.role;
+    const sess = await res.json();
+    const role = sess?.user?.role;
+    const profileCompleted = sess?.user?.profileCompleted;
 
-    if (role === "ADMIN") router.push("/admin");
-    else if (role === "STUDENT") router.push("/my-projects");
-    else router.push("/my-projects");
-    router.refresh();
+    if (role === "ADMIN") {
+      window.location.href = "/admin";
+    } else if (!profileCompleted) {
+      // Очищаем cookie от предыдущих сессий, чтобы profile gate работал корректно
+      document.cookie = "profile_completed=; path=/; max-age=0";
+      window.location.href = role === "STUDENT" ? "/profile/student" : "/profile";
+    } else {
+      window.location.href = "/my-projects";
+    }
   }
 
   return (
