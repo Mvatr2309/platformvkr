@@ -88,7 +88,11 @@ export default function InvitationsPage() {
       };
 
       setCreatedAccounts((prev) => [...prev, account]);
-      setSuccess(`Аккаунт создан и письмо отправлено: ${email}`);
+      if (data.emailError) {
+        setSuccess(`Аккаунт создан: ${email} (письмо не отправлено: ${data.emailError})`);
+      } else {
+        setSuccess(`Аккаунт создан и письмо отправлено: ${email}`);
+      }
       setName("");
       setEmail("");
       fetchInvitations();

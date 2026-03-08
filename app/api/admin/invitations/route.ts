@@ -118,8 +118,13 @@ export async function POST(request: NextRequest) {
         `,
       });
     } catch (mailErr) {
-      console.error("Failed to send invitation email:", mailErr);
-      // Аккаунт создан, но письмо не отправлено — не критично
+      const errMsg = mailErr instanceof Error ? mailErr.message : String(mailErr);
+      console.error("Failed to send invitation email to", email, ":", errMsg);
+      // Аккаунт создан, но письмо не отправлено
+      return NextResponse.json(
+        { ...invitation, userId: user.id, generatedPassword: password, emailError: errMsg },
+        { status: 201 }
+      );
     }
 
     return NextResponse.json(
