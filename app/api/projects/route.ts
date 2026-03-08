@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
         select: { id: true },
       });
       if (studentProfile) {
-        const memberRole = data.authorRole || "Автор";
         await prisma.projectMember.create({
           data: {
             projectId: project.id,
             studentId: studentProfile.id,
-            role: memberRole,
+            role: data.authorRole || null,
+            isCreator: true,
           },
         });
       }

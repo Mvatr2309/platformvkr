@@ -31,7 +31,7 @@ export async function PUT(
           title: true,
           supervisorId: true,
           supervisor: { select: { userId: true } },
-          members: { select: { role: true, student: { select: { userId: true } } } },
+          members: { select: { isCreator: true, student: { select: { userId: true } } } },
         },
       },
       student: {
@@ -48,13 +48,12 @@ export async function PUT(
     return NextResponse.json({ error: "Заявка не найдена" }, { status: 404 });
   }
 
-  // Проверка прав: админ, НР проекта, или автор проекта
-  const isAdmin = session.user.role === "ADMIN";
+  // Проверка прав: только автор (создатель) проекта или НР проекта
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
-  const isProjectAuthor = application.project.members.some(
-    (m) => m.student.userId === session.user.id
+  const isProjectCreator = application.project.members.some(
+    (m) => m.isCreator && m.student.userId === session.user.id
   );
-  const canReview = isAdmin || isSupervisorOwner || isProjectAuthor;
+  const canReview = isSupervisorOwner || isProjectCreator;
 
   if (!canReview) {
     return NextResponse.json({ error: "Нет прав" }, { status: 403 });

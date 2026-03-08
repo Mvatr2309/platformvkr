@@ -45,9 +45,9 @@ export async function GET(request: NextRequest) {
     });
     if (!student) return NextResponse.json([]);
 
-    // Найти проекты где студент — участник (автор мог выбрать любую роль)
+    // Найти проекты где студент — создатель (isCreator)
     const authorProjects = await prisma.projectMember.findMany({
-      where: { studentId: student.id },
+      where: { studentId: student.id, isCreator: true },
       select: { projectId: true },
     });
     const projectIds = authorProjects.map((p) => p.projectId);
@@ -218,26 +218,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Уведомление всем участникам проекта о новой заявке
-    const projectMembers = await prisma.projectMember.findMany({
-      where: { projectId },
+    // Уведомление создателю проекта о новой заявке
+    const creator = await prisma.projectMember.findFirst({
+      where: { projectId, isCreator: true },
       select: { student: { select: { userId: true } } },
     });
     const proj = await prisma.project.findUnique({
       where: { id: projectId },
       select: { title: true },
     });
-    for (const member of projectMembers) {
-      // Не уведомляем самого подающего
-      if (member.student.userId !== session.user.id) {
-        notify({
-          userId: member.student.userId,
-          type: "APPLICATION_NEW",
-          title: "Новая заявка",
-          message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
-          link: `/applications`,
-        }).catch(() => {});
-      }
+    if (creator && creator.student.userId !== session.user.id) {
+      notify({
+        userId: creator.student.userId,
+        type: "APPLICATION_NEW",
+        title: "Новая заявка",
+        message: `Студент ${session.user.name} подал заявку на проект «${proj?.title}»`,
+        link: `/applications`,
+      }).catch(() => {});
     }
 
     // Уведомление НР о новой заявке (если есть)

@@ -195,7 +195,8 @@ model ProjectMember {
   project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   studentId   String
   student     StudentProfile @relation(fields: [studentId], references: [id])
-  role        String?        // Роль в проекте
+  role        String?        // Роль в проекте (Разработчик, Product-менеджер и т.д.)
+  isCreator   Boolean        @default(false) // Автор (создатель) проекта
   joinedAt    DateTime       @default(now())
 
   @@unique([projectId, studentId])
