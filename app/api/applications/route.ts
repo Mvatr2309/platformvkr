@@ -225,6 +225,7 @@ export async function POST(request: NextRequest) {
       data: {
         projectId,
         action: "Новая заявка от студента",
+        actorEmail: session.user.email,
       },
     });
 

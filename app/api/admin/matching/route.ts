@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     data: {
       projectId,
       action: `Предложено руководство: ${supervisor.user.name} (ожидает подтверждения)`,
+      actorEmail: session.user.email,
     },
   });
 

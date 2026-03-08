@@ -46,6 +46,7 @@ export async function PUT(
       action: action === "approve"
         ? "Проект одобрен модератором и открыт"
         : `Проект отклонён модератором${comment ? `: ${comment}` : ""}`,
+      actorEmail: session.user.email,
     },
   });
 

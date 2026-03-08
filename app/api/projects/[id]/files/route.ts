@@ -96,6 +96,7 @@ export async function POST(
       data: {
         projectId: id,
         action: `Загружен файл: ${file.name}`,
+        actorEmail: session.user.email,
       },
     });
 

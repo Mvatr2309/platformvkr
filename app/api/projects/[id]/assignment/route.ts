@@ -52,6 +52,7 @@ export async function PUT(
       data: {
         projectId: id,
         action: `Руководитель ${project.supervisor?.user.name} подтвердил назначение`,
+        actorEmail: session.user.email,
       },
     });
 
@@ -82,6 +83,7 @@ export async function PUT(
       data: {
         projectId: id,
         action: `Руководитель ${project.supervisor?.user.name} отклонил назначение`,
+        actorEmail: session.user.email,
       },
     });
 

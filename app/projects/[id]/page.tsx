@@ -58,6 +58,7 @@ interface Project {
 interface ActivityItem {
   id: string;
   action: string;
+  actorEmail: string | null;
   createdAt: string;
 }
 
@@ -560,6 +561,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                       })}
                     </span>
                     <span className={styles.activityAction}>{a.action}</span>
+                    {a.actorEmail && <span className={styles.activityActor}>{a.actorEmail}</span>}
                   </div>
                 ))}
               </div>

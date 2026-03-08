@@ -78,6 +78,7 @@ export async function DELETE(
     data: {
       projectId,
       action: `${deletedStudent?.user.name || "Участник"} удалён из команды`,
+      actorEmail: session.user.email,
     },
   });
 

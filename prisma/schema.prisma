@@ -226,6 +226,7 @@ model Activity {
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   action      String   // Описание действия
+  actorEmail  String?  // E-mail пользователя, совершившего действие
   createdAt   DateTime @default(now())
 }
 

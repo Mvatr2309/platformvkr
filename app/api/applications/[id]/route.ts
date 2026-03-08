@@ -95,6 +95,7 @@ export async function PUT(
       data: {
         projectId: application.project.id,
         action: `Студент ${application.student.user.name} принят в команду`,
+        actorEmail: session.user.email,
       },
     });
 
