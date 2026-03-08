@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 
+const STARTUP_TEAM_LIMIT = 4; // Максимум участников для стартапов (без НР)
+
 // PUT /api/applications/[id] — принять или отклонить заявку
 // Автор проекта, НР или админ принимает → студент сразу в команде
 export async function PUT(
@@ -29,9 +31,11 @@ export async function PUT(
         select: {
           id: true,
           title: true,
+          projectType: true,
           supervisorId: true,
           supervisor: { select: { userId: true } },
           members: { select: { isCreator: true, student: { select: { userId: true } } } },
+          _count: { select: { members: true } },
         },
       },
       student: {
@@ -65,6 +69,14 @@ export async function PUT(
 
   // Принятие — студент сразу в команде
   if (action === "accept") {
+    // Проверка лимита команды для стартапов
+    const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(application.project.projectType);
+    if (isStartup && application.project._count.members >= STARTUP_TEAM_LIMIT) {
+      return NextResponse.json(
+        { error: `В проектах типа «Стартап» максимум ${STARTUP_TEAM_LIMIT} участника в команде` },
+        { status: 400 }
+      );
+    }
     const updated = await prisma.application.update({
       where: { id },
       data: { status: "ACCEPTED", comment: comment || null },

@@ -180,12 +180,21 @@ export async function POST(request: NextRequest) {
     // Определяем НР проекта
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { supervisorId: true, status: true },
+      select: { supervisorId: true, status: true, projectType: true, _count: { select: { members: true } } },
     });
 
     if (!project || project.status !== "OPEN") {
       return NextResponse.json(
         { error: "Проект не найден или не принимает заявки" },
+        { status: 400 }
+      );
+    }
+
+    // Проверка лимита команды для стартапов
+    const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
+    if (isStartup && project._count.members >= 4) {
+      return NextResponse.json(
+        { error: "Команда проекта уже укомплектована (максимум 4 участника)" },
         { status: 400 }
       );
     }
