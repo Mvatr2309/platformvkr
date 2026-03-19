@@ -11,6 +11,12 @@ const DIRECTIONS = [
 
 const ACADEMIC_TITLES = ["Доцент", "Профессор"];
 
+const PROJECT_TYPES = [
+  { value: "CLASSIC_DISSERTATION", label: "Исследования" },
+  { value: "STARTUP", label: "Стартапы" },
+  { value: "CORPORATE_STARTUP", label: "Корпоративные стартапы" },
+];
+
 interface SupervisorCard {
   id: string;
   workplace: string;
@@ -32,6 +38,7 @@ export default function SupervisorsPage() {
   const [direction, setDirection] = useState("");
   const [academicTitle, setAcademicTitle] = useState("");
   const [recruitment, setRecruitment] = useState("");
+  const [projectType, setProjectType] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchProfiles = useCallback(async () => {
@@ -40,13 +47,14 @@ export default function SupervisorsPage() {
     if (direction) params.set("direction", direction);
     if (academicTitle) params.set("academicTitle", academicTitle);
     if (recruitment) params.set("recruitment", recruitment);
+    if (projectType) params.set("projectType", projectType);
 
     const res = await fetch(`/api/supervisors?${params}`);
     if (res.ok) {
       setProfiles(await res.json());
     }
     setLoading(false);
-  }, [search, direction, academicTitle, recruitment]);
+  }, [search, direction, academicTitle, recruitment, projectType]);
 
   useEffect(() => {
     const timer = setTimeout(fetchProfiles, 300);
@@ -58,9 +66,10 @@ export default function SupervisorsPage() {
     setDirection("");
     setAcademicTitle("");
     setRecruitment("");
+    setProjectType("");
   }
 
-  const hasFilters = search || direction || academicTitle || recruitment;
+  const hasFilters = search || direction || academicTitle || recruitment || projectType;
 
   return (
     <div className={styles.wrapper}>
@@ -95,6 +104,16 @@ export default function SupervisorsPage() {
               <option value="">Любое звание</option>
               {ACADEMIC_TITLES.map((t) => (
                 <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select
+              value={projectType}
+              onChange={(e) => setProjectType(e.target.value)}
+              className={styles.select}
+            >
+              <option value="">Все типы проектов</option>
+              {PROJECT_TYPES.map((pt) => (
+                <option key={pt.value} value={pt.value}>{pt.label}</option>
               ))}
             </select>
             <select

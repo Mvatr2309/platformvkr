@@ -22,6 +22,7 @@ const ROLES = [
 interface StudentData {
   direction: string;
   course: number;
+  about: string | null;
   competencies: string[];
   desiredRoles: string[];
   portfolioUrl: string | null;
@@ -31,6 +32,7 @@ interface StudentData {
 const EMPTY: StudentData = {
   direction: "",
   course: 1,
+  about: null,
   competencies: [],
   desiredRoles: [],
   portfolioUrl: null,
@@ -186,6 +188,17 @@ export default function StudentProfilePage() {
               onChange={(e) => setProfile((p) => ({ ...p, portfolioUrl: e.target.value || null }))}
               className={styles.input}
               placeholder="https://github.com/username"
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>О себе</label>
+            <textarea
+              value={profile.about || ""}
+              onChange={(e) => setProfile((p) => ({ ...p, about: e.target.value || null }))}
+              className={styles.textarea}
+              rows={4}
+              placeholder="Расскажите о своём опыте, экспертизе, интересах и навыках..."
             />
           </div>
         </section>

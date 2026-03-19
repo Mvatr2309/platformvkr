@@ -51,6 +51,7 @@ export async function PUT(request: NextRequest) {
       workPreferences: data.workPreferences || [],
       proposedTopics: data.proposedTopics || null,
       directions: data.directions || [],
+      projectTypes: data.projectTypes || [],
       maxSlots: data.maxSlots || 3,
       contact: data.contact || "",
     };

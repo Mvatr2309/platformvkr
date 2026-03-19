@@ -22,6 +22,12 @@ const DIRECTIONS = [
 
 const ACADEMIC_TITLES = ["Нет", "Доцент", "Профессор"];
 
+const PROJECT_TYPES = [
+  { value: "CLASSIC_DISSERTATION", label: "Исследования" },
+  { value: "STARTUP", label: "Стартапы" },
+  { value: "CORPORATE_STARTUP", label: "Корпоративные стартапы" },
+];
+
 interface ProfileData {
   workplace: string;
   position: string;
@@ -33,6 +39,7 @@ interface ProfileData {
   workPreferences: string[];
   proposedTopics: string | null;
   directions: string[];
+  projectTypes: string[];
   maxSlots: number;
   contact: string;
   status?: string;
@@ -49,6 +56,7 @@ const EMPTY_PROFILE: ProfileData = {
   workPreferences: [],
   proposedTopics: null,
   directions: [],
+  projectTypes: [],
   maxSlots: 3,
   contact: "",
 };
@@ -93,7 +101,7 @@ export default function ProfilePage() {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleArrayItem(key: "workPreferences" | "directions", item: string) {
+  function toggleArrayItem(key: "workPreferences" | "directions" | "projectTypes", item: string) {
     setProfile((prev) => {
       const arr = prev[key];
       return {
@@ -147,7 +155,8 @@ export default function ProfilePage() {
     }
     if (!profile.workplace || !profile.position || !profile.academicTitle ||
         !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
-        profile.workPreferences.length === 0 || profile.directions.length === 0) {
+        profile.workPreferences.length === 0 || profile.directions.length === 0 ||
+        profile.projectTypes.length === 0) {
       setError("Заполните все обязательные поля");
       return;
     }
@@ -327,6 +336,22 @@ export default function ProfilePage() {
                     onChange={() => toggleArrayItem("directions", dir)}
                         />
                   <span>{dir}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>С какими типами проектов работаете *</label>
+            <div className={styles.checkboxGroup}>
+              {PROJECT_TYPES.map((pt) => (
+                <label key={pt.value} className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={profile.projectTypes.includes(pt.value)}
+                    onChange={() => toggleArrayItem("projectTypes", pt.value)}
+                  />
+                  <span>{pt.label}</span>
                 </label>
               ))}
             </div>

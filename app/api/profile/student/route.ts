@@ -40,6 +40,7 @@ export async function PUT(request: NextRequest) {
     const profileFields = {
       direction: data.direction || "",
       course: data.course || 1,
+      about: data.about || null,
       competencies: data.competencies || [],
       desiredRoles: data.desiredRoles || [],
       portfolioUrl: data.portfolioUrl || null,

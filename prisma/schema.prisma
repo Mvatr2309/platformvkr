@@ -78,6 +78,7 @@ model SupervisorProfile {
   workPreferences String[]          // Готов работать с (мультиселект)
   proposedTopics  String?           // Предлагаемые темы (длинный текст)
   directions      String[]          // Направления студентов (мультиселект)
+  projectTypes    String[]          // Типы проектов (CLASSIC_DISSERTATION, STARTUP, CORPORATE_STARTUP)
   maxSlots        Int               @default(3) // Макс. одновременных проектов
   contact         String            // Контакт (e-mail, Telegram, телефон)
 
@@ -105,6 +106,7 @@ model StudentProfile {
   direction     String        // Направление (образовательная программа)
   course        Int           // Курс
   cohort        String        @default("") // Когорта (Поток2025, Поток2026)
+  about         String?       // О себе (опыт, экспертиза)
   competencies  String[]      // Компетенции
   desiredRoles  String[]      // Желаемые роли в проекте
   portfolioUrl  String?       // Портфолио (ссылка)

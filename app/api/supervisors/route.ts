@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const direction = searchParams.get("direction") || "";
   const academicTitle = searchParams.get("academicTitle") || "";
   const recruitment = searchParams.get("recruitment") || "";
+  const projectType = searchParams.get("projectType") || "";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {
@@ -27,6 +28,11 @@ export async function GET(request: NextRequest) {
   // Фильтр по статусу набора
   if (recruitment) {
     where.recruitmentStatus = recruitment;
+  }
+
+  // Фильтр по типу проектов
+  if (projectType) {
+    where.projectTypes = { has: projectType };
   }
 
   // Текстовый поиск по ФИО, месту работы, экспертизе, темам (01.09)
