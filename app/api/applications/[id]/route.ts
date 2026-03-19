@@ -45,6 +45,13 @@ export async function PUT(
           user: { select: { name: true, email: true } },
         },
       },
+      supervisor: {
+        select: {
+          id: true,
+          userId: true,
+          user: { select: { name: true, email: true } },
+        },
+      },
     },
   });
 
@@ -52,12 +59,13 @@ export async function PUT(
     return NextResponse.json({ error: "Заявка не найдена" }, { status: 404 });
   }
 
-  // Проверка прав: только автор (создатель) проекта или НР проекта
+  // Проверка прав: автор проекта, НР проекта или админ
+  const isAdmin = session.user.role === "ADMIN";
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
   const isProjectCreator = application.project.members.some(
     (m) => m.isCreator && m.student.userId === session.user.id
   );
-  const canReview = isSupervisorOwner || isProjectCreator;
+  const canReview = isAdmin || isSupervisorOwner || isProjectCreator;
 
   if (!canReview) {
     return NextResponse.json({ error: "Нет прав" }, { status: 403 });
@@ -67,7 +75,118 @@ export async function PUT(
     return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
   }
 
-  // Принятие — студент сразу в команде
+  // ===== Заявка от НР (type: SUPERVISOR) =====
+  if (application.type === "SUPERVISOR") {
+    if (action === "accept") {
+      // Назначаем НР на проект
+      await prisma.application.update({
+        where: { id },
+        data: { status: "ACCEPTED", comment: comment || null },
+      });
+
+      await prisma.project.update({
+        where: { id: application.project.id },
+        data: {
+          supervisorId: application.supervisor!.id,
+          assignmentStatus: "CONFIRMED",
+        },
+      });
+
+      // Отклоняем другие заявки НР на этот проект
+      await prisma.application.updateMany({
+        where: {
+          projectId: application.project.id,
+          type: "SUPERVISOR",
+          id: { not: id },
+          status: "PENDING",
+        },
+        data: { status: "REJECTED", comment: "Другой научный руководитель был выбран" },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `Научный руководитель ${application.supervisor!.user.name} назначен на проект`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      // Уведомление НР
+      notify({
+        userId: application.supervisor!.userId,
+        type: "APPLICATION_ACCEPTED",
+        title: "Заявка на руководство принята",
+        message: `Ваша заявка на руководство проектом «${application.project.title}» принята!`,
+        link: `/projects/${application.project.id}`,
+      }).catch(() => {});
+
+      // Email НР
+      try {
+        await sendMail({
+          to: application.supervisor!.user.email,
+          subject: `Заявка принята — ${application.project.title}`,
+          html: `
+            <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Ваша заявка на руководство принята!</h2>
+              <p style="color: #333; font-size: 15px;">
+                Уважаемый(ая) <strong>${application.supervisor!.user.name}</strong>,
+              </p>
+              <p style="color: #555; font-size: 15px;">
+                Вы назначены научным руководителем проекта «${application.project.title}».
+              </p>
+              <p>
+                <a href="${process.env.NEXTAUTH_URL}/projects/${application.project.id}"
+                   style="display: inline-block; background: #E8375A; color: #fff; padding: 14px 28px; text-decoration: none; font-weight: 600;">
+                  Перейти к проекту
+                </a>
+              </p>
+            </div>
+          `,
+        });
+      } catch { /* Email не критичен */ }
+
+      return NextResponse.json({ status: "ACCEPTED" });
+    }
+
+    if (action === "reject") {
+      const updated = await prisma.application.update({
+        where: { id },
+        data: { status: "REJECTED", comment: comment || null },
+      });
+
+      notify({
+        userId: application.supervisor!.userId,
+        type: "APPLICATION_REJECTED",
+        title: "Заявка на руководство отклонена",
+        message: `Ваша заявка на руководство проектом «${application.project.title}» отклонена.${comment ? ` Комментарий: ${comment}` : ""}`,
+        link: `/projects/${application.project.id}`,
+      }).catch(() => {});
+
+      try {
+        await sendMail({
+          to: application.supervisor!.user.email,
+          subject: `Заявка отклонена — ${application.project.title}`,
+          html: `
+            <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Заявка на руководство отклонена</h2>
+              <p style="color: #333; font-size: 15px;">
+                Уважаемый(ая) <strong>${application.supervisor!.user.name}</strong>,
+              </p>
+              <p style="color: #555; font-size: 15px;">
+                Ваша заявка на руководство проектом «${application.project.title}» отклонена.${comment ? ` Комментарий: ${comment}` : ""}
+              </p>
+            </div>
+          `,
+        });
+      } catch { /* Email не критичен */ }
+
+      return NextResponse.json(updated);
+    }
+
+    return NextResponse.json({ error: "Недопустимое действие" }, { status: 400 });
+  }
+
+  // ===== Заявка от студента (type: STUDENT) =====
   if (action === "accept") {
     // Проверка лимита команды для стартапов
     const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(application.project.projectType);
@@ -86,7 +205,7 @@ export async function PUT(
     await prisma.projectMember.create({
       data: {
         projectId: application.project.id,
-        studentId: application.student.id,
+        studentId: application.student!.id,
         role: application.role || null,
       },
     });
@@ -94,14 +213,14 @@ export async function PUT(
     await prisma.activity.create({
       data: {
         projectId: application.project.id,
-        action: `Студент ${application.student.user.name} принят в команду`,
+        action: `Студент ${application.student!.user.name} принят в команду`,
         actorEmail: session.user.email,
       },
     });
 
     // Уведомление студенту
     notify({
-      userId: application.student.userId,
+      userId: application.student!.userId,
       type: "APPLICATION_ACCEPTED",
       title: "Заявка принята",
       message: `Ваша заявка на проект «${application.project.title}» принята. Вы в команде!`,
@@ -111,13 +230,13 @@ export async function PUT(
     // Email студенту
     try {
       await sendMail({
-        to: application.student.user.email,
+        to: application.student!.user.email,
         subject: `Заявка принята — ${application.project.title}`,
         html: `
           <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
             <h2 style="color: #003092;">Ваша заявка принята!</h2>
             <p style="color: #333; font-size: 15px;">
-              Уважаемый(ая) <strong>${application.student.user.name}</strong>,
+              Уважаемый(ая) <strong>${application.student!.user.name}</strong>,
             </p>
             <p style="color: #555; font-size: 15px;">
               Ваша заявка на проект «${application.project.title}» принята. Вы добавлены в команду.
@@ -144,7 +263,7 @@ export async function PUT(
     });
 
     notify({
-      userId: application.student.userId,
+      userId: application.student!.userId,
       type: "APPLICATION_REJECTED",
       title: "Заявка отклонена",
       message: `Ваша заявка на проект «${application.project.title}» отклонена.${comment ? ` Комментарий: ${comment}` : ""}`,
@@ -153,13 +272,13 @@ export async function PUT(
 
     try {
       await sendMail({
-        to: application.student.user.email,
+        to: application.student!.user.email,
         subject: `Заявка отклонена — ${application.project.title}`,
         html: `
           <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
             <h2 style="color: #003092;">Заявка отклонена</h2>
             <p style="color: #333; font-size: 15px;">
-              Уважаемый(ая) <strong>${application.student.user.name}</strong>,
+              Уважаемый(ая) <strong>${application.student!.user.name}</strong>,
             </p>
             <p style="color: #555; font-size: 15px;">
               Ваша заявка на проект «${application.project.title}» отклонена.${comment ? ` Комментарий: ${comment}` : ""}

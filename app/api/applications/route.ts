@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
   }
 
-  const asAuthor = request.nextUrl.searchParams.get("as") === "author";
+  const asParam = request.nextUrl.searchParams.get("as");
 
   // Админ: все заявки (для обзора)
   if (session.user.role === "ADMIN") {
@@ -32,13 +32,23 @@ export async function GET(request: NextRequest) {
             user: { select: { name: true } },
           },
         },
+        supervisor: {
+          select: {
+            id: true,
+            workplace: true,
+            position: true,
+            academicDegree: true,
+            expertise: true,
+            user: { select: { name: true } },
+          },
+        },
       },
     });
     return NextResponse.json(applications);
   }
 
-  // Студент-автор: заявки на мои проекты (где я автор)
-  if (session.user.role === "STUDENT" && asAuthor) {
+  // Студент-автор: заявки на мои проекты (где я автор) — включая заявки от НР
+  if (session.user.role === "STUDENT" && asParam === "author") {
     const student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
       select: { id: true },
@@ -69,6 +79,17 @@ export async function GET(request: NextRequest) {
             user: { select: { name: true } },
           },
         },
+        supervisor: {
+          select: {
+            id: true,
+            workplace: true,
+            position: true,
+            academicDegree: true,
+            expertise: true,
+            contact: true,
+            user: { select: { name: true } },
+          },
+        },
       },
     });
     return NextResponse.json(applications);
@@ -92,7 +113,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(applications);
   }
 
-  // НР: заявки на мои проекты
+  // НР: as=my — мои поданные заявки на руководство; иначе — входящие заявки студентов на мои проекты
   if (session.user.role === "SUPERVISOR") {
     const supervisor = await prisma.supervisorProfile.findUnique({
       where: { userId: session.user.id },
@@ -100,8 +121,23 @@ export async function GET(request: NextRequest) {
     });
     if (!supervisor) return NextResponse.json([]);
 
+    const asMy = request.nextUrl.searchParams.get("as") === "my";
+
+    if (asMy) {
+      // Мои заявки на руководство проектами
+      const applications = await prisma.application.findMany({
+        where: { supervisorId: supervisor.id, type: "SUPERVISOR" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          project: { select: { id: true, title: true, status: true } },
+        },
+      });
+      return NextResponse.json(applications);
+    }
+
+    // Входящие заявки студентов на мои проекты
     const applications = await prisma.application.findMany({
-      where: { supervisorId: supervisor.id },
+      where: { supervisorId: supervisor.id, type: "STUDENT" },
       orderBy: { createdAt: "desc" },
       include: {
         project: { select: { id: true, title: true } },
@@ -124,10 +160,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json([]);
 }
 
-// POST /api/applications — подача заявки студентом (05.01)
+// POST /api/applications — подача заявки студентом (05.01) или НР (supervisor matching)
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") {
+  if (!session?.user || !["STUDENT", "SUPERVISOR"].includes(session.user.role)) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
@@ -141,6 +177,110 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ===== Заявка от НР (type: SUPERVISOR) =====
+    if (session.user.role === "SUPERVISOR") {
+      const supervisor = await prisma.supervisorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true, status: true, maxSlots: true, _count: { select: { projects: true } } },
+      });
+
+      if (!supervisor || supervisor.status !== "APPROVED") {
+        return NextResponse.json(
+          { error: "Ваш профиль должен быть одобрен для подачи заявок" },
+          { status: 400 }
+        );
+      }
+
+      // Проверка лимита слотов
+      if (supervisor._count.projects >= supervisor.maxSlots) {
+        return NextResponse.json(
+          { error: `Вы уже руководите максимальным количеством проектов (${supervisor.maxSlots})` },
+          { status: 400 }
+        );
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, title: true, supervisorId: true, status: true },
+      });
+
+      if (!project || project.status !== "OPEN") {
+        return NextResponse.json(
+          { error: "Проект не найден или не принимает заявки" },
+          { status: 400 }
+        );
+      }
+
+      if (project.supervisorId) {
+        return NextResponse.json(
+          { error: "У проекта уже есть научный руководитель" },
+          { status: 400 }
+        );
+      }
+
+      // Проверка дубликата — НР уже подавал на этот проект
+      const existing = await prisma.application.findFirst({
+        where: { projectId, supervisorId: supervisor.id, type: "SUPERVISOR" },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { error: "Вы уже подали заявку на этот проект" },
+          { status: 409 }
+        );
+      }
+
+      const application = await prisma.application.create({
+        data: {
+          type: "SUPERVISOR",
+          projectId,
+          supervisorId: supervisor.id,
+          motivation,
+        },
+      });
+
+      // Лента активности
+      await prisma.activity.create({
+        data: {
+          projectId,
+          action: "Заявка от научного руководителя",
+          actorEmail: session.user.email,
+        },
+      });
+
+      // Уведомление создателю проекта (студенту)
+      const creator = await prisma.projectMember.findFirst({
+        where: { projectId, isCreator: true },
+        select: { student: { select: { userId: true } } },
+      });
+      if (creator) {
+        notify({
+          userId: creator.student.userId,
+          type: "APPLICATION_NEW",
+          title: "Заявка от научного руководителя",
+          message: `${session.user.name} хочет стать руководителем проекта «${project.title}»`,
+          link: `/applications`,
+        }).catch(() => {});
+      }
+
+      // Уведомление админам
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN" },
+        select: { id: true },
+      });
+      for (const admin of admins) {
+        notify({
+          userId: admin.id,
+          type: "APPLICATION_NEW",
+          title: "Заявка НР на проект",
+          message: `${session.user.name} подал заявку на руководство проектом «${project.title}»`,
+          link: `/applications`,
+        }).catch(() => {});
+      }
+
+      return NextResponse.json(application, { status: 201 });
+    }
+
+    // ===== Заявка от студента (type: STUDENT) =====
     const student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
       select: { id: true },
@@ -212,6 +352,7 @@ export async function POST(request: NextRequest) {
 
     const application = await prisma.application.create({
       data: {
+        type: "STUDENT",
         projectId,
         studentId: student.id,
         supervisorId: project.supervisorId,

@@ -76,6 +76,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
   const [myApplication, setMyApplication] = useState<{ status: string } | null>(null);
+  const [mySupervisorApp, setMySupervisorApp] = useState<{ status: string } | null>(null);
   const [newEvent, setNewEvent] = useState({ title: "", date: "", eventType: "DEADLINE" });
   const [addingEvent, setAddingEvent] = useState(false);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -93,15 +94,27 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }, [id]);
 
   const checkMyApplication = useCallback(async () => {
-    if (!session?.user || session.user.role !== "STUDENT") return;
-    try {
-      const res = await fetch("/api/applications");
-      if (res.ok) {
-        const apps = await res.json();
-        const found = apps.find((a: { project: { id: string }; status: string }) => a.project.id === id);
-        if (found) setMyApplication({ status: found.status });
-      }
-    } catch { /* ignore */ }
+    if (!session?.user) return;
+    if (session.user.role === "STUDENT") {
+      try {
+        const res = await fetch("/api/applications");
+        if (res.ok) {
+          const apps = await res.json();
+          const found = apps.find((a: { project: { id: string }; status: string }) => a.project.id === id);
+          if (found) setMyApplication({ status: found.status });
+        }
+      } catch { /* ignore */ }
+    }
+    if (session.user.role === "SUPERVISOR") {
+      try {
+        const res = await fetch("/api/applications?as=my");
+        if (res.ok) {
+          const apps = await res.json();
+          const found = apps.find((a: { project: { id: string }; status: string }) => a.project.id === id);
+          if (found) setMySupervisorApp({ status: found.status });
+        }
+      } catch { /* ignore */ }
+    }
   }, [session, id]);
 
   useEffect(() => {
@@ -155,13 +168,15 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     if (!motivation.trim()) { setApplyErr("Напишите мотивационное письмо"); return; }
     setApplying(true); setApplyErr(""); setApplyMsg("");
     try {
+      const body: Record<string, string> = { projectId: id, motivation };
+      if (applyRole) body.role = applyRole;
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: id, motivation, role: applyRole || undefined }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.ok) { setApplyMsg("Заявка отправлена!"); setMotivation(""); }
+      if (res.ok) { setApplyMsg("Заявка отправлена!"); setMotivation(""); checkMyApplication(); }
       else setApplyErr(data.error || "Ошибка");
     } catch { setApplyErr("Ошибка сети"); }
     finally { setApplying(false); }
@@ -612,6 +627,42 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 {applyErr && <p className={styles.error}>{applyErr}</p>}
                 <button onClick={handleApply} className={styles.applyButton} disabled={applying}>
                   {applying ? "Отправка..." : "Отправить заявку"}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Блок заявки НР на руководство — только если проект открыт и без НР */}
+        {session?.user?.role === "SUPERVISOR" && project.status === "OPEN" && !project.supervisor && !isSupervisorOwner && (
+          <div className={styles.applyBlock}>
+            {mySupervisorApp ? (
+              <>
+                <h2 className={styles.sectionTitle}>Ваша заявка на руководство</h2>
+                <p className={styles.applySuccess}>
+                  {mySupervisorApp.status === "PENDING" && "Заявка ожидает рассмотрения"}
+                  {mySupervisorApp.status === "ACCEPTED" && "Вы назначены руководителем!"}
+                  {mySupervisorApp.status === "REJECTED" && "Заявка отклонена"}
+                </p>
+              </>
+            ) : applyMsg ? (
+              <p className={styles.applySuccess}>{applyMsg}</p>
+            ) : (
+              <>
+                <h2 className={styles.sectionTitle}>Стать руководителем</h2>
+                <p className={styles.text} style={{ marginBottom: 12 }}>
+                  У этого проекта пока нет научного руководителя. Вы можете подать заявку на руководство.
+                </p>
+                <textarea
+                  value={motivation}
+                  onChange={(e) => setMotivation(e.target.value)}
+                  className={styles.applyTextarea}
+                  rows={4}
+                  placeholder="Расскажите, почему вы хотите руководить этим проектом, какой опыт можете предложить..."
+                />
+                {applyErr && <p className={styles.error}>{applyErr}</p>}
+                <button onClick={handleApply} className={styles.applyButton} disabled={applying}>
+                  {applying ? "Отправка..." : "Подать заявку на руководство"}
                 </button>
               </>
             )}

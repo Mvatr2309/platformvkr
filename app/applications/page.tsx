@@ -21,6 +21,7 @@ interface StudentApplication {
 
 interface AuthorApplication {
   id: string;
+  type?: string;
   motivation: string;
   role: string | null;
   status: string;
@@ -35,7 +36,25 @@ interface AuthorApplication {
     portfolioUrl: string | null;
     contact: string;
     user: { name: string };
-  };
+  } | null;
+  supervisor?: {
+    id: string;
+    workplace: string;
+    position: string;
+    academicDegree: string;
+    expertise: string[];
+    contact: string;
+    user: { name: string };
+  } | null;
+}
+
+interface SupervisorOwnApp {
+  id: string;
+  motivation: string;
+  status: string;
+  comment: string | null;
+  createdAt: string;
+  project: { id: string; title: string; status: string };
 }
 
 export default function ApplicationsPage() {
@@ -45,11 +64,13 @@ export default function ApplicationsPage() {
   const [myApps, setMyApps] = useState<StudentApplication[]>([]);
   const [authorApps, setAuthorApps] = useState<AuthorApplication[]>([]);
   const [supervisorApps, setSupervisorApps] = useState<AuthorApplication[]>([]);
+  const [supervisorOwnApps, setSupervisorOwnApps] = useState<SupervisorOwnApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [message, setMessage] = useState("");
   const [tab, setTab] = useState<"my" | "author">("my");
+  const [supTab, setSupTab] = useState<"incoming" | "my">("incoming");
 
   const fetchApps = useCallback(async () => {
     if (role === "STUDENT") {
@@ -60,8 +81,12 @@ export default function ApplicationsPage() {
       if (myRes.ok) setMyApps(await myRes.json());
       if (authorRes.ok) setAuthorApps(await authorRes.json());
     } else if (role === "SUPERVISOR") {
-      const res = await fetch("/api/applications");
-      if (res.ok) setSupervisorApps(await res.json());
+      const [incomingRes, myRes] = await Promise.all([
+        fetch("/api/applications"),
+        fetch("/api/applications?as=my"),
+      ]);
+      if (incomingRes.ok) setSupervisorApps(await incomingRes.json());
+      if (myRes.ok) setSupervisorOwnApps(await myRes.json());
     }
     setLoading(false);
   }, [role]);
@@ -75,7 +100,7 @@ export default function ApplicationsPage() {
       body: JSON.stringify({ action, comment }),
     });
     if (res.ok) {
-      setMessage(action === "accept" ? "Заявка принята, студент добавлен в команду" : "Заявка отклонена");
+      setMessage(action === "accept" ? "Заявка принята" : "Заявка отклонена");
       setActionId(null);
       setComment("");
       fetchApps();
@@ -187,38 +212,82 @@ export default function ApplicationsPage() {
     return (
       <div className={styles.wrapper}>
         <div className={styles.container}>
-          <h1 className={styles.title}>Заявки на мои проекты</h1>
+          <h1 className={styles.title}>Заявки</h1>
+
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${supTab === "incoming" ? styles.tabActive : ""}`}
+              onClick={() => setSupTab("incoming")}
+            >
+              Входящие заявки ({supervisorApps.length})
+            </button>
+            <button
+              className={`${styles.tab} ${supTab === "my" ? styles.tabActive : ""}`}
+              onClick={() => setSupTab("my")}
+            >
+              Мои заявки на руководство ({supervisorOwnApps.length})
+            </button>
+          </div>
+
           {message && <p className={styles.success}>{message}</p>}
 
-          {pending.length > 0 && (
+          {supTab === "incoming" && (
             <>
-              <h2 className={styles.subtitle}>На рассмотрении ({pending.length})</h2>
-              <div className={styles.list}>
-                {pending.map((app) => renderReviewCard(app))}
-              </div>
-            </>
-          )}
-
-          {resolved.length > 0 && (
-            <>
-              <h2 className={styles.subtitle}>Рассмотренные ({resolved.length})</h2>
-              <div className={styles.list}>
-                {resolved.map((app) => (
-                  <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
-                    <div className={styles.cardHeader}>
-                      <span className={styles.studentName}>{app.student.user.name}</span>
-                      <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
-                        {STATUS_LABELS[app.status]}
-                      </span>
-                    </div>
-                    <span className={styles.projectBadge}>{app.project.title}</span>
+              {pending.length > 0 && (
+                <>
+                  <h2 className={styles.subtitle}>На рассмотрении ({pending.length})</h2>
+                  <div className={styles.list}>
+                    {pending.map((app) => renderReviewCard(app))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
+
+              {resolved.length > 0 && (
+                <>
+                  <h2 className={styles.subtitle}>Рассмотренные ({resolved.length})</h2>
+                  <div className={styles.list}>
+                    {resolved.map((app) => (
+                      <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
+                        <div className={styles.cardHeader}>
+                          <span className={styles.studentName}>{app.student?.user.name}</span>
+                          <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
+                            {STATUS_LABELS[app.status]}
+                          </span>
+                        </div>
+                        <span className={styles.projectBadge}>{app.project.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {supervisorApps.length === 0 && <p className={styles.empty}>Входящих заявок пока нет</p>}
             </>
           )}
 
-          {supervisorApps.length === 0 && <p className={styles.empty}>Заявок пока нет</p>}
+          {supTab === "my" && (
+            <>
+              {supervisorOwnApps.length === 0 ? (
+                <p className={styles.empty}>Вы ещё не подавали заявок на руководство. <a href="/projects" className={styles.link}>Найти проект</a></p>
+              ) : (
+                <div className={styles.list}>
+                  {supervisorOwnApps.map((app) => (
+                    <div key={app.id} className={styles.card}>
+                      <div className={styles.cardHeader}>
+                        <a href={`/projects/${app.project.id}`} className={styles.projectLink}>{app.project.title}</a>
+                        <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
+                          {STATUS_LABELS[app.status]}
+                        </span>
+                      </div>
+                      <p className={styles.motivation}>{app.motivation}</p>
+                      {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
+                      <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     );
@@ -228,26 +297,55 @@ export default function ApplicationsPage() {
 
   // Карточка заявки для рассмотрения (автор/НР)
   function renderReviewCard(app: AuthorApplication) {
+    const isSupervisorApp = app.type === "SUPERVISOR";
+    const applicantName = isSupervisorApp
+      ? app.supervisor?.user.name || "НР"
+      : app.student?.user.name || "Студент";
+
     return (
       <div key={app.id} className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.studentName}>{app.student.user.name}</span>
+          <span className={styles.studentName}>
+            {isSupervisorApp && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[НР]</span>}
+            {applicantName}
+          </span>
           <span className={styles.projectBadge}>{app.project.title}</span>
         </div>
-        <div className={styles.studentInfo}>
-          <span>{app.student.direction}, {app.student.course} курс</span>
-          {app.student.competencies.length > 0 && (
-            <div className={styles.tags}>
-              {app.student.competencies.slice(0, 5).map((c) => (
-                <span key={c} className={styles.tag}>{c}</span>
-              ))}
-            </div>
-          )}
-          {app.student.portfolioUrl && (
-            <a href={app.student.portfolioUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>Портфолио</a>
-          )}
-          <span className={styles.contact}>Контакт: {app.student.contact}</span>
-        </div>
+
+        {/* Инфо о студенте */}
+        {!isSupervisorApp && app.student && (
+          <div className={styles.studentInfo}>
+            <span>{app.student.direction}, {app.student.course} курс</span>
+            {app.student.competencies.length > 0 && (
+              <div className={styles.tags}>
+                {app.student.competencies.slice(0, 5).map((c) => (
+                  <span key={c} className={styles.tag}>{c}</span>
+                ))}
+              </div>
+            )}
+            {app.student.portfolioUrl && (
+              <a href={app.student.portfolioUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>Портфолио</a>
+            )}
+            <span className={styles.contact}>Контакт: {app.student.contact}</span>
+          </div>
+        )}
+
+        {/* Инфо о НР-заявителе */}
+        {isSupervisorApp && app.supervisor && (
+          <div className={styles.studentInfo}>
+            <span>{app.supervisor.position}, {app.supervisor.workplace}</span>
+            <span>{app.supervisor.academicDegree}</span>
+            {app.supervisor.expertise.length > 0 && (
+              <div className={styles.tags}>
+                {app.supervisor.expertise.slice(0, 5).map((e) => (
+                  <span key={e} className={styles.tag}>{e}</span>
+                ))}
+              </div>
+            )}
+            <span className={styles.contact}>Контакт: {app.supervisor.contact}</span>
+          </div>
+        )}
+
         {app.role && <p className={styles.roleBadge}>Роль: {app.role}</p>}
         <p className={styles.motivation}><strong>Мотивация:</strong> {app.motivation}</p>
 
@@ -261,7 +359,9 @@ export default function ApplicationsPage() {
               rows={2}
             />
             <div className={styles.actionButtons}>
-              <button onClick={() => handleAction(app.id, "accept")} className={styles.acceptButton}>Принять</button>
+              <button onClick={() => handleAction(app.id, "accept")} className={styles.acceptButton}>
+                {isSupervisorApp ? "Назначить руководителем" : "Принять"}
+              </button>
               <button onClick={() => handleAction(app.id, "reject")} className={styles.rejectButton}>Отклонить</button>
               <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
             </div>

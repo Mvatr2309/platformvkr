@@ -235,6 +235,11 @@ model Activity {
 // Источник: 05-FR-05-matching-students.md (05.01–05.05)
 // ============================================
 
+enum ApplicationType {
+  STUDENT
+  SUPERVISOR
+}
+
 enum ApplicationStatus {
   PENDING
   APPROVED_BY_AUTHOR
@@ -244,11 +249,12 @@ enum ApplicationStatus {
 
 model Application {
   id              String            @id @default(cuid())
+  type            ApplicationType   @default(STUDENT)
   projectId       String
   project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  studentId       String
-  student         StudentProfile    @relation(fields: [studentId], references: [id])
-  supervisorId    String?
+  studentId       String?           // Заполняется для STUDENT-заявок
+  student         StudentProfile?   @relation(fields: [studentId], references: [id])
+  supervisorId    String?           // Для STUDENT — НР проекта; для SUPERVISOR — сам заявитель
   supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])
 
   motivation      String            // Мотивационное письмо (05.01)
