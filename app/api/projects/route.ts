@@ -137,6 +137,8 @@ export async function POST(request: NextRequest) {
           await prisma.projectFile.create({
             data: {
               projectId: project.id,
+              title: file.name,
+              fileType: "FILE",
               filename: file.name,
               filepath: file.url,
             },
