@@ -6,14 +6,6 @@ import { useRouter } from "next/navigation";
 import styles from "./profile.module.css";
 
 // Опции мультиселектов из спецификации (01-FR-01, раздел 2)
-const WORK_PREFERENCES = [
-  "Студенты с темой классической диссертации",
-  "Студенты без темы (готов предложить тему)",
-  "Студенты со своим (корп)стартапом",
-  "Студенты, ищущие идею стартапа (готов предложить идею)",
-  "Студенты для корпоративного стартапа (готов предложить проект)",
-];
-
 const DIRECTIONS = [
   "Управление IT продуктом",
   "Разработка IT-продуктов",
@@ -101,7 +93,7 @@ export default function ProfilePage() {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleArrayItem(key: "workPreferences" | "directions" | "projectTypes", item: string) {
+  function toggleArrayItem(key: "directions" | "projectTypes", item: string) {
     setProfile((prev) => {
       const arr = prev[key];
       return {
@@ -155,8 +147,7 @@ export default function ProfilePage() {
     }
     if (!profile.workplace || !profile.position || !profile.academicTitle ||
         !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
-        profile.workPreferences.length === 0 || profile.directions.length === 0 ||
-        profile.projectTypes.length === 0) {
+        profile.directions.length === 0 || profile.projectTypes.length === 0) {
       setError("Заполните все обязательные поля");
       return;
     }
@@ -310,22 +301,6 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Готов работать с *</label>
-            <div className={styles.checkboxGroup}>
-              {WORK_PREFERENCES.map((pref) => (
-                <label key={pref} className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={profile.workPreferences.includes(pref)}
-                    onChange={() => toggleArrayItem("workPreferences", pref)}
-                        />
-                  <span>{pref}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.field}>
             <label className={styles.label}>Направления студентов *</label>
             <div className={styles.checkboxGroup}>
               {DIRECTIONS.map((dir) => (
@@ -359,6 +334,9 @@ export default function ProfilePage() {
 
           <div className={styles.field}>
             <label className={styles.label}>Предлагаемые темы и идеи</label>
+            <p className={styles.fieldHint}>
+              Вы можете предложить идеи стартапов или исследований для студентов — если студенту откликнется ваша идея, он может взять её в работу. Вы также можете предложить корпоративный стартап или исследование для компании, но в этом случае укажите, для какой компании.
+            </p>
             <textarea
               value={profile.proposedTopics || ""}
               onChange={(e) => updateField("proposedTopics", e.target.value)}

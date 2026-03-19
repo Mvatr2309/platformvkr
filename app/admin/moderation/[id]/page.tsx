@@ -129,15 +129,6 @@ export default function ModerationDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
 
-        <div className={styles.card}>
-          <h3 className={styles.cardTitle}>Готов работать с</h3>
-          <ul className={styles.list}>
-            {profile.workPreferences.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-        </div>
-
         {profile.proposedTopics && (
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Предлагаемые темы</h3>

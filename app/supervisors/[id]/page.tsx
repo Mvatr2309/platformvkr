@@ -158,15 +158,6 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Готов работать с</h2>
-            <ul className={styles.list}>
-              {profile.workPreferences.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </div>
-
           {profile.proposedTopics && (
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Предлагаемые темы</h2>

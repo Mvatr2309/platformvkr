@@ -78,6 +78,13 @@
   letter-spacing: 0;
 }
 
+.fieldHint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0 0 var(--space-xs) 0;
+}
+
 .input,
 .select {
   border: none;
