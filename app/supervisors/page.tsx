@@ -25,6 +25,7 @@ interface SupervisorCard {
   academicDegree: string;
   expertise: string[];
   directions: string[];
+  projectTypes: string[];
   maxSlots: number;
   recruitmentStatus: string;
   photoUrl: string | null;
@@ -169,6 +170,15 @@ export default function SupervisorsPage() {
                     <span className={styles.tagMore}>+{p.expertise.length - 4}</span>
                   )}
                 </div>
+
+                {p.projectTypes && p.projectTypes.length > 0 && (
+                  <div className={styles.projectTypes}>
+                    {p.projectTypes.map((pt) => {
+                      const label = PROJECT_TYPES.find((t) => t.value === pt)?.label || pt;
+                      return <span key={pt} className={styles.projectTypeBadge}>{label}</span>;
+                    })}
+                  </div>
+                )}
 
                 <div className={styles.cardFooter}>
                   <span className={`${styles.recruitment} ${p.recruitmentStatus === "OPEN" ? styles.recruitmentOpen : styles.recruitmentClosed}`}>
