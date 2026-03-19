@@ -181,17 +181,25 @@ export default function ApplicationsPage() {
                 <>
                   <h2 className={styles.subtitle}>Рассмотренные ({resolvedAuthor.length})</h2>
                   <div className={styles.list}>
-                    {resolvedAuthor.map((app) => (
-                      <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
-                        <div className={styles.cardHeader}>
-                          <span className={styles.studentName}>{app.student.user.name}</span>
-                          <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
-                            {STATUS_LABELS[app.status]}
-                          </span>
+                    {resolvedAuthor.map((app) => {
+                      const name = app.type === "SUPERVISOR"
+                        ? app.supervisor?.user.name || "НР"
+                        : app.student?.user.name || "Студент";
+                      return (
+                        <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
+                          <div className={styles.cardHeader}>
+                            <span className={styles.studentName}>
+                              {app.type === "SUPERVISOR" && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[НР]</span>}
+                              {name}
+                            </span>
+                            <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
+                              {STATUS_LABELS[app.status]}
+                            </span>
+                          </div>
+                          <span className={styles.projectBadge}>{app.project.title}</span>
                         </div>
-                        <span className={styles.projectBadge}>{app.project.title}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
