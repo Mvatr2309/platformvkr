@@ -469,6 +469,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Исследование — 1 на 1, командные заявки запрещены
+    if (project.projectType === "CLASSIC_DISSERTATION") {
+      return NextResponse.json(
+        { error: "Исследование не предполагает командную работу. Заявки в команду недоступны." },
+        { status: 400 }
+      );
+    }
+
     // Проверка лимита команды для стартапов
     const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
     if (isStartup && project._count.members >= 4) {

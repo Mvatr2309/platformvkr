@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import styles from "./new-project.module.css";
 
 const PROJECT_TYPES = [
-  { value: "CLASSIC_DISSERTATION", label: "Классическая диссертация" },
+  { value: "CLASSIC_DISSERTATION", label: "Исследование" },
   { value: "STARTUP", label: "Стартап" },
   { value: "CORPORATE_STARTUP", label: "Корпоративный стартап" },
 ];
@@ -174,36 +174,41 @@ export default function NewProjectPage() {
         </div>
 
         <div className={styles.section}>
-          <div className={styles.field}>
-            <label className={styles.label}>Требуемые роли</label>
-            <div className={styles.checkboxGroup}>
-              {ROLES.map((role) => (
-                <label key={role} className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={requiredRoles.includes(role)}
-                    onChange={() => toggleRole(role)}
-                  />
-                  <span>{role}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          {/* Роли — только для стартапов */}
+          {projectType !== "CLASSIC_DISSERTATION" && (
+            <>
+              <div className={styles.field}>
+                <label className={styles.label}>Требуемые роли</label>
+                <div className={styles.checkboxGroup}>
+                  {ROLES.map((role) => (
+                    <label key={role} className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={requiredRoles.includes(role)}
+                        onChange={() => toggleRole(role)}
+                      />
+                      <span>{role}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-          {isStudent && (
-            <div className={styles.field}>
-              <label className={styles.label}>Моя роль в проекте</label>
-              <select
-                value={authorRole}
-                onChange={(e) => setAuthorRole(e.target.value)}
-                className={styles.select}
-              >
-                <option value="">Выберите роль...</option>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
+              {isStudent && (
+                <div className={styles.field}>
+                  <label className={styles.label}>Моя роль в проекте</label>
+                  <select
+                    value={authorRole}
+                    onChange={(e) => setAuthorRole(e.target.value)}
+                    className={styles.select}
+                  >
+                    <option value="">Выберите роль...</option>
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
           <div className={styles.field}>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "../projects/projects.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Классическая диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корпоративный стартап",
 };

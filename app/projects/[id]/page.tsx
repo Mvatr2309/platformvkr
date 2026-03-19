@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import styles from "./project.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Классическая диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корпоративный стартап",
 };
@@ -283,6 +283,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   // Незакрытые роли: требуемые минус уже занятые
   const filledRoles = project.members.map((m) => m.role).filter(Boolean);
   const openRoles = project.requiredRoles.filter((r) => !filledRoles.includes(r));
+  const isResearch = project.projectType === "CLASSIC_DISSERTATION";
+  const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
 
   return (
     <div className={styles.wrapper}>
@@ -422,8 +424,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <p className={styles.text}>{project.contact}</p>
           </div>
 
-          {/* Требуемые роли — динамически: занятые отмечены, открытые выделены */}
-          {project.requiredRoles.length > 0 && (
+          {/* Требуемые роли — только для стартапов */}
+          {!isResearch && project.requiredRoles.length > 0 && (
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Роли в команде</h2>
               <div className={styles.tags}>
@@ -439,9 +441,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             </div>
           )}
 
-          {/* 03.03 — Блок студентов (участники) */}
+          {/* 03.03 — Блок студентов (участники) — для исследований показываем «Студент» */}
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Участники команды ({project.members.length})</h2>
+            <h2 className={styles.sectionTitle}>{isResearch ? "Студент" : `Участники команды (${project.members.length})`}</h2>
             {project.members.length === 0 ? (
               <p className={styles.muted}>Пока нет участников</p>
             ) : (
@@ -585,7 +587,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Блок подачи заявки (05.01) — только для студентов, только открытые проекты */}
-        {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && (
+        {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && !isResearch && (
           <div className={styles.applyBlock}>
             {myApplication ? (
               <>
@@ -670,7 +672,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         )}
 
         <div className={styles.meta}>
-          Создан {new Date(project.createdAt).toLocaleDateString("ru-RU")} · {project._count.applications} заявок
+          Создан {new Date(project.createdAt).toLocaleDateString("ru-RU")}{!isResearch && ` · ${project._count.applications} заявок`}
         </div>
       </div>
     </div>

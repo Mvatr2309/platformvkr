@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./projects.module.css";
 
 const PROJECT_TYPES = [
-  { value: "CLASSIC_DISSERTATION", label: "Классическая диссертация" },
+  { value: "CLASSIC_DISSERTATION", label: "Исследование" },
   { value: "STARTUP", label: "Стартап" },
   { value: "CORPORATE_STARTUP", label: "Корпоративный стартап" },
 ];
@@ -16,7 +16,7 @@ const DIRECTIONS = [
 ];
 
 const TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Классическая диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корпоративный стартап",
 };
@@ -112,12 +112,16 @@ export default function ProjectsPage() {
                 <div className={styles.cardFooter}>
                   {p.supervisor && <span className={styles.supervisor}>НР: {p.supervisor.user.name}</span>}
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
-                  {p.requiredRoles.length > 0 && (
+                  {p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
                     <span className={styles.roles}>{p.requiredRoles.join(", ")}</span>
                   )}
-                  <span className={styles.stats}>
-                    {p._count.members} участн. · {p._count.applications} заявок
-                  </span>
+                  {p.projectType !== "CLASSIC_DISSERTATION" ? (
+                    <span className={styles.stats}>
+                      {p._count.members} участн. · {p._count.applications} заявок
+                    </span>
+                  ) : (
+                    <span className={styles.stats}>1 на 1 с НР</span>
+                  )}
                 </div>
               </a>
             ))}
