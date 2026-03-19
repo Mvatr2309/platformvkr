@@ -95,7 +95,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(applications);
   }
 
-  // Студент: мои поданные заявки
+  // Студент: as=proposals — мои предложения НР (SUPERVISION_REQUEST)
+  if (session.user.role === "STUDENT" && asParam === "proposals") {
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!student) return NextResponse.json([]);
+
+    const applications = await prisma.application.findMany({
+      where: { studentId: student.id, type: "SUPERVISION_REQUEST" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        project: { select: { id: true, title: true, status: true } },
+        supervisor: {
+          select: {
+            id: true,
+            contact: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return NextResponse.json(applications);
+  }
+
+  // Студент: мои поданные заявки (STUDENT type only)
   if (session.user.role === "STUDENT") {
     const student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
@@ -104,7 +129,7 @@ export async function GET(request: NextRequest) {
     if (!student) return NextResponse.json([]);
 
     const applications = await prisma.application.findMany({
-      where: { studentId: student.id },
+      where: { studentId: student.id, type: "STUDENT" },
       orderBy: { createdAt: "desc" },
       include: {
         project: { select: { id: true, title: true, status: true } },
@@ -121,15 +146,43 @@ export async function GET(request: NextRequest) {
     });
     if (!supervisor) return NextResponse.json([]);
 
-    const asMy = request.nextUrl.searchParams.get("as") === "my";
+    const supAs = request.nextUrl.searchParams.get("as");
 
-    if (asMy) {
+    if (supAs === "my") {
       // Мои заявки на руководство проектами
       const applications = await prisma.application.findMany({
         where: { supervisorId: supervisor.id, type: "SUPERVISOR" },
         orderBy: { createdAt: "desc" },
         include: {
           project: { select: { id: true, title: true, status: true } },
+        },
+      });
+      return NextResponse.json(applications);
+    }
+
+    if (supAs === "proposals") {
+      // Предложения проектов от студентов (SUPERVISION_REQUEST)
+      const applications = await prisma.application.findMany({
+        where: { supervisorId: supervisor.id, type: "SUPERVISION_REQUEST" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          project: {
+            select: {
+              id: true, title: true, description: true, projectType: true,
+              status: true, direction: true,
+            },
+          },
+          student: {
+            select: {
+              id: true,
+              direction: true,
+              course: true,
+              competencies: true,
+              portfolioUrl: true,
+              contact: true,
+              user: { select: { name: true } },
+            },
+          },
         },
       });
       return NextResponse.json(applications);
@@ -168,7 +221,93 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { projectId, motivation, role } = await request.json();
+    const { projectId, motivation, role, supervisorId: targetSupervisorId, type: reqType } = await request.json();
+
+    // ===== Предложение проекта НР (type: SUPERVISION_REQUEST) =====
+    if (session.user.role === "STUDENT" && reqType === "SUPERVISION_REQUEST") {
+      if (!targetSupervisorId || !projectId || !motivation) {
+        return NextResponse.json(
+          { error: "Выберите проект и напишите сообщение" },
+          { status: 400 }
+        );
+      }
+
+      const student = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!student) {
+        return NextResponse.json({ error: "Сначала заполните профиль" }, { status: 400 });
+      }
+
+      // Проект должен быть авторским и без НР
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: {
+          id: true, title: true, supervisorId: true, status: true,
+          members: { where: { studentId: student.id, isCreator: true }, select: { id: true } },
+        },
+      });
+
+      if (!project || project.members.length === 0) {
+        return NextResponse.json({ error: "Вы можете предлагать только свои проекты" }, { status: 400 });
+      }
+      if (project.supervisorId) {
+        return NextResponse.json({ error: "У проекта уже есть научный руководитель" }, { status: 400 });
+      }
+
+      // НР существует и доступен
+      const supervisor = await prisma.supervisorProfile.findUnique({
+        where: { id: targetSupervisorId },
+        select: { id: true, userId: true, status: true, recruitmentStatus: true, maxSlots: true, _count: { select: { projects: true } } },
+      });
+      if (!supervisor || supervisor.status !== "APPROVED") {
+        return NextResponse.json({ error: "Научный руководитель недоступен" }, { status: 400 });
+      }
+      if (supervisor.recruitmentStatus !== "OPEN") {
+        return NextResponse.json({ error: "Научный руководитель не принимает новые проекты" }, { status: 400 });
+      }
+      if (supervisor._count.projects >= supervisor.maxSlots) {
+        return NextResponse.json({ error: "У научного руководителя нет свободных слотов" }, { status: 400 });
+      }
+
+      // Дубликат
+      const existing = await prisma.application.findFirst({
+        where: { projectId, supervisorId: targetSupervisorId, type: "SUPERVISION_REQUEST", studentId: student.id },
+      });
+      if (existing) {
+        return NextResponse.json({ error: "Вы уже отправили этот проект данному руководителю" }, { status: 409 });
+      }
+
+      const application = await prisma.application.create({
+        data: {
+          type: "SUPERVISION_REQUEST",
+          projectId,
+          studentId: student.id,
+          supervisorId: targetSupervisorId,
+          motivation,
+        },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId,
+          action: "Студент предложил проект научному руководителю",
+          actorEmail: session.user.email,
+        },
+      });
+
+      // Уведомление НР
+      notify({
+        userId: supervisor.userId,
+        type: "APPLICATION_NEW",
+        title: "Предложение проекта",
+        message: `Студент ${session.user.name} предлагает вам руководство проектом «${project.title}»`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      return NextResponse.json(application, { status: 201 });
+    }
 
     if (!projectId || !motivation) {
       return NextResponse.json(

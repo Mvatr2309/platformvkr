@@ -76,3 +76,15 @@
 .rejectButton { background: var(--color-coral); color: #fff; border: none; padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 600; }
 .rejectButton:hover { background: var(--color-coral-dark); }
 .cancelButton { background: none; border: 1px solid var(--color-border); padding: 8px 16px; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--color-text-muted); }
+
+/* Статусы предложений */
+.status_INTERESTED { background: #E3F2FD; color: #1565C0; }
+.status_CONFIRMED { background: #E8F5E9; color: #2a7d2a; }
+.status_DECLINED { background: #FFEBEE; color: #c62828; }
+
+/* Предложения */
+.supervisorTarget { font-size: 14px; color: var(--color-text-secondary); margin-bottom: var(--space-sm); }
+.contactRevealed { font-size: 14px; color: #1565C0; background: #E3F2FD; padding: 8px 12px; margin-bottom: var(--space-sm); }
+.interestedHint { font-size: 13px; color: var(--color-text-secondary); margin-bottom: var(--space-sm); }
+.proposalProject { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-sm); }
+.dirBadge { font-size: 12px; color: var(--color-text-muted); }

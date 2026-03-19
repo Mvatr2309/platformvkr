@@ -20,7 +20,7 @@ export async function PUT(
   const { id } = await params;
   const { action, comment } = await request.json();
 
-  if (!["accept", "reject"].includes(action)) {
+  if (!["accept", "reject", "interested", "confirm", "decline"].includes(action)) {
     return NextResponse.json({ error: "Недопустимое действие" }, { status: 400 });
   }
 
@@ -42,6 +42,7 @@ export async function PUT(
         select: {
           id: true,
           userId: true,
+          contact: true,
           user: { select: { name: true, email: true } },
         },
       },
@@ -49,6 +50,7 @@ export async function PUT(
         select: {
           id: true,
           userId: true,
+          contact: true,
           user: { select: { name: true, email: true } },
         },
       },
@@ -62,9 +64,176 @@ export async function PUT(
   // Проверка прав: автор проекта, НР проекта или админ
   const isAdmin = session.user.role === "ADMIN";
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
+  const isTargetSupervisor = application.supervisor?.userId === session.user.id;
   const isProjectCreator = application.project.members.some(
     (m) => m.isCreator && m.student.userId === session.user.id
   );
+
+  // ===== SUPERVISION_REQUEST — предложение проекта от студента НР =====
+  if (application.type === "SUPERVISION_REQUEST") {
+    // НР может: interested, confirm, decline, reject
+    // Админ/Автор может: reject
+    const canReviewSR = isTargetSupervisor || isAdmin || isProjectCreator;
+    if (!canReviewSR) {
+      return NextResponse.json({ error: "Нет прав" }, { status: 403 });
+    }
+
+    // НР заинтересован — контакты раскрываются
+    if (action === "interested" && isTargetSupervisor) {
+      if (application.status !== "PENDING") {
+        return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
+      }
+
+      const updated = await prisma.application.update({
+        where: { id },
+        data: { status: "INTERESTED" },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `НР ${application.supervisor!.user.name} заинтересован в руководстве`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      // Уведомление студенту — НР заинтересован, контакты раскрыты
+      notify({
+        userId: application.student!.userId,
+        type: "APPLICATION_ACCEPTED",
+        title: "НР заинтересован в вашем проекте",
+        message: `${application.supervisor!.user.name} заинтересован в руководстве проектом «${application.project.title}». Свяжитесь для встречи! Контакт: ${application.supervisor!.contact}`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      // Уведомление НР — контакт студента
+      notify({
+        userId: application.supervisor!.userId,
+        type: "APPLICATION_ACCEPTED",
+        title: "Контакт студента",
+        message: `Контакт студента ${application.student!.user.name}: ${application.student!.contact}. Договоритесь о встрече для обсуждения проекта «${application.project.title}».`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      return NextResponse.json(updated);
+    }
+
+    // НР подтверждает руководство после встречи
+    if (action === "confirm" && isTargetSupervisor) {
+      if (application.status !== "INTERESTED") {
+        return NextResponse.json({ error: "Сначала отметьте заинтересованность" }, { status: 400 });
+      }
+
+      await prisma.application.update({
+        where: { id },
+        data: { status: "CONFIRMED" },
+      });
+
+      await prisma.project.update({
+        where: { id: application.project.id },
+        data: {
+          supervisorId: application.supervisor!.id,
+          assignmentStatus: "CONFIRMED",
+        },
+      });
+
+      // Отклонить другие предложения на этот проект
+      await prisma.application.updateMany({
+        where: {
+          projectId: application.project.id,
+          type: { in: ["SUPERVISION_REQUEST", "SUPERVISOR"] },
+          id: { not: id },
+          status: { in: ["PENDING", "INTERESTED"] },
+        },
+        data: { status: "DECLINED", comment: "Другой научный руководитель подтвердил руководство" },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `НР ${application.supervisor!.user.name} подтвердил руководство проектом`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      notify({
+        userId: application.student!.userId,
+        type: "APPLICATION_ACCEPTED",
+        title: "НР подтвердил руководство!",
+        message: `${application.supervisor!.user.name} подтвердил руководство проектом «${application.project.title}»!`,
+        link: `/projects/${application.project.id}`,
+      }).catch(() => {});
+
+      try {
+        await sendMail({
+          to: application.student!.user.email,
+          subject: `НР подтвердил руководство — ${application.project.title}`,
+          html: `
+            <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Научный руководитель подтверждён!</h2>
+              <p style="color: #555; font-size: 15px;">
+                ${application.supervisor!.user.name} подтвердил руководство проектом «${application.project.title}».
+              </p>
+              <p>
+                <a href="${process.env.NEXTAUTH_URL}/projects/${application.project.id}"
+                   style="display: inline-block; background: #E8375A; color: #fff; padding: 14px 28px; text-decoration: none; font-weight: 600;">
+                  Перейти к проекту
+                </a>
+              </p>
+            </div>
+          `,
+        });
+      } catch { /* ignore */ }
+
+      return NextResponse.json({ status: "CONFIRMED" });
+    }
+
+    // НР отказывается после встречи
+    if (action === "decline" && isTargetSupervisor) {
+      if (!["PENDING", "INTERESTED"].includes(application.status)) {
+        return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
+      }
+
+      const updated = await prisma.application.update({
+        where: { id },
+        data: { status: "DECLINED", comment: comment || null },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `НР ${application.supervisor!.user.name} отклонил предложение руководства`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      notify({
+        userId: application.student!.userId,
+        type: "APPLICATION_REJECTED",
+        title: "НР отклонил предложение",
+        message: `${application.supervisor!.user.name} отклонил предложение руководства проектом «${application.project.title}».${comment ? ` Причина: ${comment}` : ""}`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      return NextResponse.json(updated);
+    }
+
+    // Отклонение (reject) — автором или админом
+    if (action === "reject") {
+      if (!["PENDING"].includes(application.status)) {
+        return NextResponse.json({ error: "Заявка уже рассмотрена" }, { status: 400 });
+      }
+
+      const updated = await prisma.application.update({
+        where: { id },
+        data: { status: "REJECTED", comment: comment || null },
+      });
+      return NextResponse.json(updated);
+    }
+
+    return NextResponse.json({ error: "Недопустимое действие для этого типа заявки" }, { status: 400 });
+  }
+
   const canReview = isAdmin || isSupervisorOwner || isProjectCreator;
 
   if (!canReview) {

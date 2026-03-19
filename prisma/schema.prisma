@@ -238,6 +238,7 @@ model Activity {
 enum ApplicationType {
   STUDENT
   SUPERVISOR
+  SUPERVISION_REQUEST   // Студент предлагает свой проект НР
 }
 
 enum ApplicationStatus {
@@ -245,6 +246,9 @@ enum ApplicationStatus {
   APPROVED_BY_AUTHOR
   ACCEPTED
   REJECTED
+  INTERESTED            // НР заинтересован — контакты раскрыты, ожидание встречи
+  CONFIRMED             // НР подтвердил руководство после встречи
+  DECLINED              // НР отказался после встречи
 }
 
 model Application {

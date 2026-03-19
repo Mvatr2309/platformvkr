@@ -8,6 +8,9 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: "На рассмотрении",
   ACCEPTED: "Принята",
   REJECTED: "Отклонена",
+  INTERESTED: "Заинтересован",
+  CONFIRMED: "Руководство подтверждено",
+  DECLINED: "Отклонено",
 };
 
 interface StudentApplication {
@@ -57,50 +60,86 @@ interface SupervisorOwnApp {
   project: { id: string; title: string; status: string };
 }
 
+interface ProposalApp {
+  id: string;
+  motivation: string;
+  status: string;
+  comment: string | null;
+  createdAt: string;
+  project: { id: string; title: string; description?: string; projectType?: string; status: string; direction?: string | null };
+  student?: {
+    id: string;
+    direction: string;
+    course: number;
+    competencies: string[];
+    portfolioUrl: string | null;
+    contact: string;
+    user: { name: string };
+  } | null;
+  supervisor?: {
+    id: string;
+    contact: string;
+    user: { name: string };
+  } | null;
+}
+
 export default function ApplicationsPage() {
   const { data: session } = useSession();
   const role = session?.user?.role;
 
   const [myApps, setMyApps] = useState<StudentApplication[]>([]);
   const [authorApps, setAuthorApps] = useState<AuthorApplication[]>([]);
+  const [myProposals, setMyProposals] = useState<ProposalApp[]>([]);
   const [supervisorApps, setSupervisorApps] = useState<AuthorApplication[]>([]);
   const [supervisorOwnApps, setSupervisorOwnApps] = useState<SupervisorOwnApp[]>([]);
+  const [supervisorProposals, setSupervisorProposals] = useState<ProposalApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [message, setMessage] = useState("");
-  const [tab, setTab] = useState<"my" | "author">("my");
-  const [supTab, setSupTab] = useState<"incoming" | "my">("incoming");
+  const [tab, setTab] = useState<"my" | "author" | "proposals">("my");
+  const [supTab, setSupTab] = useState<"incoming" | "proposals" | "my">("incoming");
 
   const fetchApps = useCallback(async () => {
     if (role === "STUDENT") {
-      const [myRes, authorRes] = await Promise.all([
+      const [myRes, authorRes, proposalsRes] = await Promise.all([
         fetch("/api/applications"),
         fetch("/api/applications?as=author"),
+        fetch("/api/applications?as=proposals"),
       ]);
       if (myRes.ok) setMyApps(await myRes.json());
       if (authorRes.ok) setAuthorApps(await authorRes.json());
+      if (proposalsRes.ok) setMyProposals(await proposalsRes.json());
     } else if (role === "SUPERVISOR") {
-      const [incomingRes, myRes] = await Promise.all([
+      const [incomingRes, myRes, proposalsRes] = await Promise.all([
         fetch("/api/applications"),
         fetch("/api/applications?as=my"),
+        fetch("/api/applications?as=proposals"),
       ]);
       if (incomingRes.ok) setSupervisorApps(await incomingRes.json());
       if (myRes.ok) setSupervisorOwnApps(await myRes.json());
+      if (proposalsRes.ok) setSupervisorProposals(await proposalsRes.json());
     }
     setLoading(false);
   }, [role]);
 
   useEffect(() => { fetchApps(); }, [fetchApps]);
 
-  async function handleAction(id: string, action: "accept" | "reject") {
+  async function handleAction(id: string, action: string) {
     const res = await fetch(`/api/applications/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, comment }),
     });
     if (res.ok) {
-      setMessage(action === "accept" ? "Заявка принята" : "Заявка отклонена");
+      const msgs: Record<string, string> = {
+        accept: "Заявка принята",
+        reject: "Заявка отклонена",
+        interested: "Вы отметили заинтересованность. Контакты раскрыты!",
+        confirm: "Руководство подтверждено!",
+        decline: "Предложение отклонено",
+      };
+      setMessage(msgs[action] || "Готово");
       setActionId(null);
       setComment("");
       fetchApps();
@@ -120,23 +159,29 @@ export default function ApplicationsPage() {
         <div className={styles.container}>
           <h1 className={styles.title}>Заявки</h1>
 
-          {/* Табы если есть заявки на мои проекты */}
-          {hasAuthorApps && (
-            <div className={styles.tabs}>
-              <button
-                className={`${styles.tab} ${tab === "my" ? styles.tabActive : ""}`}
-                onClick={() => setTab("my")}
-              >
-                Мои заявки ({myApps.length})
-              </button>
+          {/* Табы */}
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${tab === "my" ? styles.tabActive : ""}`}
+              onClick={() => setTab("my")}
+            >
+              Мои заявки ({myApps.length})
+            </button>
+            {authorApps.length > 0 && (
               <button
                 className={`${styles.tab} ${tab === "author" ? styles.tabActive : ""}`}
                 onClick={() => setTab("author")}
               >
                 Заявки на мои проекты ({authorApps.length})
               </button>
-            </div>
-          )}
+            )}
+            <button
+              className={`${styles.tab} ${tab === "proposals" ? styles.tabActive : ""}`}
+              onClick={() => setTab("proposals")}
+            >
+              Предложения НР ({myProposals.length})
+            </button>
+          </div>
 
           {message && <p className={styles.success}>{message}</p>}
 
@@ -207,6 +252,39 @@ export default function ApplicationsPage() {
               {authorApps.length === 0 && <p className={styles.empty}>Заявок на ваши проекты пока нет</p>}
             </>
           )}
+
+          {/* Мои предложения НР (SUPERVISION_REQUEST) */}
+          {tab === "proposals" && (
+            <>
+              {myProposals.length === 0 ? (
+                <p className={styles.empty}>Вы ещё не предлагали проекты руководителям. <a href="/supervisors" className={styles.link}>Найти руководителя</a></p>
+              ) : (
+                <div className={styles.list}>
+                  {myProposals.map((app) => (
+                    <div key={app.id} className={styles.card}>
+                      <div className={styles.cardHeader}>
+                        <a href={`/projects/${app.project.id}`} className={styles.projectLink}>{app.project.title}</a>
+                        <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
+                          {STATUS_LABELS[app.status] || app.status}
+                        </span>
+                      </div>
+                      <p className={styles.supervisorTarget}>
+                        Руководитель: <strong>{app.supervisor?.user.name}</strong>
+                      </p>
+                      {app.status === "INTERESTED" && app.supervisor?.contact && (
+                        <p className={styles.contactRevealed}>
+                          Контакт НР: <strong>{app.supervisor.contact}</strong> — договоритесь о встрече!
+                        </p>
+                      )}
+                      <p className={styles.motivation}>{app.motivation}</p>
+                      {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
+                      <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     );
@@ -228,6 +306,12 @@ export default function ApplicationsPage() {
               onClick={() => setSupTab("incoming")}
             >
               Входящие заявки ({supervisorApps.length})
+            </button>
+            <button
+              className={`${styles.tab} ${supTab === "proposals" ? styles.tabActive : ""}`}
+              onClick={() => setSupTab("proposals")}
+            >
+              Предложения от студентов ({supervisorProposals.length})
             </button>
             <button
               className={`${styles.tab} ${supTab === "my" ? styles.tabActive : ""}`}
@@ -270,6 +354,130 @@ export default function ApplicationsPage() {
               )}
 
               {supervisorApps.length === 0 && <p className={styles.empty}>Входящих заявок пока нет</p>}
+            </>
+          )}
+
+          {/* Предложения проектов от студентов (SUPERVISION_REQUEST) */}
+          {supTab === "proposals" && (
+            <>
+              {supervisorProposals.length === 0 ? (
+                <p className={styles.empty}>Студенты пока не предлагали вам проекты</p>
+              ) : (
+                <div className={styles.list}>
+                  {supervisorProposals.map((app) => {
+                    const isPending = app.status === "PENDING";
+                    const isInterested = app.status === "INTERESTED";
+
+                    return (
+                      <div key={app.id} className={styles.card}>
+                        <div className={styles.cardHeader}>
+                          <span className={styles.studentName}>{app.student?.user.name}</span>
+                          <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
+                            {STATUS_LABELS[app.status] || app.status}
+                          </span>
+                        </div>
+
+                        {/* Информация о проекте */}
+                        <div className={styles.proposalProject}>
+                          <a href={`/projects/${app.project.id}`} className={styles.projectLink}>
+                            {app.project.title}
+                          </a>
+                          {app.project.projectType && (
+                            <span className={styles.projectBadge}>
+                              {app.project.projectType === "CLASSIC_DISSERTATION" ? "Диссертация" :
+                               app.project.projectType === "STARTUP" ? "Стартап" : "Корп. стартап"}
+                            </span>
+                          )}
+                          {app.project.direction && (
+                            <span className={styles.dirBadge}>{app.project.direction}</span>
+                          )}
+                        </div>
+
+                        {/* Информация о студенте */}
+                        {app.student && (
+                          <div className={styles.studentInfo}>
+                            <span>{app.student.direction}, {app.student.course} курс</span>
+                            {app.student.competencies.length > 0 && (
+                              <div className={styles.tags}>
+                                {app.student.competencies.slice(0, 5).map((c) => (
+                                  <span key={c} className={styles.tag}>{c}</span>
+                                ))}
+                              </div>
+                            )}
+                            {app.student.portfolioUrl && (
+                              <a href={app.student.portfolioUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>Портфолио</a>
+                            )}
+                            {/* Контакт показываем только после INTERESTED */}
+                            {isInterested && (
+                              <span className={styles.contactRevealed}>Контакт: <strong>{app.student.contact}</strong></span>
+                            )}
+                          </div>
+                        )}
+
+                        <p className={styles.motivation}><strong>Сообщение:</strong> {app.motivation}</p>
+                        {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
+
+                        {/* Кнопки действий */}
+                        {isPending && (
+                          <>
+                            {actionId === app.id ? (
+                              <div className={styles.actionBlock}>
+                                <textarea
+                                  value={comment}
+                                  onChange={(e) => setComment(e.target.value)}
+                                  className={styles.textarea}
+                                  placeholder="Укажите причину отказа (желательно)"
+                                  rows={2}
+                                />
+                                <div className={styles.actionButtons}>
+                                  <button onClick={() => handleAction(app.id, "interested")} className={styles.acceptButton}>
+                                    Заинтересован
+                                  </button>
+                                  <button onClick={() => handleAction(app.id, "decline")} className={styles.rejectButton}>Отклонить</button>
+                                  <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button onClick={() => setActionId(app.id)} className={styles.reviewButton}>Рассмотреть</button>
+                            )}
+                          </>
+                        )}
+
+                        {isInterested && (
+                          <div className={styles.actionBlock}>
+                            <p className={styles.interestedHint}>Свяжитесь со студентом и встретьтесь. После встречи подтвердите или отклоните:</p>
+                            {actionId === app.id ? (
+                              <>
+                                <textarea
+                                  value={comment}
+                                  onChange={(e) => setComment(e.target.value)}
+                                  className={styles.textarea}
+                                  placeholder="Укажите причину отказа (желательно)"
+                                  rows={2}
+                                />
+                                <div className={styles.actionButtons}>
+                                  <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
+                                    Подтвердить руководство
+                                  </button>
+                                  <button onClick={() => handleAction(app.id, "decline")} className={styles.rejectButton}>Отказаться</button>
+                                  <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className={styles.actionButtons}>
+                                <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
+                                  Подтвердить руководство
+                                </button>
+                                <button onClick={() => setActionId(app.id)} className={styles.rejectButton}>Отказаться</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 

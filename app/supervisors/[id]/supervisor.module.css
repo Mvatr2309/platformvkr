@@ -195,6 +195,115 @@
   color: var(--color-text-muted);
 }
 
+/* Предложение проекта */
+.proposeBlock {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.proposeButton {
+  width: 100%;
+  padding: 14px 28px;
+  background: var(--color-coral);
+  color: #fff;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.proposeButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.proposeButton:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.proposeForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.proposeHint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.proposeField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.proposeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.proposeSelect,
+.proposeTextarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+}
+
+.proposeTextarea {
+  resize: vertical;
+}
+
+.proposeError {
+  font-size: 13px;
+  color: var(--color-coral);
+}
+
+.proposeSuccess {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2a7d2a;
+}
+
+.proposeActions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.proposeSubmit {
+  padding: 12px 24px;
+  background: var(--color-coral);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.proposeSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.proposeCancel {
+  padding: 12px 24px;
+  background: none;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
