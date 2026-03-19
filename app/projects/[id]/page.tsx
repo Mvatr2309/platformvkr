@@ -50,7 +50,7 @@ interface Project {
       user: { name: string };
     };
   }>;
-  files: Array<{ id: string; filename: string; filepath: string; uploadedAt: string }>;
+  files: Array<{ id: string; title: string; fileType: string; filename: string | null; filepath: string | null; url: string | null; uploadedAt: string }>;
   events: Array<{ id: string; title: string; date: string; eventType: string }>;
   _count: { applications: number };
 }
@@ -70,6 +70,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [showAddFile, setShowAddFile] = useState(false);
+  const [newFileTitle, setNewFileTitle] = useState("");
+  const [newFileType, setNewFileType] = useState<"FILE" | "LINK">("FILE");
+  const [newFileUrl, setNewFileUrl] = useState("");
+  const [deletingFileId, setDeletingFileId] = useState("");
   const [motivation, setMotivation] = useState("");
   const [applyRole, setApplyRole] = useState("");
   const [applying, setApplying] = useState(false);
@@ -123,28 +128,69 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     checkMyApplication();
   }, [fetchProject, fetchActivities, checkMyApplication]);
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleAddFileSlot(file?: File) {
+    if (!newFileTitle.trim()) {
+      setUploadError("Укажите название документа");
+      return;
+    }
     setUploading(true);
     setUploadError("");
 
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("title", newFileTitle.trim());
+      fd.append("fileType", newFileType);
+
+      if (newFileType === "LINK") {
+        if (!newFileUrl.trim()) {
+          setUploadError("Укажите ссылку");
+          setUploading(false);
+          return;
+        }
+        fd.append("url", newFileUrl.trim());
+      } else {
+        if (!file) {
+          setUploadError("Выберите файл");
+          setUploading(false);
+          return;
+        }
+        fd.append("file", file);
+      }
+
       const res = await fetch(`/api/projects/${id}/files`, { method: "POST", body: fd });
       if (res.ok) {
         fetchProject();
         fetchActivities();
+        setShowAddFile(false);
+        setNewFileTitle("");
+        setNewFileType("FILE");
+        setNewFileUrl("");
       } else {
         const data = await res.json();
-        setUploadError(data.error || "Ошибка загрузки");
+        setUploadError(data.error || "Ошибка");
       }
     } catch {
       setUploadError("Ошибка сети");
     } finally {
       setUploading(false);
-      e.target.value = "";
+    }
+  }
+
+  async function handleDeleteFile(fileId: string) {
+    if (!confirm("Удалить этот документ?")) return;
+    setDeletingFileId(fileId);
+    try {
+      const res = await fetch(`/api/projects/${id}/files`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId }),
+      });
+      if (res.ok) {
+        fetchProject();
+        fetchActivities();
+      }
+    } catch { /* ignore */ } finally {
+      setDeletingFileId("");
     }
   }
 
@@ -490,27 +536,119 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           {/* 03.04 — Файлы и материалы */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Файлы и материалы</h2>
-            {project.files.length === 0 && !uploading && (
-              <p className={styles.muted}>Файлы не загружены</p>
+            {project.files.length === 0 && !showAddFile && (
+              <p className={styles.muted}>Документы не добавлены</p>
             )}
             {project.files.length > 0 && (
-              <ul className={styles.fileList}>
+              <div className={styles.fileSlots}>
                 {project.files.map((f) => (
-                  <li key={f.id} className={styles.fileItem}>
-                    <a href={f.filepath} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
-                      {f.filename}
-                    </a>
-                    <span className={styles.fileDate}>
-                      {new Date(f.uploadedAt).toLocaleDateString("ru-RU")}
-                    </span>
-                  </li>
+                  <div key={f.id} className={styles.fileSlot}>
+                    <div className={styles.fileSlotInfo}>
+                      <span className={styles.fileSlotTitle}>{f.title}</span>
+                      <span className={styles.fileSlotType}>
+                        {f.fileType === "LINK" ? "Ссылка" : f.filename || "Файл"}
+                      </span>
+                    </div>
+                    <div className={styles.fileSlotActions}>
+                      {f.fileType === "LINK" && f.url ? (
+                        <a href={f.url} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
+                          Открыть
+                        </a>
+                      ) : f.filepath ? (
+                        <a href={f.filepath} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
+                          Скачать
+                        </a>
+                      ) : null}
+                      {session?.user && (
+                        <button
+                          className={styles.fileDeleteBtn}
+                          onClick={() => handleDeleteFile(f.id)}
+                          disabled={deletingFileId === f.id}
+                        >
+                          {deletingFileId === f.id ? "..." : "×"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
-            <label className={styles.uploadButton}>
-              {uploading ? "Загрузка..." : "Загрузить файл"}
-              <input type="file" onChange={handleFileUpload} hidden disabled={uploading} />
-            </label>
+
+            {session?.user && !showAddFile && (
+              <button className={styles.uploadButton} onClick={() => setShowAddFile(true)}>
+                Добавить документ
+              </button>
+            )}
+
+            {showAddFile && (
+              <div className={styles.addFileForm}>
+                <input
+                  type="text"
+                  value={newFileTitle}
+                  onChange={(e) => setNewFileTitle(e.target.value)}
+                  className={styles.addFileInput}
+                  placeholder="Название документа (напр. Концепция исследования)"
+                />
+                <div className={styles.addFileTypeToggle}>
+                  <button
+                    type="button"
+                    className={`${styles.addFileTypeBtn} ${newFileType === "FILE" ? styles.addFileTypeBtnActive : ""}`}
+                    onClick={() => setNewFileType("FILE")}
+                  >
+                    Загрузить файл
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.addFileTypeBtn} ${newFileType === "LINK" ? styles.addFileTypeBtnActive : ""}`}
+                    onClick={() => setNewFileType("LINK")}
+                  >
+                    Вставить ссылку
+                  </button>
+                </div>
+
+                {newFileType === "LINK" ? (
+                  <input
+                    type="url"
+                    value={newFileUrl}
+                    onChange={(e) => setNewFileUrl(e.target.value)}
+                    className={styles.addFileInput}
+                    placeholder="https://drive.google.com/..."
+                  />
+                ) : (
+                  <label className={styles.addFilePickBtn}>
+                    Выбрать файл
+                    <input
+                      type="file"
+                      hidden
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAddFileSlot(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+
+                <div className={styles.addFileActions}>
+                  {newFileType === "LINK" && (
+                    <button
+                      className={styles.addFileSaveBtn}
+                      onClick={() => handleAddFileSlot()}
+                      disabled={uploading}
+                    >
+                      {uploading ? "Сохранение..." : "Сохранить"}
+                    </button>
+                  )}
+                  <button
+                    className={styles.addFileCancelBtn}
+                    onClick={() => { setShowAddFile(false); setUploadError(""); setNewFileTitle(""); setNewFileUrl(""); }}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
             {uploadError && <p className={styles.error}>{uploadError}</p>}
           </div>
 

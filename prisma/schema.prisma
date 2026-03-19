@@ -208,12 +208,20 @@ model ProjectMember {
 // ============================================
 
 model ProjectFile {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  filename    String   // Имя файла
-  filepath    String   // Путь на диске
-  uploadedAt  DateTime @default(now())
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String          // Название слота (напр. «Концепция исследования»)
+  fileType    ProjectFileType @default(FILE)
+  filename    String?         // Имя загруженного файла (для FILE)
+  filepath    String?         // Путь на диске (для FILE)
+  url         String?         // Внешняя ссылка (для LINK)
+  uploadedAt  DateTime        @default(now())
+}
+
+enum ProjectFileType {
+  FILE
+  LINK
 }
 
 // ============================================

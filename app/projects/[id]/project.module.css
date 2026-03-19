@@ -66,19 +66,70 @@
 .creatorBadge { display: inline-block; font-size: 12px; padding: 2px 8px; background: #E8375A; color: #fff; font-weight: 600; }
 .memberContact { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
 
-/* 03.04 — Файлы */
-.fileList { list-style: none; padding: 0; margin: 0 0 var(--space-md) 0; display: flex; flex-direction: column; gap: var(--space-sm); }
-.fileItem { display: flex; align-items: center; justify-content: space-between; padding: var(--space-sm); border-bottom: 1px solid var(--color-border); }
-.fileLink { color: var(--color-deep-blue); font-size: 14px; text-decoration: none; }
+/* 03.04 — Файлы (слоты) */
+.fileSlots { display: flex; flex-direction: column; gap: 0; margin-bottom: var(--space-md); }
+.fileSlot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-bottom: 1px solid var(--color-border);
+}
+.fileSlot:last-child { border-bottom: none; }
+.fileSlotInfo { display: flex; flex-direction: column; gap: 2px; }
+.fileSlotTitle { font-size: 14px; font-weight: 600; color: var(--color-text-primary); }
+.fileSlotType { font-size: 12px; color: var(--color-text-muted); }
+.fileSlotActions { display: flex; align-items: center; gap: 12px; }
+.fileLink { color: var(--color-deep-blue); font-size: 13px; text-decoration: none; font-weight: 500; }
 .fileLink:hover { text-decoration: underline; }
-.fileDate { font-size: 12px; color: var(--color-text-muted); }
+.fileDeleteBtn {
+  background: none; border: none; color: var(--color-coral); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 0 4px;
+}
+.fileDeleteBtn:hover { opacity: 0.7; }
 
 .uploadButton {
   display: inline-block; border: 1px solid var(--color-border); padding: 8px 16px;
   font-size: 13px; color: var(--color-text-secondary); cursor: pointer;
   transition: border-color 0.15s, color 0.15s; margin-top: var(--space-sm);
+  background: none;
 }
 .uploadButton:hover { border-color: var(--color-deep-blue); color: var(--color-deep-blue); }
+
+/* Форма добавления файла */
+.addFileForm {
+  margin-top: var(--space-sm); padding: 16px; border: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.addFileInput {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--color-border);
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.addFileInput:focus { border-color: var(--color-deep-blue); }
+.addFileTypeToggle { display: flex; gap: 0; }
+.addFileTypeBtn {
+  flex: 1; padding: 8px; border: 1px solid var(--color-border);
+  background: #fff; font-size: 13px; cursor: pointer; text-align: center;
+  color: var(--color-text-secondary); transition: all 0.15s;
+}
+.addFileTypeBtn:first-child { border-right: none; }
+.addFileTypeBtnActive {
+  background: var(--color-deep-blue); color: #fff; border-color: var(--color-deep-blue);
+}
+.addFilePickBtn {
+  display: inline-block; border: 1px dashed var(--color-border); padding: 10px 16px;
+  font-size: 13px; color: var(--color-text-secondary); cursor: pointer; text-align: center;
+}
+.addFilePickBtn:hover { border-color: var(--color-deep-blue); color: var(--color-deep-blue); }
+.addFileActions { display: flex; gap: 8px; }
+.addFileSaveBtn {
+  padding: 8px 20px; background: var(--color-deep-blue); color: #fff;
+  border: none; font-size: 13px; cursor: pointer;
+}
+.addFileSaveBtn:hover { opacity: 0.9; }
+.addFileSaveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.addFileCancelBtn {
+  padding: 8px 20px; background: none; border: 1px solid var(--color-border);
+  font-size: 13px; cursor: pointer; color: var(--color-text-secondary);
+}
+.addFileCancelBtn:hover { border-color: var(--color-text-secondary); }
 
 .error { color: var(--color-coral); font-size: 13px; margin-top: var(--space-sm); }
 
