@@ -1,12 +1,12 @@
 -- Seed dictionaries with default values
 
 -- directions
-INSERT INTO "Dictionary" (id, type, "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'directions', NOW(), NOW())
+INSERT INTO "Dictionary" (id, type)
+VALUES (gen_random_uuid(), 'directions')
 ON CONFLICT (type) DO NOTHING;
 
-INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder", "createdAt", "updatedAt")
-SELECT gen_random_uuid(), d.id, v.value, v.ord, NOW(), NOW()
+INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder")
+SELECT gen_random_uuid(), d.id, v.value, v.ord
 FROM "Dictionary" d,
 (VALUES
   ('Управление IT продуктом', 0),
@@ -17,12 +17,12 @@ WHERE d.type = 'directions'
   AND NOT EXISTS (SELECT 1 FROM "DictionaryValue" dv WHERE dv."dictionaryId" = d.id AND dv.value = v.value);
 
 -- roles
-INSERT INTO "Dictionary" (id, type, "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'roles', NOW(), NOW())
+INSERT INTO "Dictionary" (id, type)
+VALUES (gen_random_uuid(), 'roles')
 ON CONFLICT (type) DO NOTHING;
 
-INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder", "createdAt", "updatedAt")
-SELECT gen_random_uuid(), d.id, v.value, v.ord, NOW(), NOW()
+INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder")
+SELECT gen_random_uuid(), d.id, v.value, v.ord
 FROM "Dictionary" d,
 (VALUES
   ('Разработчик', 0),
@@ -35,12 +35,12 @@ WHERE d.type = 'roles'
   AND NOT EXISTS (SELECT 1 FROM "DictionaryValue" dv WHERE dv."dictionaryId" = d.id AND dv.value = v.value);
 
 -- academicTitles
-INSERT INTO "Dictionary" (id, type, "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'academicTitles', NOW(), NOW())
+INSERT INTO "Dictionary" (id, type)
+VALUES (gen_random_uuid(), 'academicTitles')
 ON CONFLICT (type) DO NOTHING;
 
-INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder", "createdAt", "updatedAt")
-SELECT gen_random_uuid(), d.id, v.value, v.ord, NOW(), NOW()
+INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder")
+SELECT gen_random_uuid(), d.id, v.value, v.ord
 FROM "Dictionary" d,
 (VALUES
   ('Нет', 0),
@@ -51,12 +51,12 @@ WHERE d.type = 'academicTitles'
   AND NOT EXISTS (SELECT 1 FROM "DictionaryValue" dv WHERE dv."dictionaryId" = d.id AND dv.value = v.value);
 
 -- cohorts
-INSERT INTO "Dictionary" (id, type, "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'cohorts', NOW(), NOW())
+INSERT INTO "Dictionary" (id, type)
+VALUES (gen_random_uuid(), 'cohorts')
 ON CONFLICT (type) DO NOTHING;
 
-INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder", "createdAt", "updatedAt")
-SELECT gen_random_uuid(), d.id, v.value, v.ord, NOW(), NOW()
+INSERT INTO "DictionaryValue" (id, "dictionaryId", value, "sortOrder")
+SELECT gen_random_uuid(), d.id, v.value, v.ord
 FROM "Dictionary" d,
 (VALUES
   ('Поток2025', 0),
