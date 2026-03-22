@@ -83,6 +83,29 @@
   color: #e65100;
 }
 
+/* Типы проектов */
+.projectTypes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.projectTypesLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.projectTypeBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  background: #FFF3E0;
+  color: #e65100;
+}
+
 /* Сетка контента */
 .grid {
   display: grid;

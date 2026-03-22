@@ -19,6 +19,7 @@ interface SupervisorProfile {
   maxSlots: number;
   contact: string;
   recruitmentStatus: string;
+  projectTypes: string[];
   user: { name: string };
   projects: Array<{
     id: string;
@@ -37,7 +38,7 @@ interface MyProject {
 }
 
 const PROJECT_TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Классическая диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корпоративный стартап",
 };
@@ -135,6 +136,16 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
             <span className={`${styles.recruitment} ${profile.recruitmentStatus === "OPEN" ? styles.open : styles.closed}`}>
               {profile.recruitmentStatus === "OPEN" ? "Набор открыт" : "Набор закрыт"}
             </span>
+            {profile.projectTypes && profile.projectTypes.length > 0 && (
+              <div className={styles.projectTypes}>
+                <span className={styles.projectTypesLabel}>Работает с:</span>
+                {profile.projectTypes.map((t) => (
+                  <span key={t} className={styles.projectTypeBadge}>
+                    {PROJECT_TYPE_LABELS[t] || t}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
