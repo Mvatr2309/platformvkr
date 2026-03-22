@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "./supervisors.module.css";
-
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
-];
-
-const ACADEMIC_TITLES = ["Доцент", "Профессор"];
 
 const PROJECT_TYPES = [
   { value: "CLASSIC_DISSERTATION", label: "Исследования" },
@@ -34,6 +27,9 @@ interface SupervisorCard {
 }
 
 export default function SupervisorsPage() {
+  const dicts = useDictionaries("directions", "academicTitles");
+  const DIRECTIONS = dicts.directions || [];
+  const ACADEMIC_TITLES = dicts.academicTitles || [];
   const [profiles, setProfiles] = useState<SupervisorCard[]>([]);
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState("");

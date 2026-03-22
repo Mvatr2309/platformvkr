@@ -3,16 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "./profile.module.css";
-
-// Опции мультиселектов из спецификации (01-FR-01, раздел 2)
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
-];
-
-const ACADEMIC_TITLES = ["Нет", "Доцент", "Профессор"];
 
 const PROJECT_TYPES = [
   { value: "CLASSIC_DISSERTATION", label: "Исследования" },
@@ -56,6 +48,9 @@ const EMPTY_PROFILE: ProfileData = {
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
+  const dicts = useDictionaries("directions", "academicTitles");
+  const DIRECTIONS = dicts.directions || [];
+  const ACADEMIC_TITLES = dicts.academicTitles || [];
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
   const [name, setName] = useState("");
   const [agreement, setAgreement] = useState(false);

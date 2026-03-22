@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "../list.module.css";
 
 interface Student {
@@ -17,15 +18,10 @@ interface Student {
   } | null;
 }
 
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
-];
-
-const COHORTS = ["Поток2025", "Поток2026"];
-
 export default function StudentsListPage() {
+  const dicts = useDictionaries("directions", "cohorts");
+  const DIRECTIONS = dicts.directions || [];
+  const COHORTS = dicts.cohorts || [];
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

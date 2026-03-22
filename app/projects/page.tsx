@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useDictionary } from "@/lib/useDictionary";
 import styles from "./projects.module.css";
 
 const PROJECT_TYPES = [
   { value: "CLASSIC_DISSERTATION", label: "Исследование" },
   { value: "STARTUP", label: "Стартап" },
   { value: "CORPORATE_STARTUP", label: "Корпоративный стартап" },
-];
-
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
 ];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,6 +30,7 @@ interface ProjectCard {
 }
 
 export default function ProjectsPage() {
+  const DIRECTIONS = useDictionary("directions");
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [search, setSearch] = useState("");
   const [projectType, setProjectType] = useState("");

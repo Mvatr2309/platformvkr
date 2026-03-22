@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useDictionary } from "@/lib/useDictionary";
 import styles from "./invitations.module.css";
 
 interface Invitation {
@@ -12,8 +13,6 @@ interface Invitation {
   createdAt: string;
   sentBy: { name: string };
 }
-
-const COHORTS = ["Поток2025", "Поток2026"];
 
 interface CreatedAccount {
   email: string;
@@ -43,6 +42,7 @@ function downloadCredentials(accounts: CreatedAccount[]) {
 }
 
 export default function InvitationsPage() {
+  const COHORTS = useDictionary("cohorts");
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("SUPERVISOR");

@@ -3,21 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "../profile.module.css";
-
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
-];
-
-const ROLES = [
-  "Разработчик",
-  "ML-инженер",
-  "Data Engineer",
-  "Data Scientist",
-  "Product-менеджер",
-];
 
 interface StudentData {
   direction: string;
@@ -42,6 +29,9 @@ const EMPTY: StudentData = {
 export default function StudentProfilePage() {
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
+  const dicts = useDictionaries("directions", "roles");
+  const DIRECTIONS = dicts.directions || [];
+  const ROLES = dicts.roles || [];
   const [profile, setProfile] = useState<StudentData>(EMPTY);
   const [name, setName] = useState("");
   const [compInput, setCompInput] = useState("");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "./new-project.module.css";
 
 const PROJECT_TYPES = [
@@ -11,23 +12,12 @@ const PROJECT_TYPES = [
   { value: "CORPORATE_STARTUP", label: "Корпоративный стартап" },
 ];
 
-const DIRECTIONS = [
-  "Управление IT продуктом",
-  "Разработка IT-продуктов",
-  "Науки о данных",
-];
-
-const ROLES = [
-  "Разработчик",
-  "ML-инженер",
-  "Data Engineer",
-  "Data Scientist",
-  "Product-менеджер",
-];
-
 export default function NewProjectPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const dicts = useDictionaries("directions", "roles");
+  const DIRECTIONS = dicts.directions || [];
+  const ROLES = dicts.roles || [];
   const isStudent = session?.user?.role === "STUDENT";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

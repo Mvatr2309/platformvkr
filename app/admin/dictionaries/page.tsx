@@ -10,20 +10,20 @@ interface DictionaryData {
 }
 
 const DICT_LABELS: Record<string, string> = {
-  directions: "Направления",
-  competencies: "Компетенции",
-  workTypes: "Типы работ",
+  directions: "Направления обучения",
   roles: "Роли в команде",
+  academicTitles: "Учёные звания",
+  cohorts: "Потоки",
 };
 
 const DICT_HINTS: Record<string, string> = {
-  directions: "Образовательные программы (ПМИ, ПМФ, РЛ, БМ, КИ...)",
-  competencies: "Компетенции для профилей (ML, Backend, UI/UX...)",
-  workTypes: "Типы ВКР (Классическая диссертация, Стартап...)",
-  roles: "Роли в проектной команде (Backend, Frontend, ML...)",
+  directions: "Образовательные программы (Управление IT продуктом, Разработка IT-продуктов...)",
+  roles: "Роли в проектной команде (Разработчик, ML-инженер, Data Engineer...)",
+  academicTitles: "Учёные звания для профилей НР (Нет, Доцент, Профессор...)",
+  cohorts: "Потоки студентов (Поток2025, Поток2026...)",
 };
 
-const DEFAULT_TYPES = ["directions", "competencies", "workTypes", "roles"];
+const DEFAULT_TYPES = ["directions", "roles", "academicTitles", "cohorts"];
 
 export default function DictionariesPage() {
   const [dictionaries, setDictionaries] = useState<DictionaryData[]>([]);
