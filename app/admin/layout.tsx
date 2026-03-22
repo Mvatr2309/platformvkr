@@ -32,6 +32,9 @@ export default function AdminLayout({
           <a href="/admin/projects-list" className={styles.navLink}>
             Список проектов
           </a>
+          <a href="/admin/calendar" className={styles.navLink}>
+            Календарь
+          </a>
           <a href="/admin/dictionaries" className={styles.navLink}>
             Справочники
           </a>

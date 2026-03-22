@@ -159,7 +159,7 @@ export default function CalendarPage() {
     }
   }
 
-  const canCreate = session?.user?.role === "ADMIN" || session?.user?.role === "SUPERVISOR";
+  const canCreate = session?.user?.role === "ADMIN";
   const days = buildDays();
 
   return (

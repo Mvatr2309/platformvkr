@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
   }
 
-  // Только админ или НР могут создавать события
-  if (!["ADMIN", "SUPERVISOR"].includes(session.user.role)) {
+  // Только админ может создавать события
+  if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Нет прав" }, { status: 403 });
   }
 
@@ -64,17 +64,6 @@ export async function POST(request: NextRequest) {
       { error: "Заполните название, дату и тип события" },
       { status: 400 }
     );
-  }
-
-  // Если НР — проверяем, что проект принадлежит ему
-  if (projectId && session.user.role === "SUPERVISOR") {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: { supervisor: { select: { userId: true } } },
-    });
-    if (!project || project.supervisor?.userId !== session.user.id) {
-      return NextResponse.json({ error: "Нет доступа к проекту" }, { status: 403 });
-    }
   }
 
   const event = await prisma.event.create({
