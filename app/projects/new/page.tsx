@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useDictionaries } from "@/lib/useDictionary";
@@ -19,6 +19,27 @@ export default function NewProjectPage() {
   const DIRECTIONS = dicts.directions || [];
   const ROLES = dicts.roles || [];
   const isStudent = session?.user?.role === "STUDENT";
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitMessage, setLimitMessage] = useState("");
+  const [checkingLimit, setCheckingLimit] = useState(true);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/projects/check-limit");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.limitReached) {
+            setLimitReached(true);
+            setLimitMessage(data.message);
+          }
+        }
+      } catch { /* ignore */ }
+      setCheckingLimit(false);
+    })();
+  }, [session]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectType, setProjectType] = useState("");
@@ -96,6 +117,34 @@ export default function NewProjectPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (checkingLimit) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.container}>
+          <p>Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (limitReached) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.container}>
+          <h1 className={styles.title}>Новый проект</h1>
+          <p className={styles.error}>{limitMessage}</p>
+          <button
+            onClick={() => router.push("/my-projects")}
+            className={styles.saveButton}
+            style={{ marginTop: 16 }}
+          >
+            Перейти к моим проектам
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
