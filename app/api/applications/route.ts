@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
             competencies: true,
             portfolioUrl: true,
             contact: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
         supervisor: {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
             position: true,
             academicDegree: true,
             expertise: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
       },
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
             competencies: true,
             portfolioUrl: true,
             contact: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
         supervisor: {
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
             academicDegree: true,
             expertise: true,
             contact: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
       },
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             contact: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
       },
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
               competencies: true,
               portfolioUrl: true,
               contact: true,
-              user: { select: { name: true } },
+              user: { select: { name: true, email: true } },
             },
           },
         },
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
             competencies: true,
             portfolioUrl: true,
             contact: true,
-            user: { select: { name: true } },
+            user: { select: { name: true, email: true } },
           },
         },
       },
@@ -251,6 +251,9 @@ export async function POST(request: NextRequest) {
 
       if (!project || project.members.length === 0) {
         return NextResponse.json({ error: "Вы можете предлагать только свои проекты" }, { status: 400 });
+      }
+      if (project.status !== "OPEN") {
+        return NextResponse.json({ error: "Проект должен быть одобрен модерацией (статус «Открыт»), прежде чем предлагать его руководителю" }, { status: 400 });
       }
       if (project.supervisorId) {
         return NextResponse.json({ error: "У проекта уже есть научный руководитель" }, { status: 400 });
@@ -410,7 +413,7 @@ export async function POST(request: NextRequest) {
         notify({
           userId: admin.id,
           type: "APPLICATION_NEW",
-          title: "Заявка НР на проект",
+          title: "Заявка научного руководителя на проект",
           message: `${session.user.name} подал заявку на руководство проектом «${project.title}»`,
           link: `/applications`,
         }).catch(() => {});

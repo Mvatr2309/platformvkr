@@ -73,7 +73,7 @@ export default function ProjectModerationPage() {
               <div className={styles.cardMeta}>
                 <span>{TYPE_LABELS[p.projectType]}</span>
                 {p.direction && <><span>·</span><span>{p.direction}</span></>}
-                {p.supervisor && <><span>·</span><span>НР: {p.supervisor.user.name}</span></>}
+                {p.supervisor && <><span>·</span><span>Науч. рук.: {p.supervisor.user.name}</span></>}
               </div>
               <p style={{ fontSize: "14px", color: "var(--color-text-secondary)", margin: "8px 0", lineHeight: 1.5 }}>
                 {p.description.length > 200 ? p.description.slice(0, 200) + "..." : p.description}

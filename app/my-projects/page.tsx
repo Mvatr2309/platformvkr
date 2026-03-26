@@ -67,7 +67,7 @@ export default function MyProjectsPage() {
                   {p.description.length > 200 ? p.description.slice(0, 200) + "..." : p.description}
                 </p>
                 <div className={styles.cardFooter}>
-                  {p.supervisor && <span className={styles.supervisor}>НР: {p.supervisor.user.name}</span>}
+                  {p.supervisor && <span className={styles.supervisor}>Науч. рук.: {p.supervisor.user.name}</span>}
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
                   <span className={styles.stats}>
                     {p._count.members} участн. · {p._count.applications} заявок

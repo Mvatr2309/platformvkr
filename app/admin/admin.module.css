@@ -57,6 +57,11 @@
   color: #fff;
 }
 
+.navLinkActive {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
 .sidebarFooter {
   margin-top: auto;
 }

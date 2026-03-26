@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function downloadCredentials(accounts: CreatedAccount[]) {
   const lines = accounts.map(
-    (a) => `${a.role === "STUDENT" ? "Студент" : "НР"}\nЛогин: ${a.email}\nПароль: ${a.password}\n`
+    (a) => `${a.role === "STUDENT" ? "Студент" : "Научный руководитель"}\nЛогин: ${a.email}\nПароль: ${a.password}\n`
   );
   const text = "=== Доступы — Платформа ВКР ===\n\n" + lines.join("\n---\n\n");
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -202,7 +202,7 @@ export default function InvitationsPage() {
                 <div className={styles.credentialName}>
                   {acc.email}
                   <span style={{ fontSize: 12, color: "#666", marginLeft: 8 }}>
-                    {acc.role === "STUDENT" ? "Студент" : "НР"}
+                    {acc.role === "STUDENT" ? "Студент" : "Научный руководитель"}
                   </span>
                 </div>
                 <div className={styles.credentialInfo}>
@@ -255,7 +255,7 @@ export default function InvitationsPage() {
               <td>{inv.email}</td>
               <td>
                 <span className={`${styles.roleBadge} ${inv.role === "STUDENT" ? styles.roleBadgeStudent : styles.roleBadgeSupervisor}`}>
-                  {inv.role === "STUDENT" ? "Студент" : inv.role === "SUPERVISOR" ? "НР" : "—"}
+                  {inv.role === "STUDENT" ? "Студент" : inv.role === "SUPERVISOR" ? "Науч. рук." : "—"}
                 </span>
               </td>
               <td>

@@ -8,6 +8,7 @@ interface Student {
   name: string;
   email: string;
   createdAt: string;
+  projectRoles: Array<{ role: string; projectTitle: string }>;
 }
 
 interface CreatedAccount {
@@ -156,13 +157,14 @@ export default function StudentsPage() {
           <tr>
             <th>ФИО</th>
             <th>E-mail</th>
+            <th>Роль в проекте</th>
             <th>Дата создания</th>
           </tr>
         </thead>
         <tbody>
           {students.length === 0 && (
             <tr>
-              <td colSpan={3} className={styles.empty}>
+              <td colSpan={4} className={styles.empty}>
                 Студентов пока нет
               </td>
             </tr>
@@ -171,6 +173,17 @@ export default function StudentsPage() {
             <tr key={s.id}>
               <td>{s.name}</td>
               <td>{s.email}</td>
+              <td>
+                {s.projectRoles.length > 0 ? (
+                  s.projectRoles.map((pr, i) => (
+                    <div key={i} title={pr.projectTitle} style={{ fontSize: 13 }}>
+                      {pr.role} <span style={{ color: "#888" }}>— {pr.projectTitle}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span style={{ color: "#999" }}>—</span>
+                )}
+              </td>
               <td>{new Date(s.createdAt).toLocaleDateString("ru-RU")}</td>
             </tr>
           ))}

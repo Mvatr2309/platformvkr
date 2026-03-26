@@ -87,14 +87,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Определяем supervisorId (02.02 — автопривязка)
+    // Студент может быть автором только одного проекта
+    if (session.user.role === "STUDENT") {
+      const studentProfile = await prisma.studentProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (studentProfile) {
+        const existingProject = await prisma.projectMember.findFirst({
+          where: { studentId: studentProfile.id, isCreator: true },
+        });
+        if (existingProject) {
+          return NextResponse.json(
+            { error: "У вас уже есть проект. Удалите текущий проект, чтобы создать новый." },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Определяем supervisorId (02.02 — автопривязка) + проверка лимита
     let supervisorId: string | null = null;
     if (session.user.role === "SUPERVISOR") {
       const profile = await prisma.supervisorProfile.findUnique({
         where: { userId: session.user.id },
-        select: { id: true },
+        select: { id: true, maxProjects: true },
       });
       supervisorId = profile?.id || null;
+
+      if (profile) {
+        const projectCount = await prisma.project.count({
+          where: { supervisorId: profile.id },
+        });
+        if (projectCount >= (profile.maxProjects || 4)) {
+          return NextResponse.json(
+            { error: `Достигнут лимит проектов (${profile.maxProjects || 4}). Измените лимит в профиле или удалите существующий проект.` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const status = data.submit ? "PENDING" : "DRAFT";

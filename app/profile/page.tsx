@@ -25,6 +25,7 @@ interface ProfileData {
   directions: string[];
   projectTypes: string[];
   maxSlots: number;
+  maxProjects: number;
   contact: string;
   status?: string;
 }
@@ -42,6 +43,7 @@ const EMPTY_PROFILE: ProfileData = {
   directions: [],
   projectTypes: [],
   maxSlots: 3,
+  maxProjects: 4,
   contact: "",
 };
 
@@ -342,7 +344,7 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.field} style={{ maxWidth: 200 }}>
-            <label className={styles.label}>Макс. проектов одновременно</label>
+            <label className={styles.label}>Макс. проектов под руководством</label>
             <input
               type="number"
               value={profile.maxSlots}
@@ -350,6 +352,21 @@ export default function ProfilePage() {
               className={styles.input}
               min={1}
               max={10}
+            />
+          </div>
+
+          <div className={styles.field} style={{ maxWidth: 200 }}>
+            <label className={styles.label}>Макс. проектов под авторством (1–4)</label>
+            <input
+              type="number"
+              value={profile.maxProjects}
+              onChange={(e) => {
+                const v = parseInt(e.target.value) || 1;
+                updateField("maxProjects", Math.min(4, Math.max(1, v)));
+              }}
+              className={styles.input}
+              min={1}
+              max={4}
             />
           </div>
         </section>

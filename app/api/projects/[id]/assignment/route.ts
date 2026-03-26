@@ -62,7 +62,7 @@ export async function PUT(
       notify({
         userId: admin.id,
         type: "PROJECT_STATUS",
-        title: "НР подтвердил назначение",
+        title: "Научный руководитель подтвердил назначение",
         message: `${project.supervisor?.user.name} подтвердил руководство проектом «${project.title}»`,
         link: `/admin/matching`,
       }).catch(() => {});
@@ -93,7 +93,7 @@ export async function PUT(
       notify({
         userId: admin.id,
         type: "PROJECT_STATUS",
-        title: "НР отклонил назначение",
+        title: "Научный руководитель отклонил назначение",
         message: `${project.supervisor?.user.name} отклонил руководство проектом «${project.title}»`,
         link: `/admin/matching`,
       }).catch(() => {});

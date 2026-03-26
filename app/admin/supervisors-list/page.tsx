@@ -85,7 +85,7 @@ export default function SupervisorsListPage() {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={8} className={styles.empty}>НР не найдено</td></tr>
+              <tr><td colSpan={8} className={styles.empty}>Научные руководители не найдены</td></tr>
             )}
             {filtered.map((s) => (
               <tr key={s.id}>

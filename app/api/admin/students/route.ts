@@ -18,10 +18,40 @@ export async function GET() {
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      student: {
+        select: {
+          projects: {
+            select: {
+              role: true,
+              isCreator: true,
+              project: { select: { title: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
-  return NextResponse.json(students);
+  const result = students.map((s) => {
+    const members = s.student?.projects || [];
+    return {
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      createdAt: s.createdAt,
+      projectRoles: members.map((m) => ({
+        role: m.isCreator ? "Автор" : m.role || "Участник",
+        projectTitle: m.project.title,
+      })),
+    };
+  });
+
+  return NextResponse.json(result);
 }
 
 // POST /api/admin/students — создать аккаунт студента

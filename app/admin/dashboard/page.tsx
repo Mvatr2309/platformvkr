@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
           <div className={styles.statValue}>{stats.totalSupervisors}</div>
-          <div className={styles.statLabel}>Всего НР</div>
+          <div className={styles.statLabel}>Всего науч. руководителей</div>
         </div>
       </div>
 

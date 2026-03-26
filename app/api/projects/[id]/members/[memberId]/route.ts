@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 // DELETE /api/projects/[id]/members/[memberId] — удаление участника из проекта
 // Права:
@@ -35,6 +36,7 @@ export async function DELETE(
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: {
+      title: true,
       supervisor: { select: { userId: true } },
       members: { select: { isCreator: true, student: { select: { userId: true } } } },
     },
@@ -77,10 +79,37 @@ export async function DELETE(
   await prisma.activity.create({
     data: {
       projectId,
-      action: `${deletedStudent?.user.name || "Участник"} удалён из команды`,
+      action: isSelf
+        ? `${deletedStudent?.user.name || "Участник"} покинул проект`
+        : `${deletedStudent?.user.name || "Участник"} удалён из команды`,
       actorEmail: session.user.email,
     },
   });
+
+  // Уведомление удалённому участнику
+  if (!isSelf) {
+    notify({
+      userId: member.student.userId,
+      type: "PROJECT_STATUS",
+      title: "Вы удалены из проекта",
+      message: `Вы были удалены из проекта «${project.title}»`,
+      link: `/my-projects`,
+    }).catch(() => {});
+  }
+
+  // Уведомление автору проекта, если участник покинул проект сам
+  if (isSelf) {
+    const creator = project.members.find((m) => m.isCreator);
+    if (creator && creator.student.userId !== session.user.id) {
+      notify({
+        userId: creator.student.userId,
+        type: "PROJECT_STATUS",
+        title: "Участник покинул проект",
+        message: `${deletedStudent?.user.name || "Участник"} покинул проект «${project.title}»`,
+        link: `/projects/${projectId}`,
+      }).catch(() => {});
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

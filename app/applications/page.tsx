@@ -38,7 +38,7 @@ interface AuthorApplication {
     competencies: string[];
     portfolioUrl: string | null;
     contact: string;
-    user: { name: string };
+    user: { name: string; email: string };
   } | null;
   supervisor?: {
     id: string;
@@ -74,7 +74,7 @@ interface ProposalApp {
     competencies: string[];
     portfolioUrl: string | null;
     contact: string;
-    user: { name: string };
+    user: { name: string; email: string };
   } | null;
   supervisor?: {
     id: string;
@@ -138,6 +138,7 @@ export default function ApplicationsPage() {
         interested: "Вы отметили заинтересованность. Контакты раскрыты!",
         confirm: "Руководство подтверждено!",
         decline: "Предложение отклонено",
+        withdraw: "Заявка отозвана",
       };
       setMessage(msgs[action] || "Готово");
       setActionId(null);
@@ -165,21 +166,21 @@ export default function ApplicationsPage() {
               className={`${styles.tab} ${tab === "my" ? styles.tabActive : ""}`}
               onClick={() => setTab("my")}
             >
-              Мои заявки ({myApps.length})
+              Исходящие мои заявки ({myApps.length})
             </button>
             {authorApps.length > 0 && (
               <button
                 className={`${styles.tab} ${tab === "author" ? styles.tabActive : ""}`}
                 onClick={() => setTab("author")}
               >
-                Заявки на мои проекты ({authorApps.length})
+                Заявки от студентов ({authorApps.length})
               </button>
             )}
             <button
               className={`${styles.tab} ${tab === "proposals" ? styles.tabActive : ""}`}
               onClick={() => setTab("proposals")}
             >
-              Предложения НР ({myProposals.length})
+              Заявки от научного руководителя ({myProposals.length})
             </button>
           </div>
 
@@ -202,7 +203,18 @@ export default function ApplicationsPage() {
                       </div>
                       <p className={styles.motivation}>{app.motivation}</p>
                       {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
-                      <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                        {app.status === "PENDING" && (
+                          <button
+                            onClick={() => { if (confirm("Отозвать заявку?")) handleAction(app.id, "withdraw"); }}
+                            className={styles.rejectButton}
+                            style={{ fontSize: 13, padding: "4px 12px" }}
+                          >
+                            Отозвать
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -227,15 +239,19 @@ export default function ApplicationsPage() {
                   <h2 className={styles.subtitle}>Рассмотренные ({resolvedAuthor.length})</h2>
                   <div className={styles.list}>
                     {resolvedAuthor.map((app) => {
-                      const name = app.type === "SUPERVISOR"
-                        ? app.supervisor?.user.name || "НР"
+                      const isSup = app.type === "SUPERVISOR";
+                      const name = isSup
+                        ? app.supervisor?.user.name || "Научный руководитель"
                         : app.student?.user.name || "Студент";
                       return (
                         <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
                           <div className={styles.cardHeader}>
                             <span className={styles.studentName}>
-                              {app.type === "SUPERVISOR" && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[НР]</span>}
-                              {name}
+                              {isSup && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[Науч. рук.]</span>}
+                              {isSup && app.supervisor?.id
+                                ? <a href={`/supervisors/${app.supervisor.id}`} className={styles.link}>{name}</a>
+                                : name
+                              }
                             </span>
                             <span className={`${styles.status} ${styles[`status_${app.status}`]}`}>
                               {STATUS_LABELS[app.status]}
@@ -273,12 +289,23 @@ export default function ApplicationsPage() {
                       </p>
                       {app.status === "INTERESTED" && app.supervisor?.contact && (
                         <p className={styles.contactRevealed}>
-                          Контакт НР: <strong>{app.supervisor.contact}</strong> — договоритесь о встрече!
+                          Контакт: <strong>{app.supervisor.contact}</strong>
                         </p>
                       )}
                       <p className={styles.motivation}>{app.motivation}</p>
                       {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
-                      <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                        {app.status === "PENDING" && (
+                          <button
+                            onClick={() => { if (confirm("Отозвать предложение?")) handleAction(app.id, "withdraw"); }}
+                            className={styles.rejectButton}
+                            style={{ fontSize: 13, padding: "4px 12px" }}
+                          >
+                            Отозвать
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -419,58 +446,53 @@ export default function ApplicationsPage() {
 
                         {/* Кнопки действий */}
                         {isPending && (
-                          <>
-                            {actionId === app.id ? (
-                              <div className={styles.actionBlock}>
-                                <textarea
-                                  value={comment}
-                                  onChange={(e) => setComment(e.target.value)}
-                                  className={styles.textarea}
-                                  placeholder="Укажите причину отказа (желательно)"
-                                  rows={2}
-                                />
-                                <div className={styles.actionButtons}>
-                                  <button onClick={() => handleAction(app.id, "interested")} className={styles.acceptButton}>
-                                    Заинтересован
-                                  </button>
+                          <div className={styles.actionBlock}>
+                            <div className={styles.actionButtons}>
+                              <button onClick={() => handleAction(app.id, "interested")} className={styles.acceptButton}>
+                                Заинтересован
+                              </button>
+                              {actionId === app.id ? (
+                                <>
+                                  <textarea
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    className={styles.textarea}
+                                    placeholder="Укажите причину отказа (желательно)"
+                                    rows={2}
+                                  />
                                   <button onClick={() => handleAction(app.id, "decline")} className={styles.rejectButton}>Отклонить</button>
                                   <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <button onClick={() => setActionId(app.id)} className={styles.reviewButton}>Рассмотреть</button>
-                            )}
-                          </>
+                                </>
+                              ) : (
+                                <button onClick={() => setActionId(app.id)} className={styles.rejectButton}>Отклонить</button>
+                              )}
+                            </div>
+                          </div>
                         )}
 
                         {isInterested && (
                           <div className={styles.actionBlock}>
                             <p className={styles.interestedHint}>Свяжитесь со студентом и встретьтесь. После встречи подтвердите или отклоните:</p>
-                            {actionId === app.id ? (
-                              <>
-                                <textarea
-                                  value={comment}
-                                  onChange={(e) => setComment(e.target.value)}
-                                  className={styles.textarea}
-                                  placeholder="Укажите причину отказа (желательно)"
-                                  rows={2}
-                                />
-                                <div className={styles.actionButtons}>
-                                  <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
-                                    Подтвердить руководство
-                                  </button>
+                            <div className={styles.actionButtons}>
+                              <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
+                                Подтвердить руководство
+                              </button>
+                              {actionId === app.id ? (
+                                <>
+                                  <textarea
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    className={styles.textarea}
+                                    placeholder="Укажите причину отказа (желательно)"
+                                    rows={2}
+                                  />
                                   <button onClick={() => handleAction(app.id, "decline")} className={styles.rejectButton}>Отказаться</button>
                                   <button onClick={() => { setActionId(null); setComment(""); }} className={styles.cancelButton}>Отмена</button>
-                                </div>
-                              </>
-                            ) : (
-                              <div className={styles.actionButtons}>
-                                <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
-                                  Подтвердить руководство
-                                </button>
+                                </>
+                              ) : (
                                 <button onClick={() => setActionId(app.id)} className={styles.rejectButton}>Отказаться</button>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -497,7 +519,18 @@ export default function ApplicationsPage() {
                       </div>
                       <p className={styles.motivation}>{app.motivation}</p>
                       {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
-                      <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
+                        {app.status === "PENDING" && (
+                          <button
+                            onClick={() => { if (confirm("Отозвать заявку?")) handleAction(app.id, "withdraw"); }}
+                            className={styles.rejectButton}
+                            style={{ fontSize: 13, padding: "4px 12px" }}
+                          >
+                            Отозвать
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -515,15 +548,18 @@ export default function ApplicationsPage() {
   function renderReviewCard(app: AuthorApplication) {
     const isSupervisorApp = app.type === "SUPERVISOR";
     const applicantName = isSupervisorApp
-      ? app.supervisor?.user.name || "НР"
+      ? app.supervisor?.user.name || "Научный руководитель"
       : app.student?.user.name || "Студент";
 
     return (
       <div key={app.id} className={styles.card}>
         <div className={styles.cardHeader}>
           <span className={styles.studentName}>
-            {isSupervisorApp && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[НР]</span>}
-            {applicantName}
+            {isSupervisorApp && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[Науч. рук.]</span>}
+            {isSupervisorApp && app.supervisor?.id
+              ? <a href={`/supervisors/${app.supervisor.id}`} className={styles.link}>{applicantName}</a>
+              : applicantName
+            }
           </span>
           <span className={styles.projectBadge}>{app.project.title}</span>
         </div>
@@ -532,6 +568,8 @@ export default function ApplicationsPage() {
         {!isSupervisorApp && app.student && (
           <div className={styles.studentInfo}>
             <span>{app.student.direction}, {app.student.course} курс</span>
+            <span className={styles.contact}>Email: {app.student.user.email}</span>
+            {app.student.contact && <span className={styles.contact}>Контакт: {app.student.contact}</span>}
             {app.student.competencies.length > 0 && (
               <div className={styles.tags}>
                 {app.student.competencies.slice(0, 5).map((c) => (
@@ -542,7 +580,6 @@ export default function ApplicationsPage() {
             {app.student.portfolioUrl && (
               <a href={app.student.portfolioUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>Портфолио</a>
             )}
-            <span className={styles.contact}>Контакт: {app.student.contact}</span>
           </div>
         )}
 

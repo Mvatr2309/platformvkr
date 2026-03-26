@@ -40,6 +40,7 @@ model User {
   supervisor    SupervisorProfile?
   student       StudentProfile?
   invitations   Invitation[]       // Приглашения, отправленные админом
+  feedbacks     Feedback[]
 }
 
 // Токены подтверждения email
@@ -79,7 +80,8 @@ model SupervisorProfile {
   proposedTopics  String?           // Предлагаемые темы (длинный текст)
   directions      String[]          // Направления студентов (мультиселект)
   projectTypes    String[]          // Типы проектов (CLASSIC_DISSERTATION, STARTUP, CORPORATE_STARTUP)
-  maxSlots        Int               @default(3) // Макс. одновременных проектов
+  maxSlots        Int               @default(3) // Макс. одновременных проектов (руководство)
+  maxProjects     Int               @default(4) // Макс. проектов под авторством НР (1–4)
   contact         String            // Контакт (e-mail, Telegram, телефон)
 
   status          ProfileStatus     @default(DRAFT)
@@ -383,4 +385,33 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+// ============================================
+// Обратная связь
+// ============================================
+
+enum FeedbackCategory {
+  BUG           // Баг
+  SUGGESTION    // Предложение
+  QUESTION      // Вопрос
+}
+
+enum FeedbackStatus {
+  NEW           // Новое
+  IN_PROGRESS   // В работе
+  RESOLVED      // Решено
+}
+
+model Feedback {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  FeedbackCategory
+  message   String
+  status    FeedbackStatus   @default(NEW)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([status])
 }

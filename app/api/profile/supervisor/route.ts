@@ -53,6 +53,7 @@ export async function PUT(request: NextRequest) {
       directions: data.directions || [],
       projectTypes: data.projectTypes || [],
       maxSlots: data.maxSlots || 3,
+      maxProjects: Math.min(4, Math.max(1, data.maxProjects || 4)),
       contact: data.contact || "",
     };
 

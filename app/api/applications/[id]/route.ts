@@ -20,8 +20,39 @@ export async function PUT(
   const { id } = await params;
   const { action, comment } = await request.json();
 
-  if (!["accept", "reject", "interested", "confirm", "decline"].includes(action)) {
+  if (!["accept", "reject", "interested", "confirm", "decline", "withdraw"].includes(action)) {
     return NextResponse.json({ error: "Недопустимое действие" }, { status: 400 });
+  }
+
+  // Отзыв заявки автором заявки
+  if (action === "withdraw") {
+    const application = await prisma.application.findUnique({
+      where: { id },
+      include: {
+        student: { select: { userId: true } },
+        supervisor: { select: { userId: true } },
+      },
+    });
+    if (!application) {
+      return NextResponse.json({ error: "Заявка не найдена" }, { status: 404 });
+    }
+
+    // Проверяем, что текущий пользователь — автор заявки
+    const isApplicant =
+      (application.type === "STUDENT" && application.student?.userId === session.user.id) ||
+      (application.type === "SUPERVISOR" && application.supervisor?.userId === session.user.id) ||
+      (application.type === "SUPERVISION_REQUEST" && application.student?.userId === session.user.id);
+
+    if (!isApplicant) {
+      return NextResponse.json({ error: "Вы не можете отозвать чужую заявку" }, { status: 403 });
+    }
+
+    if (application.status !== "PENDING") {
+      return NextResponse.json({ error: "Можно отозвать только заявку в статусе «На рассмотрении»" }, { status: 400 });
+    }
+
+    await prisma.application.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
   }
 
   const application = await prisma.application.findUnique({
@@ -92,7 +123,7 @@ export async function PUT(
       await prisma.activity.create({
         data: {
           projectId: application.project.id,
-          action: `НР ${application.supervisor!.user.name} заинтересован в руководстве`,
+          action: `Научный руководитель ${application.supervisor!.user.name} заинтересован в руководстве`,
           actorEmail: session.user.email,
         },
       });
@@ -101,7 +132,7 @@ export async function PUT(
       notify({
         userId: application.student!.userId,
         type: "APPLICATION_ACCEPTED",
-        title: "НР заинтересован в вашем проекте",
+        title: "Научный руководитель заинтересован в вашем проекте",
         message: `${application.supervisor!.user.name} заинтересован в руководстве проектом «${application.project.title}». Свяжитесь для встречи! Контакт: ${application.supervisor!.contact}`,
         link: `/applications`,
       }).catch(() => {});
@@ -151,7 +182,7 @@ export async function PUT(
       await prisma.activity.create({
         data: {
           projectId: application.project.id,
-          action: `НР ${application.supervisor!.user.name} подтвердил руководство проектом`,
+          action: `Научный руководитель ${application.supervisor!.user.name} подтвердил руководство проектом`,
           actorEmail: session.user.email,
         },
       });
@@ -159,7 +190,7 @@ export async function PUT(
       notify({
         userId: application.student!.userId,
         type: "APPLICATION_ACCEPTED",
-        title: "НР подтвердил руководство!",
+        title: "Научный руководитель подтвердил руководство!",
         message: `${application.supervisor!.user.name} подтвердил руководство проектом «${application.project.title}»!`,
         link: `/projects/${application.project.id}`,
       }).catch(() => {});
@@ -167,7 +198,7 @@ export async function PUT(
       try {
         await sendMail({
           to: application.student!.user.email,
-          subject: `НР подтвердил руководство — ${application.project.title}`,
+          subject: `Научный руководитель подтвердил руководство — ${application.project.title}`,
           html: `
             <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
               <h2 style="color: #003092;">Научный руководитель подтверждён!</h2>
@@ -202,7 +233,7 @@ export async function PUT(
       await prisma.activity.create({
         data: {
           projectId: application.project.id,
-          action: `НР ${application.supervisor!.user.name} отклонил предложение руководства`,
+          action: `Научный руководитель ${application.supervisor!.user.name} отклонил предложение руководства`,
           actorEmail: session.user.email,
         },
       });
@@ -210,7 +241,7 @@ export async function PUT(
       notify({
         userId: application.student!.userId,
         type: "APPLICATION_REJECTED",
-        title: "НР отклонил предложение",
+        title: "Научный руководитель отклонил предложение",
         message: `${application.supervisor!.user.name} отклонил предложение руководства проектом «${application.project.title}».${comment ? ` Причина: ${comment}` : ""}`,
         link: `/applications`,
       }).catch(() => {});

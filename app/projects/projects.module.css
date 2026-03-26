@@ -81,6 +81,7 @@
 
 .cardFooter { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; font-size: 13px; }
 .supervisor { color: var(--color-text-secondary); }
+.needsSupervisor { padding: 2px 8px; background: #FFF3E0; color: #E65100; font-size: 12px; font-weight: 500; }
 .dirBadge { padding: 2px 8px; background: #E8F5E9; color: #2a7d2a; font-size: 12px; }
 .roles { color: var(--color-text-muted); }
 .stats { color: var(--color-text-muted); margin-left: auto; }

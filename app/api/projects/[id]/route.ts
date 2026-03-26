@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 // GET /api/projects/[id] — детали проекта (02.06)
 export async function GET(
@@ -15,6 +16,7 @@ export async function GET(
       supervisor: {
         select: {
           id: true,
+          userId: true,
           workplace: true,
           position: true,
           academicDegree: true,
@@ -31,7 +33,7 @@ export async function GET(
               direction: true,
               course: true,
               contact: true,
-              user: { select: { name: true } },
+              user: { select: { name: true, email: true } },
             },
           },
         },
@@ -52,20 +54,14 @@ export async function GET(
   return NextResponse.json(project);
 }
 
-// Проверка прав на редактирование: админ, НР-руководитель, или участник проекта
+// Проверка прав на редактирование: только админ или автор проекта (isCreator)
 async function checkEditAccess(projectId: string, userId: string, userRole: string) {
   if (userRole === "ADMIN") return true;
 
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { supervisor: { select: { userId: true } } },
+  const creator = await prisma.projectMember.findFirst({
+    where: { projectId, isCreator: true, student: { userId } },
   });
-  if (project?.supervisor?.userId === userId) return true;
-
-  const member = await prisma.projectMember.findFirst({
-    where: { projectId, student: { userId } },
-  });
-  return !!member;
+  return !!creator;
 }
 
 // PUT /api/projects/[id] — редактирование проекта (02.04)
@@ -92,6 +88,70 @@ export async function PUT(
 
   try {
     const data = await request.json();
+
+    // Снятие НР с проекта (только админ)
+    if (data.removeSupervisor) {
+      if (session.user.role !== "ADMIN") {
+        return NextResponse.json({ error: "Только админ может снять научного руководителя" }, { status: 403 });
+      }
+      const proj = await prisma.project.findUnique({
+        where: { id },
+        select: { title: true, supervisor: { select: { userId: true, user: { select: { name: true } } } } },
+      });
+      await prisma.project.update({
+        where: { id },
+        data: { supervisorId: null, assignmentStatus: "NONE" },
+      });
+      if (proj?.supervisor) {
+        notify({
+          userId: proj.supervisor.userId,
+          type: "PROJECT_STATUS",
+          title: "Вы сняты с проекта",
+          message: `Администратор снял вас с руководства проектом «${proj.title}»`,
+          link: `/my-projects`,
+        }).catch(() => {});
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // НР покидает проект сам
+    if (data.leaveSupervisor) {
+      const proj = await prisma.project.findUnique({
+        where: { id },
+        select: {
+          title: true,
+          supervisor: { select: { userId: true, user: { select: { name: true } } } },
+          members: { where: { isCreator: true }, select: { student: { select: { userId: true } } } },
+        },
+      });
+      if (!proj?.supervisor || proj.supervisor.userId !== session.user.id) {
+        return NextResponse.json({ error: "Вы не являетесь руководителем этого проекта" }, { status: 403 });
+      }
+      await prisma.project.update({
+        where: { id },
+        data: { supervisorId: null, assignmentStatus: "NONE" },
+      });
+      await prisma.activity.create({
+        data: {
+          projectId: id,
+          action: `${proj.supervisor.user.name || "Научный руководитель"} покинул проект`,
+          actorEmail: session.user.email,
+        },
+      });
+      // Уведомление автору проекта
+      const creator = proj.members[0];
+      if (creator) {
+        notify({
+          userId: creator.student.userId,
+          type: "PROJECT_STATUS",
+          title: "Научный руководитель покинул проект",
+          message: `${proj.supervisor.user.name || "Научный руководитель"} покинул проект «${proj.title}»`,
+          link: `/projects/${id}`,
+        }).catch(() => {});
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     const status = data.submit ? "PENDING" : (data.status || project.status);
 
     const updated = await prisma.project.update({

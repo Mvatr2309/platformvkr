@@ -34,6 +34,7 @@ interface MyProject {
   id: string;
   title: string;
   projectType: string;
+  status: string;
   supervisorId: string | null;
 }
 
@@ -73,8 +74,8 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
       const res = await fetch("/api/projects?my=true");
       if (res.ok) {
         const projects = await res.json();
-        // Фильтруем: только те где нет supervisorId
-        setMyProjects(projects.filter((p: MyProject) => !p.supervisorId));
+        // Фильтруем: только открытые проекты без НР
+        setMyProjects(projects.filter((p: MyProject) => !p.supervisorId && p.status === "OPEN"));
       }
     } catch { /* ignore */ }
   }, [session]);
@@ -227,7 +228,7 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
                 <h2 className={styles.sectionTitle}>Предложить проект</h2>
                 <p className={styles.proposeHint}>
                   Выберите свой проект и напишите, почему хотите работать с этим руководителем.
-                  Если НР заинтересуется — вам раскроются контакты для встречи.
+                  Если научный руководитель заинтересуется — вам раскроются контакты для встречи.
                 </p>
 
                 <div className={styles.proposeField}>

@@ -31,6 +31,7 @@ interface Project {
   createdAt: string;
   supervisor: {
     id: string;
+    userId: string;
     workplace: string;
     position: string;
     academicDegree: string;
@@ -47,7 +48,7 @@ interface Project {
       direction: string;
       course: number;
       contact: string;
-      user: { name: string };
+      user: { name: string; email: string };
     };
   }>;
   files: Array<{ id: string; title: string; fileType: string; filename: string | null; filepath: string | null; url: string | null; uploadedAt: string }>;
@@ -231,10 +232,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const userId = session?.user?.id;
   const userRole = session?.user?.role;
   const isAdmin = userRole === "ADMIN";
-  const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.user?.name === session?.user?.name;
+  const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.userId === userId;
   const isMember = project?.members.some((m) => m.student.user.name === session?.user?.name);
   const isAuthor = project?.members.some((m) => m.isCreator && m.student.user.name === session?.user?.name);
-  const canManage = isAdmin || isSupervisorOwner || isMember;
+  const canEdit = isAdmin || isAuthor;
+  const canManage = isAdmin || isAuthor || isSupervisorOwner || isMember;
   const otherMembers = project?.members.filter((m) => !m.isCreator) || [];
   const canDelete = isAdmin || (isAuthor && otherMembers.length === 0);
 
@@ -340,21 +342,33 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         {/* 03.01 — Информационный блок */}
         <div className={styles.header}>
           <div className={styles.headerRow}>
-            <h1 className={styles.title}>{project.title}</h1>
-            {canManage && (
+            {editing ? (
+              <input
+                type="text"
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                className={styles.editInput}
+                style={{ fontSize: 24, fontWeight: 800, flex: 1 }}
+              />
+            ) : (
+              <h1 className={styles.title}>{project.title}</h1>
+            )}
+            {canEdit && (
               <div className={styles.headerActions}>
-                {project.status === "DRAFT" && (isAuthor || isSupervisorOwner || isAdmin) && (
+                {project.status === "DRAFT" && (isAuthor || isAdmin) && !editing && (
                   <button onClick={handleSubmitForModeration} className={styles.editBtn} disabled={submitting} style={{ background: "#003092", color: "#fff" }}>
                     {submitting ? "Отправка..." : "Отправить на модерацию"}
                   </button>
                 )}
-                <button
-                  onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact }); }}
-                  className={styles.editBtn}
-                >
-                  Редактировать
-                </button>
-                {canDelete && (
+                {!editing && (
+                  <button
+                    onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact }); }}
+                    className={styles.editBtn}
+                  >
+                    Редактировать
+                  </button>
+                )}
+                {canDelete && !editing && (
                   <button onClick={handleDelete} className={styles.deleteBtn} disabled={deleting}>
                     {deleting ? "Удаление..." : "Удалить"}
                   </button>
@@ -371,70 +385,83 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           </div>
         </div>
 
-        {/* Форма редактирования */}
-        {editing && (
-          <div className={styles.editBlock}>
-            <div className={styles.editField}>
-              <label className={styles.editLabel}>Название</label>
-              <input
-                type="text"
-                value={editData.title}
-                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                className={styles.editInput}
-              />
-            </div>
-            <div className={styles.editField}>
-              <label className={styles.editLabel}>Описание</label>
+        <div className={styles.grid}>
+          {/* Описание */}
+          <div className={styles.sectionFull}>
+            <h2 className={styles.sectionTitle}>Описание</h2>
+            {editing ? (
               <textarea
                 value={editData.description}
                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                 className={styles.editTextarea}
                 rows={6}
               />
-            </div>
-            <div className={styles.editField}>
-              <label className={styles.editLabel}>Контакт для связи</label>
-              <input
-                type="text"
-                value={editData.contact}
-                onChange={(e) => setEditData({ ...editData, contact: e.target.value })}
-                className={styles.editInput}
-              />
-            </div>
-            <div className={styles.editActions}>
-              <button onClick={handleSaveEdit} className={styles.confirmBtn} disabled={saving}>
-                {saving ? "Сохранение..." : "Сохранить"}
-              </button>
-              <button onClick={() => setEditing(false)} className={styles.declineBtn}>Отмена</button>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.grid}>
-          {/* Описание */}
-          <div className={styles.sectionFull}>
-            <h2 className={styles.sectionTitle}>Описание</h2>
-            <p className={styles.text}>{project.description}</p>
+            ) : (
+              <p className={styles.text}>{project.description}</p>
+            )}
           </div>
 
           {/* 03.02 — Блок руководителя */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Научный руководитель</h2>
             {project.supervisor ? (
-              <a href={`/supervisors/${project.supervisor.id}`} className={styles.supervisorCard}>
-                {project.supervisor.photoUrl ? (
-                  <img src={project.supervisor.photoUrl} alt="" className={styles.supervisorPhoto} />
-                ) : (
-                  <div className={styles.supervisorPhotoPlaceholder}>
-                    {project.supervisor.user.name.charAt(0)}
+              <div>
+                <a href={`/supervisors/${project.supervisor.id}`} className={styles.supervisorCard}>
+                  {project.supervisor.photoUrl ? (
+                    <img src={project.supervisor.photoUrl} alt="" className={styles.supervisorPhoto} />
+                  ) : (
+                    <div className={styles.supervisorPhotoPlaceholder}>
+                      {project.supervisor.user.name.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div className={styles.supervisorName}>{project.supervisor.user.name}</div>
+                    <div className={styles.supervisorMeta}>{project.supervisor.academicDegree}</div>
+                    <div className={styles.supervisorMeta}>{project.supervisor.position}, {project.supervisor.workplace}</div>
                   </div>
+                </a>
+                {isAdmin && (
+                  <button
+                    className={styles.deleteBtn}
+                    style={{ marginTop: 8, fontSize: 13 }}
+                    onClick={async () => {
+                      if (!confirm("Снять научного руководителя с проекта?")) return;
+                      const res = await fetch(`/api/projects/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ removeSupervisor: true }),
+                      });
+                      if (res.ok) fetchProject();
+                      else alert("Ошибка");
+                    }}
+                  >
+                    Снять руководителя
+                  </button>
                 )}
-                <div>
-                  <div className={styles.supervisorName}>{project.supervisor.user.name}</div>
-                  <div className={styles.supervisorMeta}>{project.supervisor.academicDegree}</div>
-                  <div className={styles.supervisorMeta}>{project.supervisor.position}, {project.supervisor.workplace}</div>
-                </div>
-              </a>
+                {isSupervisorOwner && !isAdmin && (
+                  <button
+                    className={styles.deleteBtn}
+                    style={{ marginTop: 8, fontSize: 13 }}
+                    onClick={async () => {
+                      if (!confirm("Вы уверены, что хотите покинуть этот проект?")) return;
+                      const res = await fetch(`/api/projects/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ leaveSupervisor: true }),
+                      });
+                      if (res.ok) {
+                        fetchProject();
+                        fetchActivities();
+                      } else {
+                        const data = await res.json();
+                        alert(data.error || "Ошибка");
+                      }
+                    }}
+                  >
+                    Покинуть проект
+                  </button>
+                )}
+              </div>
             ) : (
               <p className={styles.muted}>Не назначен</p>
             )}
@@ -467,7 +494,16 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           {/* Контакт */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>Контакт для связи</h2>
-            <p className={styles.text}>{project.contact}</p>
+            {editing ? (
+              <input
+                type="text"
+                value={editData.contact}
+                onChange={(e) => setEditData({ ...editData, contact: e.target.value })}
+                className={styles.editInput}
+              />
+            ) : (
+              <p className={styles.text}>{project.contact}</p>
+            )}
           </div>
 
           {/* Требуемые роли — только для стартапов */}
@@ -722,6 +758,18 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
           )}
+
+          {/* Кнопки inline-редактирования */}
+          {editing && (
+            <div className={styles.sectionFull}>
+              <div className={styles.editActions}>
+                <button onClick={handleSaveEdit} className={styles.confirmBtn} disabled={saving}>
+                  {saving ? "Сохранение..." : "Сохранить"}
+                </button>
+                <button onClick={() => setEditing(false)} className={styles.declineBtn}>Отмена</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Блок подачи заявки (05.01) — только для студентов, только открытые проекты */}
@@ -742,6 +790,21 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             ) : (
               <>
                 <h2 className={styles.sectionTitle}>Подать заявку</h2>
+                {(() => {
+                  const author = project.members.find((m) => m.isCreator);
+                  if (author) {
+                    return (
+                      <div className={styles.authorContact} style={{ marginBottom: 16, padding: "12px 16px", background: "#f5f7fa", borderLeft: "3px solid #003092" }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>Автор проекта: {author.student.user.name}</div>
+                        <div style={{ fontSize: 14, color: "#555" }}>
+                          Email: {author.student.user.email}
+                          {author.student.contact && <> · Контакт: {author.student.contact}</>}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {project.requiredRoles.length > 0 && (
                   <div className={styles.applyField}>
                     <label className={styles.applyLabel}>Желаемая роль</label>

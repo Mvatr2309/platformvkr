@@ -106,7 +106,10 @@ export default function ProjectsPage() {
                   {p.description.length > 200 ? p.description.slice(0, 200) + "..." : p.description}
                 </p>
                 <div className={styles.cardFooter}>
-                  {p.supervisor && <span className={styles.supervisor}>НР: {p.supervisor.user.name}</span>}
+                  {p.supervisor
+                    ? <span className={styles.supervisor}>Науч. рук.: {p.supervisor.user.name}</span>
+                    : <span className={styles.needsSupervisor}>Ищет научного руководителя</span>
+                  }
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
                   {p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
                     <span className={styles.roles}>{p.requiredRoles.join(", ")}</span>
@@ -116,7 +119,7 @@ export default function ProjectsPage() {
                       {p._count.members} участн. · {p._count.applications} заявок
                     </span>
                   ) : (
-                    <span className={styles.stats}>1 на 1 с НР</span>
+                    <span className={styles.stats}>1 на 1 с научным руководителем</span>
                   )}
                 </div>
               </a>
