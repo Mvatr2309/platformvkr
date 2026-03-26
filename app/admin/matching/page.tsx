@@ -18,7 +18,7 @@ interface MatchSupervisor {
   workplace: string;
   expertise: string[];
   directions: string[];
-  maxSlots: number;
+  maxProjects: number;
   user: { name: string };
   _count: { projects: number };
 }
@@ -94,7 +94,7 @@ export default function MatchingPage() {
                   <option value="">Выберите руководителя...</option>
                   {supervisors.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.user.name} — {s.expertise.slice(0, 3).join(", ")} ({s._count.projects}/{s.maxSlots})
+                      {s.user.name} — {s.expertise.slice(0, 3).join(", ")} ({s._count.projects}/{s.maxProjects})
                     </option>
                   ))}
                 </select>
@@ -116,7 +116,7 @@ export default function MatchingPage() {
             <div className={styles.tags}>
               {s.expertise.slice(0, 4).map((t) => <span key={t} className={styles.tag}>{t}</span>)}
             </div>
-            <div className={styles.slots}>{s._count.projects}/{s.maxSlots} проектов</div>
+            <div className={styles.slots}>{s._count.projects}/{s.maxProjects} проектов</div>
           </div>
         ))}
       </div>

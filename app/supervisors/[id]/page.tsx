@@ -16,7 +16,7 @@ interface SupervisorProfile {
   workPreferences: string[];
   proposedTopics: string | null;
   directions: string[];
-  maxSlots: number;
+  maxProjects: number;
   contact: string;
   recruitmentStatus: string;
   projectTypes: string[];

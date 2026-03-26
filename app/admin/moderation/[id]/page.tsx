@@ -16,7 +16,7 @@ interface Profile {
   workPreferences: string[];
   proposedTopics: string | null;
   directions: string[];
-  maxSlots: number;
+  maxProjects: number;
   contact: string;
   status: string;
   moderationComment: string | null;
@@ -109,7 +109,7 @@ export default function ModerationDetailPage({ params }: { params: Promise<{ id:
             <dt>Контакт</dt>
             <dd>{profile.contact}</dd>
             <dt>Макс. проектов</dt>
-            <dd>{profile.maxSlots}</dd>
+            <dd>{profile.maxProjects}</dd>
           </dl>
         </div>
 

@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
       // НР существует и доступен
       const supervisor = await prisma.supervisorProfile.findUnique({
         where: { id: targetSupervisorId },
-        select: { id: true, userId: true, status: true, recruitmentStatus: true, maxSlots: true, _count: { select: { projects: true } } },
+        select: { id: true, userId: true, status: true, recruitmentStatus: true, maxProjects: true, _count: { select: { projects: true } } },
       });
       if (!supervisor || supervisor.status !== "APPROVED") {
         return NextResponse.json({ error: "Научный руководитель недоступен" }, { status: 400 });
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
       if (supervisor.recruitmentStatus !== "OPEN") {
         return NextResponse.json({ error: "Научный руководитель не принимает новые проекты" }, { status: 400 });
       }
-      if (supervisor._count.projects >= supervisor.maxSlots) {
+      if (supervisor._count.projects >= supervisor.maxProjects) {
         return NextResponse.json({ error: "У научного руководителя нет свободных слотов" }, { status: 400 });
       }
 
@@ -323,7 +323,7 @@ export async function POST(request: NextRequest) {
     if (session.user.role === "SUPERVISOR") {
       const supervisor = await prisma.supervisorProfile.findUnique({
         where: { userId: session.user.id },
-        select: { id: true, status: true, maxSlots: true, _count: { select: { projects: true } } },
+        select: { id: true, status: true, maxProjects: true, _count: { select: { projects: true } } },
       });
 
       if (!supervisor || supervisor.status !== "APPROVED") {
@@ -334,9 +334,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Проверка лимита слотов
-      if (supervisor._count.projects >= supervisor.maxSlots) {
+      if (supervisor._count.projects >= supervisor.maxProjects) {
         return NextResponse.json(
-          { error: `Вы уже руководите максимальным количеством проектов (${supervisor.maxSlots})` },
+          { error: `Вы уже руководите максимальным количеством проектов (${supervisor.maxProjects})` },
           { status: 400 }
         );
       }

@@ -19,7 +19,7 @@ interface SupervisorCard {
   expertise: string[];
   directions: string[];
   projectTypes: string[];
-  maxSlots: number;
+  maxProjects: number;
   recruitmentStatus: string;
   photoUrl: string | null;
   user: { name: string };
@@ -181,7 +181,7 @@ export default function SupervisorsPage() {
                     {p.recruitmentStatus === "OPEN" ? "Набор открыт" : "Набор закрыт"}
                   </span>
                   <span className={styles.slots}>
-                    {p._count.projects}/{p.maxSlots} проектов
+                    {p._count.projects}/{p.maxProjects} проектов
                   </span>
                 </div>
               </a>

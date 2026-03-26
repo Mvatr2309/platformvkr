@@ -35,7 +35,7 @@ export async function GET() {
     },
   });
 
-  const available = supervisors.filter((s) => s._count.projects < s.maxSlots);
+  const available = supervisors.filter((s) => s._count.projects < s.maxProjects);
 
   return NextResponse.json({ projects, supervisors: available });
 }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 04.05 — проверка нагрузки
-  if (supervisor._count.projects >= supervisor.maxSlots) {
+  if (supervisor._count.projects >= supervisor.maxProjects) {
     return NextResponse.json({ error: "У руководителя заполнены все слоты" }, { status: 400 });
   }
 

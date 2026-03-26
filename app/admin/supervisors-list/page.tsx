@@ -14,7 +14,7 @@ interface Supervisor {
     academicDegree: string;
     contact: string;
     expertise: string[];
-    maxSlots: number;
+    maxProjects: number;
   } | null;
 }
 
@@ -95,7 +95,7 @@ export default function SupervisorsListPage() {
                 <td>{s.supervisor?.position || <span className={styles.muted}>—</span>}</td>
                 <td>{s.supervisor?.academicDegree || <span className={styles.muted}>—</span>}</td>
                 <td>{s.supervisor?.contact || <span className={styles.muted}>—</span>}</td>
-                <td>{s.supervisor?.maxSlots || <span className={styles.muted}>—</span>}</td>
+                <td>{s.supervisor?.maxProjects || <span className={styles.muted}>—</span>}</td>
                 <td>
                   {s.profileCompleted ? (
                     <span className={styles.statusBadge + " " + styles.status_OPEN}>Заполнен</span>
