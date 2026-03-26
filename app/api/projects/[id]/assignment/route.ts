@@ -43,6 +43,23 @@ export async function PUT(
   }
 
   if (action === "confirm") {
+    // Проверка лимита проектов НР
+    const supProfile = await prisma.supervisorProfile.findUnique({
+      where: { id: project.supervisor!.id },
+      select: { maxProjects: true },
+    });
+    const supProjectCount = await prisma.project.count({
+      where: { supervisorId: project.supervisor!.id },
+    });
+    // Текущий проект уже привязан к НР (supervisorId set), не считаем его повторно
+    const otherProjects = supProjectCount - 1;
+    if (otherProjects >= (supProfile?.maxProjects || 4)) {
+      return NextResponse.json(
+        { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 4})` },
+        { status: 400 }
+      );
+    }
+
     const updated = await prisma.project.update({
       where: { id },
       data: { assignmentStatus: "CONFIRMED" },

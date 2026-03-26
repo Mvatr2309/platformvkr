@@ -155,6 +155,21 @@ export async function PUT(
         return NextResponse.json({ error: "Сначала отметьте заинтересованность" }, { status: 400 });
       }
 
+      // Проверка лимита проектов НР
+      const supProfile = await prisma.supervisorProfile.findUnique({
+        where: { id: application.supervisor!.id },
+        select: { maxProjects: true },
+      });
+      const supProjectCount = await prisma.project.count({
+        where: { supervisorId: application.supervisor!.id },
+      });
+      if (supProjectCount >= (supProfile?.maxProjects || 4)) {
+        return NextResponse.json(
+          { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 4})` },
+          { status: 400 }
+        );
+      }
+
       await prisma.application.update({
         where: { id },
         data: { status: "CONFIRMED" },
@@ -278,6 +293,21 @@ export async function PUT(
   // ===== Заявка от НР (type: SUPERVISOR) =====
   if (application.type === "SUPERVISOR") {
     if (action === "accept") {
+      // Проверка лимита проектов НР
+      const supProfile = await prisma.supervisorProfile.findUnique({
+        where: { id: application.supervisor!.id },
+        select: { maxProjects: true },
+      });
+      const supProjectCount = await prisma.project.count({
+        where: { supervisorId: application.supervisor!.id },
+      });
+      if (supProjectCount >= (supProfile?.maxProjects || 4)) {
+        return NextResponse.json(
+          { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 4})` },
+          { status: 400 }
+        );
+      }
+
       // Назначаем НР на проект
       await prisma.application.update({
         where: { id },
