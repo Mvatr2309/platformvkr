@@ -74,8 +74,20 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
     return <>{children}</>;
   }
 
-  // Admin on non-admin pages (e.g. /projects/[id]) — redirect-style sidebar
+  // Admin on non-admin pages (e.g. /knowledge, /projects/[id]) — full admin sidebar
   if (role === "ADMIN") {
+    const adminNav = [
+      { href: "/admin/dashboard", label: "Дашборд" },
+      { href: "/admin/invitations", label: "Создание аккаунтов" },
+      { href: "/admin/students-list", label: "Список студентов" },
+      { href: "/admin/supervisors-list", label: "Научные руководители" },
+      { href: "/admin/projects", label: "Модерация проектов" },
+      { href: "/admin/projects-list", label: "Список проектов" },
+      { href: "/admin/calendar", label: "Календарь" },
+      { href: "/admin/knowledge-base", label: "База знаний", match: "/knowledge" },
+      { href: "/admin/feedback", label: "Обратная связь" },
+      { href: "/admin/dictionaries", label: "Справочники" },
+    ];
     return (
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
@@ -84,11 +96,20 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <span className={styles.badge}>Админ</span>
           </div>
           <nav className={styles.nav}>
-            <a href="/admin/dashboard" className={styles.navLink}>Дашборд</a>
-            <a href="/admin/invitations" className={styles.navLink}>Создание аккаунтов</a>
-            <a href="/admin/students-list" className={styles.navLink}>Список студентов</a>
-            <a href="/admin/supervisors-list" className={styles.navLink}>Список НР</a>
-            <a href="/admin/projects-list" className={styles.navLink}>Список проектов</a>
+            {adminNav.map((item) => {
+              const isActive = pathname === item.href
+                || pathname.startsWith(item.href + "/")
+                || (item.match && (pathname === item.match || pathname.startsWith(item.match + "/")));
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </nav>
           <div className={styles.sidebarFooter}>
             <div className={styles.userName}>{user.name}</div>

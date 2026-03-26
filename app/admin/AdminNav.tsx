@@ -22,15 +22,18 @@ export default function AdminNav() {
 
   return (
     <nav className={styles.nav}>
-      {NAV_ITEMS.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={`${styles.navLink} ${pathname === item.href ? styles.navLinkActive : ""}`}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
