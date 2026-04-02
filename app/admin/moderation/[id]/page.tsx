@@ -121,7 +121,7 @@ export default function ModerationDetailPage({ params }: { params: Promise<{ id:
             ))}
           </div>
 
-          <h3 className={styles.cardTitle} style={{ marginTop: 16 }}>Направления</h3>
+          <h3 className={styles.cardTitle} style={{ marginTop: 16 }}>Магистратуры</h3>
           <div className={styles.tags}>
             {profile.directions.map((d) => (
               <span key={d} className={styles.tag}>{d}</span>

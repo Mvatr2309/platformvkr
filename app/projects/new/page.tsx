@@ -182,7 +182,7 @@ export default function NewProjectPage() {
 
           {projectType === "CLASSIC_DISSERTATION" && (
             <div className={styles.field}>
-              <label className={styles.label}>Направление</label>
+              <label className={styles.label}>Магистратура</label>
               <select
                 value={direction}
                 onChange={(e) => setDirection(e.target.value)}

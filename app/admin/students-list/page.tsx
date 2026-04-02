@@ -82,7 +82,7 @@ export default function StudentsListPage() {
           onChange={(e) => setDirectionFilter(e.target.value)}
           className={styles.filterSelect}
         >
-          <option value="">Все направления</option>
+          <option value="">Все магистратуры</option>
           {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
         <select
@@ -104,7 +104,7 @@ export default function StudentsListPage() {
                 ФИО {sortAsc ? "↑" : "↓"}
               </th>
               <th>Email</th>
-              <th>Направление</th>
+              <th>Магистратура</th>
               <th>Курс</th>
               <th>Когорта</th>
               <th>Контакт</th>

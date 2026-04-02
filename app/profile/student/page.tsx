@@ -137,7 +137,7 @@ export default function StudentProfilePage() {
 
           <div className={styles.row}>
             <div className={styles.field}>
-              <label className={styles.label}>Направление *</label>
+              <label className={styles.label}>Магистратура *</label>
               <select
                 value={profile.direction}
                 onChange={(e) => setProfile((p) => ({ ...p, direction: e.target.value }))}

@@ -77,7 +77,7 @@ export default function ProjectsPage() {
               {PROJECT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <select value={direction} onChange={(e) => setDirection(e.target.value)} className={styles.select}>
-              <option value="">Все направления</option>
+              <option value="">Все магистратуры</option>
               {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
             {hasFilters && (

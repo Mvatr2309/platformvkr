@@ -196,7 +196,7 @@ export default function CalendarPage() {
             onChange={(e) => setFilterDirection(e.target.value)}
             className={styles.filterSelect}
           >
-            <option value="">Все направления</option>
+            <option value="">Все магистратуры</option>
             <option value="ПМИ">ПМИ</option>
             <option value="ПМФ">ПМФ</option>
             <option value="РЛ">РЛ</option>
@@ -289,7 +289,7 @@ export default function CalendarPage() {
                 </select>
               </div>
               <div className={styles.formGroup}>
-                <label>Направление (опционально)</label>
+                <label>Магистратура (опционально)</label>
                 <select
                   value={form.direction}
                   onChange={(e) => setForm({ ...form, direction: e.target.value })}

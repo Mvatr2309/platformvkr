@@ -145,7 +145,7 @@ export default function AdminCalendarPage() {
           onChange={(e) => setFilterDirection(e.target.value)}
           className={styles.filterSelect}
         >
-          <option value="">Все направления</option>
+          <option value="">Все магистратуры</option>
           <option value="ПМИ">ПМИ</option>
           <option value="ПМФ">ПМФ</option>
           <option value="РЛ">РЛ</option>
@@ -216,13 +216,13 @@ export default function AdminCalendarPage() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Направление</label>
+              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Магистратура</label>
               <select
                 value={form.direction}
                 onChange={(e) => setForm({ ...form, direction: e.target.value })}
                 style={{ padding: "8px 12px", border: "1px solid var(--color-border)", fontSize: 14, fontFamily: "inherit" }}
               >
-                <option value="">Все направления</option>
+                <option value="">Все магистратуры</option>
                 <option value="ПМИ">ПМИ</option>
                 <option value="ПМФ">ПМФ</option>
                 <option value="РЛ">РЛ</option>
@@ -269,7 +269,7 @@ export default function AdminCalendarPage() {
               <th>Дата</th>
               <th>Название</th>
               <th>Тип</th>
-              <th>Направление</th>
+              <th>Магистратура</th>
               <th>Описание</th>
               <th>Действия</th>
             </tr>

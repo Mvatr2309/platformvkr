@@ -88,7 +88,7 @@ export default function SupervisorsPage() {
               onChange={(e) => setDirection(e.target.value)}
               className={styles.select}
             >
-              <option value="">Все направления</option>
+              <option value="">Все магистратуры</option>
               {DIRECTIONS.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}

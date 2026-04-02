@@ -273,7 +273,7 @@ export default function ProfilePage() {
 
         {/* Секция 2: Экспертиза и направления */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Экспертиза и направления</h2>
+          <h2 className={styles.sectionTitle}>Экспертиза и магистратуры</h2>
 
           <div className={styles.field}>
             <label className={styles.label}>Доменная экспертиза * <span className={styles.hint}>Введите теги через Enter</span></label>
@@ -296,7 +296,7 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Направления студентов *</label>
+            <label className={styles.label}>Магистратуры студентов *</label>
             <div className={styles.checkboxGroup}>
               {DIRECTIONS.map((dir) => (
                 <label key={dir} className={styles.checkboxLabel}>

@@ -162,7 +162,7 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
           </div>
 
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Направления</h2>
+            <h2 className={styles.sectionTitle}>Магистратуры</h2>
             <div className={styles.tags}>
               {profile.directions.map((d) => (
                 <span key={d} className={styles.tag}>{d}</span>

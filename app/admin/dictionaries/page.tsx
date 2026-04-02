@@ -10,14 +10,14 @@ interface DictionaryData {
 }
 
 const DICT_LABELS: Record<string, string> = {
-  directions: "Направления обучения",
+  directions: "Магистратуры",
   roles: "Роли в команде",
   academicTitles: "Учёные звания",
   cohorts: "Потоки",
 };
 
 const DICT_HINTS: Record<string, string> = {
-  directions: "Образовательные программы (Управление IT продуктом, Разработка IT-продуктов...)",
+  directions: "Магистратуры (Управление IT продуктом, Разработка IT-продуктов...)",
   roles: "Роли в проектной команде (Разработчик, ML-инженер, Data Engineer...)",
   academicTitles: "Учёные звания для профилей НР (Нет, Доцент, Профессор...)",
   cohorts: "Потоки студентов (Поток2025, Поток2026...)",

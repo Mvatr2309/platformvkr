@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { useSession } from "next-auth/react";
+import { useDictionary } from "@/lib/useDictionary";
 import styles from "./project.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -70,6 +71,7 @@ interface ActivityItem {
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: session } = useSession();
+  const DIRECTIONS = useDictionary("directions");
   const [project, setProject] = useState<Project | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -602,20 +604,26 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
                     className={styles.editInput}
                   />
-                  <input
-                    type="text"
-                    placeholder="Направление / программа"
+                  <select
                     value={manualForm.direction}
                     onChange={(e) => setManualForm({ ...manualForm, direction: e.target.value })}
                     className={styles.editInput}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Роль в проекте"
+                  >
+                    <option value="">Магистратура</option>
+                    {DIRECTIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  <select
                     value={manualForm.role}
                     onChange={(e) => setManualForm({ ...manualForm, role: e.target.value })}
                     className={styles.editInput}
-                  />
+                  >
+                    <option value="">Роль в проекте</option>
+                    {openRoles.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                   {manualError && <p className={styles.error} style={{ margin: 0 }}>{manualError}</p>}
                   <button
                     onClick={handleAddManualMember}
@@ -667,7 +675,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                       </div>
                       <div className={styles.memberMeta}>
                         {isManual
-                          ? (m.manualDirection || "Направление не указано")
+                          ? (m.manualDirection || "Магистратура не указана")
                           : `${m.student!.direction}, ${m.student!.course} курс`}
                       </div>
                       <div className={styles.memberBadges}>

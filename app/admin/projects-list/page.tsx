@@ -95,7 +95,7 @@ export default function ProjectsListPage() {
                 Название {sortAsc ? "↑" : "↓"}
               </th>
               <th>Статус</th>
-              <th>Направление</th>
+              <th>Магистратура</th>
               <th>Руководитель</th>
               <th>Команда</th>
               <th>Заявки</th>
