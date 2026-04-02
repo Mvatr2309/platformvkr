@@ -42,6 +42,10 @@ interface Project {
     id: string;
     role: string | null;
     isCreator: boolean;
+    inSystem: boolean;
+    manualName: string | null;
+    manualEmail: string | null;
+    manualDirection: string | null;
     student: {
       id: string;
       userId: string;
@@ -49,7 +53,7 @@ interface Project {
       course: number;
       contact: string;
       user: { name: string; email: string };
-    };
+    } | null;
   }>;
   files: Array<{ id: string; title: string; fileType: string; filename: string | null; filepath: string | null; url: string | null; uploadedAt: string }>;
   events: Array<{ id: string; title: string; date: string; eventType: string }>;
@@ -87,6 +91,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [addingEvent, setAddingEvent] = useState(false);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [showAddManual, setShowAddManual] = useState(false);
+  const [manualForm, setManualForm] = useState({ name: "", email: "", direction: "", role: "" });
+  const [addingManual, setAddingManual] = useState(false);
+  const [manualError, setManualError] = useState("");
 
   const fetchProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -233,8 +241,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const userRole = session?.user?.role;
   const isAdmin = userRole === "ADMIN";
   const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.userId === userId;
-  const isMember = project?.members.some((m) => m.student.user.name === session?.user?.name);
-  const isAuthor = project?.members.some((m) => m.isCreator && m.student.user.name === session?.user?.name);
+  const isMember = project?.members.some((m) => m.student?.userId === userId);
+  const isAuthor = project?.members.some((m) => m.isCreator && m.student?.userId === userId);
   const canEdit = isAdmin || isAuthor;
   const canManage = isAdmin || isAuthor || isSupervisorOwner || isMember;
   const otherMembers = project?.members.filter((m) => !m.isCreator) || [];
@@ -306,6 +314,45 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       if (res.ok) fetchProject();
     } catch { /* ignore */ }
     finally { setAssignmentLoading(false); }
+  }
+
+  async function handleAddManualMember() {
+    if (!manualForm.name || !manualForm.email) {
+      setManualError("ФИО и e-mail обязательны");
+      return;
+    }
+    setAddingManual(true);
+    setManualError("");
+    try {
+      const res = await fetch(`/api/projects/${id}/manual-members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualForm),
+      });
+      if (res.ok) {
+        setManualForm({ name: "", email: "", direction: "", role: "" });
+        setShowAddManual(false);
+        fetchProject();
+      } else {
+        const data = await res.json();
+        setManualError(data.error || "Ошибка");
+      }
+    } catch { setManualError("Ошибка сети"); }
+    finally { setAddingManual(false); }
+  }
+
+  async function handleRemoveManualMember(memberId: string) {
+    if (!confirm("Удалить участника из команды?")) return;
+    setRemovingMemberId(memberId);
+    try {
+      await fetch(`/api/projects/${id}/manual-members`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      });
+      fetchProject();
+    } catch { /* ignore */ }
+    finally { setRemovingMemberId(null); }
   }
 
   async function handleAddEvent() {
@@ -525,27 +572,91 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
           {/* 03.03 — Блок студентов (участники) — для исследований показываем «Студент» */}
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>{isResearch ? "Студент" : `Участники команды (${project.members.length})`}</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 className={styles.sectionTitle}>{isResearch ? "Студент" : `Участники команды (${project.members.length})`}</h2>
+              {(isAuthor || isAdmin || isSupervisorOwner) && (
+                <button
+                  onClick={() => setShowAddManual(!showAddManual)}
+                  className={styles.editBtn}
+                  style={{ fontSize: 14, padding: "4px 12px" }}
+                >
+                  {showAddManual ? "Отмена" : "+ Добавить"}
+                </button>
+              )}
+            </div>
+
+            {showAddManual && (
+              <div className={styles.memberCard} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="ФИО *"
+                    value={manualForm.name}
+                    onChange={(e) => setManualForm({ ...manualForm, name: e.target.value })}
+                    className={styles.editInput}
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-mail *"
+                    value={manualForm.email}
+                    onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                    className={styles.editInput}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Направление / программа"
+                    value={manualForm.direction}
+                    onChange={(e) => setManualForm({ ...manualForm, direction: e.target.value })}
+                    className={styles.editInput}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Роль в проекте"
+                    value={manualForm.role}
+                    onChange={(e) => setManualForm({ ...manualForm, role: e.target.value })}
+                    className={styles.editInput}
+                  />
+                  {manualError && <p className={styles.error} style={{ margin: 0 }}>{manualError}</p>}
+                  <button
+                    onClick={handleAddManualMember}
+                    className={styles.editBtn}
+                    disabled={addingManual}
+                    style={{ alignSelf: "flex-start" }}
+                  >
+                    {addingManual ? "Добавление..." : "Добавить участника"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {project.members.length === 0 ? (
               <p className={styles.muted}>Пока нет участников</p>
             ) : (
               <div className={styles.memberCards}>
                 {project.members.map((m) => {
-                  const isSelf = m.student.userId === userId;
-                  // Кто может удалить этого участника:
-                  const canRemove =
-                    (isAdmin) || // Админ — всех
-                    (isAuthor && !isSelf) || // Автор — всех кроме себя
-                    (isSupervisorOwner && !m.isCreator) || // НР — всех кроме автора
-                    (isSelf && !m.isCreator); // Сам себя, если не автор
+                  const isManual = !m.student;
+                  const memberName = isManual ? m.manualName || "—" : m.student!.user.name;
+                  const isSelf = !isManual && m.student!.userId === userId;
+
+                  const canRemove = isManual
+                    ? (isAdmin || isAuthor || isSupervisorOwner)
+                    : (isAdmin) ||
+                      (isAuthor && !isSelf) ||
+                      (isSupervisorOwner && !m.isCreator) ||
+                      (isSelf && !m.isCreator);
 
                   return (
                     <div key={m.id} className={styles.memberCard}>
                       <div className={styles.memberCardHeader}>
-                        <div className={styles.memberName}>{m.student.user.name}</div>
+                        <div className={styles.memberName}>
+                          {memberName}
+                          {!m.inSystem && (
+                            <span style={{ fontSize: 11, color: "#E8375A", marginLeft: 8, fontWeight: 600 }}>Не в системе</span>
+                          )}
+                        </div>
                         {canRemove && (
                           <button
-                            onClick={() => handleRemoveMember(m.id, m.student.user.name)}
+                            onClick={() => isManual ? handleRemoveManualMember(m.id) : handleRemoveMember(m.id, memberName)}
                             className={styles.removeMemberBtn}
                             disabled={removingMemberId === m.id}
                             title={isSelf ? "Покинуть проект" : "Удалить из команды"}
@@ -555,13 +666,17 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                         )}
                       </div>
                       <div className={styles.memberMeta}>
-                        {m.student.direction}, {m.student.course} курс
+                        {isManual
+                          ? (m.manualDirection || "Направление не указано")
+                          : `${m.student!.direction}, ${m.student!.course} курс`}
                       </div>
                       <div className={styles.memberBadges}>
                         {m.isCreator && <span className={styles.creatorBadge}>Автор</span>}
                         {m.role && <span className={styles.memberRoleBadge}>{m.role}</span>}
                       </div>
-                      <div className={styles.memberContact}>{m.student.contact}</div>
+                      <div className={styles.memberContact}>
+                        {isManual ? m.manualEmail : m.student!.contact}
+                      </div>
                     </div>
                   );
                 })}
@@ -791,8 +906,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               <>
                 <h2 className={styles.sectionTitle}>Подать заявку</h2>
                 {(() => {
-                  const author = project.members.find((m) => m.isCreator);
-                  if (author) {
+                  const author = project.members.find((m) => m.isCreator && m.student);
+                  if (author && author.student) {
                     return (
                       <div className={styles.authorContact} style={{ marginBottom: 16, padding: "12px 16px", background: "#f5f7fa", borderLeft: "3px solid #003092" }}>
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>Автор проекта: {author.student.user.name}</div>

@@ -65,6 +65,7 @@ export async function PUT(
 
   // Уведомление участникам проекта (студентам-авторам)
   for (const member of project.members) {
+    if (!member.student) continue; // ручные участники без аккаунта
     notify({
       userId: member.student.userId,
       type: "PROJECT_STATUS",

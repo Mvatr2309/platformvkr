@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         recipients.push(event.project.supervisor.user.email);
       }
       for (const m of event.project.members) {
-        if (m.student.user.email) {
+        if (m.student?.user?.email) {
           recipients.push(m.student.user.email);
         }
       }

@@ -197,11 +197,17 @@ model ProjectMember {
   id          String         @id @default(cuid())
   projectId   String
   project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  studentId   String
-  student     StudentProfile @relation(fields: [studentId], references: [id])
+  studentId   String?        // null для ручных участников (без аккаунта)
+  student     StudentProfile? @relation(fields: [studentId], references: [id])
   role        String?        // Роль в проекте (Разработчик, Product-менеджер и т.д.)
   isCreator   Boolean        @default(false) // Автор (создатель) проекта
   joinedAt    DateTime       @default(now())
+
+  // Поля для ручных участников (добавленных автором без аккаунта)
+  manualName      String?   // ФИО
+  manualEmail     String?   // E-mail
+  manualDirection String?   // Направление / программа
+  inSystem        Boolean   @default(true) // true = в системе, false = не в системе
 
   @@unique([projectId, studentId])
 }

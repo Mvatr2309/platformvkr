@@ -394,7 +394,7 @@ export async function POST(request: NextRequest) {
         where: { projectId, isCreator: true },
         select: { student: { select: { userId: true } } },
       });
-      if (creator) {
+      if (creator?.student) {
         notify({
           userId: creator.student.userId,
           type: "APPLICATION_NEW",
@@ -529,7 +529,7 @@ export async function POST(request: NextRequest) {
       where: { id: projectId },
       select: { title: true },
     });
-    if (creator && creator.student.userId !== session.user.id) {
+    if (creator?.student && creator.student.userId !== session.user.id) {
       notify({
         userId: creator.student.userId,
         type: "APPLICATION_NEW",

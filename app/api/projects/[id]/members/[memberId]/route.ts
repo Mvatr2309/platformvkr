@@ -48,9 +48,9 @@ export async function DELETE(
 
   const isSupervisor = project.supervisor?.userId === session.user.id;
   const isCreator = project.members.some(
-    (m) => m.isCreator && m.student.userId === session.user.id
+    (m) => m.isCreator && m.student?.userId === session.user.id
   );
-  const isSelf = member.student.userId === session.user.id;
+  const isSelf = member.student?.userId === session.user.id;
   const targetIsCreator = member.isCreator;
 
   // Проверка прав
@@ -71,10 +71,10 @@ export async function DELETE(
   await prisma.projectMember.delete({ where: { id: memberId } });
 
   // Запись в ленту активности
-  const deletedStudent = await prisma.studentProfile.findUnique({
+  const deletedStudent = member.studentId ? await prisma.studentProfile.findUnique({
     where: { id: member.studentId },
     select: { user: { select: { name: true } } },
-  });
+  }) : null;
 
   await prisma.activity.create({
     data: {
@@ -87,7 +87,7 @@ export async function DELETE(
   });
 
   // Уведомление удалённому участнику
-  if (!isSelf) {
+  if (!isSelf && member.student) {
     notify({
       userId: member.student.userId,
       type: "PROJECT_STATUS",
@@ -100,7 +100,7 @@ export async function DELETE(
   // Уведомление автору проекта, если участник покинул проект сам
   if (isSelf) {
     const creator = project.members.find((m) => m.isCreator);
-    if (creator && creator.student.userId !== session.user.id) {
+    if (creator?.student && creator.student.userId !== session.user.id) {
       notify({
         userId: creator.student.userId,
         type: "PROJECT_STATUS",

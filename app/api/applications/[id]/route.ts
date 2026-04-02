@@ -97,7 +97,7 @@ export async function PUT(
   const isSupervisorOwner = application.project.supervisor?.userId === session.user.id;
   const isTargetSupervisor = application.supervisor?.userId === session.user.id;
   const isProjectCreator = application.project.members.some(
-    (m) => m.isCreator && m.student.userId === session.user.id
+    (m) => m.isCreator && m.student?.userId === session.user.id
   );
 
   // ===== SUPERVISION_REQUEST — предложение проекта от студента НР =====

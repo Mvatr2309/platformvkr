@@ -140,7 +140,7 @@ export async function PUT(
       });
       // Уведомление автору проекта
       const creator = proj.members[0];
-      if (creator) {
+      if (creator?.student) {
         notify({
           userId: creator.student.userId,
           type: "PROJECT_STATUS",
@@ -200,7 +200,7 @@ export async function DELETE(
 
   const isAdmin = session.user.role === "ADMIN";
   const isAuthor = project.members.some(
-    (m) => m.isCreator && m.student.userId === session.user.id
+    (m) => m.isCreator && m.student?.userId === session.user.id
   );
 
   if (!isAdmin && !isAuthor) {
