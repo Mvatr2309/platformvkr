@@ -319,8 +319,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }
 
   async function handleAddManualMember() {
-    if (!manualForm.name || !manualForm.email) {
-      setManualError("ФИО и e-mail обязательны");
+    if (!manualForm.name || !manualForm.email || !manualForm.role) {
+      setManualError("ФИО, e-mail и роль обязательны");
       return;
     }
     setAddingManual(true);
