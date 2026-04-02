@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import Providers from "./providers";
 import AppSidebar from "@/components/layout/AppSidebar";
 import FeedbackButton from "@/components/FeedbackButton";
+import OnboardingTour from "@/components/OnboardingTour";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className={montserrat.className}>
         <Providers>
           <AppSidebar>{children}</AppSidebar>
+          <OnboardingTour />
           <FeedbackButton />
         </Providers>
       </body>

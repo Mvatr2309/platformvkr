@@ -188,12 +188,22 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
 
         <div className={styles.sidebarFooter}>
           <div className={styles.userName}>{user.name}</div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className={styles.logoutBtn}
-          >
-            Выйти
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className={styles.logoutBtn}
+              style={{ flex: 1 }}
+            >
+              Выйти
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event("onboarding:restart"))}
+              className={styles.helpBtn}
+              title="Пройти обучение"
+            >
+              ?
+            </button>
+          </div>
         </div>
       </aside>
       <main className={styles.main}>{children}</main>

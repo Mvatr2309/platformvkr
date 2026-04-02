@@ -119,6 +119,28 @@
   color: #fff;
 }
 
+.helpBtn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.helpBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 .main {
   flex: 1;
   background: var(--color-bg);
