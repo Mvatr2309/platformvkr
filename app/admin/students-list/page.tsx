@@ -9,13 +9,16 @@ interface Student {
   email: string;
   name: string;
   profileCompleted: boolean;
+  inSystem: boolean;
+  memberId?: string;
   student: {
     direction: string;
-    course: number;
-    cohort: string;
-    contact: string;
+    course: number | null;
+    cohort: string | null;
+    contact: string | null;
     competencies: string[];
   } | null;
+  projectInfo?: string;
 }
 
 export default function StudentsListPage() {
@@ -27,6 +30,7 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState("");
   const [directionFilter, setDirectionFilter] = useState("");
   const [cohortFilter, setCohortFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "in_system" | "not_in_system">("");
   const [sortAsc, setSortAsc] = useState(true);
 
   const fetchStudents = useCallback(async () => {
@@ -55,13 +59,22 @@ export default function StudentsListPage() {
       list = list.filter((s) => s.student?.cohort === cohortFilter);
     }
 
+    if (statusFilter === "in_system") {
+      list = list.filter((s) => s.inSystem);
+    } else if (statusFilter === "not_in_system") {
+      list = list.filter((s) => !s.inSystem);
+    }
+
     list = [...list].sort((a, b) => {
       const cmp = (a.name || "").localeCompare(b.name || "", "ru");
       return sortAsc ? cmp : -cmp;
     });
 
     return list;
-  }, [students, search, directionFilter, cohortFilter, sortAsc]);
+  }, [students, search, directionFilter, cohortFilter, statusFilter, sortAsc]);
+
+  const inSystemCount = students.filter((s) => s.inSystem).length;
+  const notInSystemCount = students.filter((s) => !s.inSystem).length;
 
   if (loading) return <p>Загрузка...</p>;
 
@@ -93,6 +106,15 @@ export default function StudentsListPage() {
           <option value="">Все когорты</option>
           {COHORTS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as "" | "in_system" | "not_in_system")}
+          className={styles.filterSelect}
+        >
+          <option value="">Все статусы ({students.length})</option>
+          <option value="in_system">В системе ({inSystemCount})</option>
+          <option value="not_in_system">Не в системе ({notInSystemCount})</option>
+        </select>
         <span className={styles.count}>Найдено: {filtered.length}</span>
       </div>
 
@@ -108,7 +130,7 @@ export default function StudentsListPage() {
               <th>Курс</th>
               <th>Когорта</th>
               <th>Контакт</th>
-              <th>Профиль</th>
+              <th>Статус ЛК</th>
             </tr>
           </thead>
           <tbody>
@@ -124,10 +146,21 @@ export default function StudentsListPage() {
                 <td>{s.student?.cohort || <span className={styles.muted}>—</span>}</td>
                 <td>{s.student?.contact || <span className={styles.muted}>—</span>}</td>
                 <td>
-                  {s.profileCompleted ? (
-                    <span className={styles.statusBadge + " " + styles.status_OPEN}>Заполнен</span>
+                  {s.inSystem ? (
+                    s.profileCompleted ? (
+                      <span className={styles.statusBadge + " " + styles.status_OPEN}>В системе</span>
+                    ) : (
+                      <span className={styles.statusBadge + " " + styles.status_PENDING}>Профиль не заполнен</span>
+                    )
                   ) : (
-                    <span className={styles.statusBadge + " " + styles.status_PENDING}>Не заполнен</span>
+                    <span style={{
+                      display: "inline-block",
+                      padding: "2px 8px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: "#fce4ec",
+                      color: "#c62828",
+                    }}>Не в системе</span>
                   )}
                 </td>
               </tr>
