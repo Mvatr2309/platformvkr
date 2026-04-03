@@ -23,7 +23,9 @@ const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>>
     { selector: '[data-onboarding="project-status"]', hint: "Ваш проект на модерации — администратор скоро проверит" },
   ],
   supervisor: [
-    { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей и предложите свой проект" },
+    { selector: '[data-onboarding="propose-project"]', hint: "Предложите свой проект этому руководителю" },
+    { selector: '[data-onboarding="supervisor-card"]', hint: "Выберите руководителя и откройте его профиль" },
+    { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей" },
   ],
   // НР
   supervisor_moderation: [
@@ -35,6 +37,7 @@ const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>>
 };
 
 const STORAGE_DISMISSED = "onboarding_dismissed";
+const POLL_INTERVAL = 5000; // авто-обновление каждые 5 секунд
 
 export default function OnboardingTour() {
   const { data: session } = useSession();
@@ -46,7 +49,7 @@ export default function OnboardingTour() {
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [activeHint, setActiveHint] = useState<string | null>(null);
-  const [hintHidden, setHintHidden] = useState(false);
+  const [hintClosed, setHintClosed] = useState(false); // × закрывает рамку + подсказку
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const activeSelectorRef = useRef<string | null>(null);
 
@@ -64,9 +67,25 @@ export default function OnboardingTour() {
     setLoading(false);
   }, [role]);
 
+  // Fetch on mount + on navigation
   useEffect(() => {
     fetchProgress();
   }, [fetchProgress, pathname]);
+
+  // Auto-poll to update checklist without page reload
+  useEffect(() => {
+    if (!role || role === "ADMIN" || dismissed) return;
+    const interval = setInterval(fetchProgress, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [role, dismissed, fetchProgress]);
+
+  // Also listen for focus (user switched tabs and came back)
+  useEffect(() => {
+    if (!role || role === "ADMIN" || dismissed) return;
+    const handleFocus = () => fetchProgress();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [role, dismissed, fetchProgress]);
 
   useEffect(() => {
     if (!role) return;
@@ -81,6 +100,7 @@ export default function OnboardingTour() {
       localStorage.removeItem(STORAGE_DISMISSED + "_" + role);
       setDismissed(false);
       setCollapsed(false);
+      setHintClosed(false);
       fetchProgress();
     }
     window.addEventListener("onboarding:restart", handleRestart);
@@ -112,7 +132,7 @@ export default function OnboardingTour() {
   useEffect(() => {
     setHighlightRect(null);
     setActiveHint(null);
-    setHintHidden(false);
+    setHintClosed(false);
     activeSelectorRef.current = null;
 
     if (dismissed || collapsed || loading || !checkedStorage) return;
@@ -123,7 +143,6 @@ export default function OnboardingTour() {
     const highlights = STEP_HIGHLIGHTS[activeStep.id];
     if (!highlights) return;
 
-    // Small delay to let page render
     const timer = setTimeout(() => {
       for (const h of highlights) {
         const el = document.querySelector(h.selector);
@@ -141,7 +160,7 @@ export default function OnboardingTour() {
 
   // Update highlight position on scroll/resize, hide if element disappeared
   useEffect(() => {
-    if (!highlightRect) return;
+    if (!highlightRect || hintClosed) return;
 
     function updateRect() {
       const selector = activeSelectorRef.current;
@@ -150,7 +169,6 @@ export default function OnboardingTour() {
       if (el) {
         setHighlightRect(el.getBoundingClientRect());
       } else {
-        // Element gone (e.g. button replaced by form)
         setHighlightRect(null);
         setActiveHint(null);
       }
@@ -158,8 +176,6 @@ export default function OnboardingTour() {
 
     window.addEventListener("scroll", updateRect, true);
     window.addEventListener("resize", updateRect);
-
-    // Also observe DOM changes to detect element removal
     const observer = new MutationObserver(updateRect);
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -168,7 +184,13 @@ export default function OnboardingTour() {
       window.removeEventListener("resize", updateRect);
       observer.disconnect();
     };
-  }, [highlightRect]);
+  }, [highlightRect, hintClosed]);
+
+  function handleCloseHint() {
+    setHintClosed(true);
+    setHighlightRect(null);
+    setActiveHint(null);
+  }
 
   function handleDismiss() {
     if (!role) return;
@@ -193,7 +215,7 @@ export default function OnboardingTour() {
   if (collapsed) {
     return (
       <div
-        onClick={() => setCollapsed(false)}
+        onClick={() => { setCollapsed(false); setHintClosed(false); }}
         style={{
           position: "fixed",
           bottom: 24,
@@ -223,17 +245,19 @@ export default function OnboardingTour() {
     );
   }
 
+  const showHighlight = highlightRect && !hintClosed;
+
   return (
     <>
       {/* Pulsing border around target element */}
-      {highlightRect && (
+      {showHighlight && (
         <div
           style={{
             position: "fixed",
-            top: highlightRect.top - 6,
-            left: highlightRect.left - 6,
-            width: highlightRect.width + 12,
-            height: highlightRect.height + 12,
+            top: highlightRect!.top - 6,
+            left: highlightRect!.left - 6,
+            width: highlightRect!.width + 12,
+            height: highlightRect!.height + 12,
             border: "2px solid #E8375A",
             zIndex: 901,
             pointerEvents: "none",
@@ -243,12 +267,12 @@ export default function OnboardingTour() {
       )}
 
       {/* Hint tooltip near highlighted element */}
-      {activeHint && highlightRect && !hintHidden && (
+      {showHighlight && activeHint && (
         <div
           style={{
             position: "fixed",
-            top: highlightRect.bottom + 12,
-            left: highlightRect.left,
+            top: highlightRect!.bottom + 12,
+            left: highlightRect!.left,
             background: "#E8375A",
             color: "#fff",
             padding: "8px 14px",
@@ -274,7 +298,7 @@ export default function OnboardingTour() {
           }} />
           <span style={{ flex: 1 }}>{activeHint}</span>
           <button
-            onClick={() => setHintHidden(true)}
+            onClick={handleCloseHint}
             style={{
               background: "none",
               border: "none",
