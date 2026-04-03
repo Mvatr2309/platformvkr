@@ -175,7 +175,10 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
           {role === "STUDENT" && (
             <>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Моё</div>
+                <div className={styles.navGroupTitle}>
+                  Моё
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Ваш профиль, проекты и поданные заявки</span></span>
+                </div>
                 <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
                 <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
                 <a href="/applications" className={navClass("/applications")}>
@@ -186,12 +189,18 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                 </a>
               </div>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Каталог</div>
+                <div className={styles.navGroupTitle}>
+                  Каталог
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Поиск проектов для участия и научных руководителей</span></span>
+                </div>
                 <a href="/projects" className={navClass("/projects")}>Проекты</a>
                 <a href="/supervisors" className={navClass("/supervisors")} data-onboarding="find-supervisor">Руководители</a>
               </div>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Ресурсы</div>
+                <div className={styles.navGroupTitle}>
+                  Ресурсы
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Календарь дедлайнов и защит, полезные материалы</span></span>
+                </div>
                 <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
                 <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
               </div>
@@ -201,7 +210,10 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
           {role === "SUPERVISOR" && (
             <>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Моё</div>
+                <div className={styles.navGroupTitle}>
+                  Моё
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Ваш профиль, проекты и входящие заявки</span></span>
+                </div>
                 <a href="/profile" className={navClass("/profile")} data-onboarding="supervisor-profile">Профиль</a>
                 <a href="/my-projects" className={navClass("/my-projects")} data-onboarding="supervisor-projects">Мои проекты</a>
                 <a href="/applications" className={navClass("/applications")} data-onboarding="supervisor-applications">
@@ -212,11 +224,17 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                 </a>
               </div>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Каталог</div>
+                <div className={styles.navGroupTitle}>
+                  Каталог
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Проекты студентов, которым можно предложить руководство</span></span>
+                </div>
                 <a href="/projects" className={navClass("/projects")}>Проекты</a>
               </div>
               <div className={styles.navGroup}>
-                <div className={styles.navGroupTitle}>Ресурсы</div>
+                <div className={styles.navGroupTitle}>
+                  Ресурсы
+                  <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Календарь дедлайнов и защит, полезные материалы</span></span>
+                </div>
                 <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
                 <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
               </div>
