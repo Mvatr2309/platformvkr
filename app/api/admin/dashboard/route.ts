@@ -2,22 +2,30 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/admin/dashboard — сводная статистика и список проектов для дашборда
+// GET /api/admin/dashboard — сводная статистика для дашборда
 export async function GET() {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 
-  // Статистика
   const [
     totalProjects,
     projectsByStatus,
+    projectsByType,
     totalSupervisors,
     totalStudents,
     totalApplications,
     pendingModeration,
+    pendingProjects,
     upcomingDeadlines,
+    studentsByDirection,
+    studentsWithoutProject,
+    supervisorsWithoutProjects,
+    supervisorWorkload,
+    recentApplications,
+    recentProjects,
+    newFeedback,
   ] = await Promise.all([
     prisma.project.count({ where: { status: { not: "DRAFT" } } }),
     prisma.project.groupBy({
@@ -25,10 +33,18 @@ export async function GET() {
       where: { status: { not: "DRAFT" } },
       _count: true,
     }),
+    prisma.project.groupBy({
+      by: ["projectType"],
+      where: { status: { not: "DRAFT" } },
+      _count: true,
+    }),
     prisma.supervisorProfile.count({ where: { status: "APPROVED" } }),
     prisma.studentProfile.count(),
     prisma.application.count(),
+    // Профили НР на модерации
     prisma.supervisorProfile.count({ where: { status: "PENDING" } }),
+    // Проекты на модерации
+    prisma.project.count({ where: { status: "PENDING" } }),
     // Дедлайны в ближайшие 7 дней
     prisma.event.findMany({
       where: {
@@ -41,9 +57,66 @@ export async function GET() {
       include: { project: { select: { id: true, title: true } } },
       orderBy: { date: "asc" },
     }),
+    // Студенты по направлениям
+    prisma.studentProfile.groupBy({
+      by: ["direction"],
+      _count: true,
+      orderBy: { _count: { direction: "desc" } },
+    }),
+    // Студенты без проекта (не являются участниками ни одного проекта)
+    prisma.studentProfile.count({
+      where: { projects: { none: {} } },
+    }),
+    // НР без проектов
+    prisma.supervisorProfile.count({
+      where: { status: "APPROVED", projects: { none: {} } },
+    }),
+    // Нагрузка НР (топ-10 по количеству проектов)
+    prisma.supervisorProfile.findMany({
+      where: { status: "APPROVED" },
+      select: {
+        id: true,
+        maxSlots: true,
+        user: { select: { name: true } },
+        _count: { select: { projects: true } },
+      },
+      orderBy: { projects: { _count: "desc" } },
+      take: 10,
+    }),
+    // Последние заявки (5 шт)
+    prisma.application.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        createdAt: true,
+        project: { select: { id: true, title: true } },
+        student: { select: { user: { select: { name: true } } } },
+        supervisor: { select: { user: { select: { name: true } } } },
+      },
+    }),
+    // Последние проекты (5 шт)
+    prisma.project.findMany({
+      where: { status: { not: "DRAFT" } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        projectType: true,
+        status: true,
+        createdAt: true,
+        supervisor: { select: { user: { select: { name: true } } } },
+        _count: { select: { members: true } },
+      },
+    }),
+    // Новые обращения обратной связи
+    prisma.feedback.count({ where: { status: "NEW" } }),
   ]);
 
-  // Проекты без руководителя (не считая черновики)
+  // Проекты без руководителя
   const unassignedProjects = await prisma.project.count({
     where: { supervisorId: null, status: { not: "DRAFT" } },
   });
@@ -56,38 +129,39 @@ export async function GET() {
     },
   });
 
-  // Все проекты кроме черновиков
-  const projects = await prisma.project.findMany({
-    where: { status: { not: "DRAFT" } },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      projectType: true,
-      status: true,
-      direction: true,
-      createdAt: true,
-      supervisor: { select: { user: { select: { name: true } } } },
-      _count: { select: { members: true, applications: true } },
-    },
-  });
-
   const statusCounts = Object.fromEntries(
     projectsByStatus.map((s) => [s.status, s._count])
   );
+
+  const typeCounts = Object.fromEntries(
+    projectsByType.map((t) => [t.projectType, t._count])
+  );
+
+  const directionCounts = studentsByDirection.map((d) => ({
+    direction: d.direction,
+    count: d._count,
+  }));
 
   return NextResponse.json({
     stats: {
       totalProjects,
       statusCounts,
+      typeCounts,
       totalSupervisors,
       totalStudents,
       totalApplications,
       pendingModeration,
+      pendingProjects,
       unassignedProjects,
       emptyProjects,
+      studentsWithoutProject,
+      supervisorsWithoutProjects,
+      newFeedback,
     },
     upcomingDeadlines,
-    projects,
+    directionCounts,
+    supervisorWorkload,
+    recentApplications,
+    recentProjects,
   });
 }
