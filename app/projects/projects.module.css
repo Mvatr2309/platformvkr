@@ -1,6 +1,6 @@
 /* Каталог проектов — design-system.md */
 
-.wrapper { min-height: 100vh; background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
+.wrapper { background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
 .container { max-width: var(--container-max); margin: 0 auto; }
 
 .headerRow { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xl); }

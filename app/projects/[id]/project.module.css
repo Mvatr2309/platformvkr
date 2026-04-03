@@ -1,6 +1,6 @@
 /* Страница проекта — design-system.md (03.01–03.06) */
 
-.wrapper { min-height: 100vh; background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
+.wrapper { background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
 .container { max-width: var(--container-max); margin: 0 auto; }
 
 .back { display: inline-block; font-size: 14px; color: var(--color-text-muted); text-decoration: none; margin-bottom: var(--space-lg); }

@@ -1,6 +1,6 @@
 /* Заявки — design-system.md */
 
-.wrapper { min-height: 100vh; background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
+.wrapper { background: var(--color-bg); padding: var(--space-2xl) var(--space-md); }
 .container { max-width: var(--container-max); margin: 0 auto; }
 
 .title { font-size: 28px; font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xl); }

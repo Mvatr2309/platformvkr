@@ -104,5 +104,6 @@
   flex: 1;
   padding: var(--space-2xl);
   background: var(--color-bg);
+  height: 100vh;
   overflow-y: auto;
 }

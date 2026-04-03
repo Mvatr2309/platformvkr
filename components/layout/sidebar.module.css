@@ -221,7 +221,8 @@
 .main {
   flex: 1;
   background: var(--color-bg);
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 /* Mobile */
