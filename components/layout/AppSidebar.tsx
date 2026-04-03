@@ -16,7 +16,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingAppsCount, setPendingAppsCount] = useState(0);
-  const [onboardingDone, setOnboardingDone] = useState(true);
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
   const user = session?.user;
   const role = user?.role as string | undefined;
@@ -45,18 +45,27 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         }
       }
     } catch { /* ignore */ }
-    // Check onboarding progress
-    if (role && role !== "ADMIN") {
+  }, [user, role]);
+
+  // Onboarding check — only while not done, stops polling once completed
+  useEffect(() => {
+    if (!user || !role || role === "ADMIN" || onboardingDone) return;
+    async function checkOnboarding() {
       try {
-        const obRes = await fetch("/api/onboarding");
-        if (obRes.ok) {
-          const obData = await obRes.json();
-          const steps = obData.steps || [];
-          setOnboardingDone(steps.length === 0 || steps.every((s: { done: boolean }) => s.done));
+        const res = await fetch("/api/onboarding");
+        if (res.ok) {
+          const data = await res.json();
+          const steps = data.steps || [];
+          if (steps.length === 0 || steps.every((s: { done: boolean }) => s.done)) {
+            setOnboardingDone(true);
+          }
         }
       } catch { /* ignore */ }
     }
-  }, [user, role]);
+    checkOnboarding();
+    const interval = setInterval(checkOnboarding, 10000);
+    return () => clearInterval(interval);
+  }, [user, role, onboardingDone]);
 
   useEffect(() => {
     if (!user) return;
