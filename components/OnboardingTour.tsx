@@ -23,9 +23,7 @@ const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>>
     { selector: '[data-onboarding="project-status"]', hint: "Ваш проект на модерации — администратор скоро проверит" },
   ],
   supervisor: [
-    { selector: '[data-onboarding="propose-project"]', hint: "Предложите свой проект этому руководителю" },
-    { selector: '[data-onboarding="supervisor-card"]', hint: "Выберите руководителя и откройте его профиль" },
-    { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей" },
+    { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей и предложите свой проект" },
   ],
   // НР
   supervisor_moderation: [
@@ -50,6 +48,7 @@ export default function OnboardingTour() {
   const [activeHint, setActiveHint] = useState<string | null>(null);
   const [hintHidden, setHintHidden] = useState(false);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const activeSelectorRef = useRef<string | null>(null);
 
   const role = session?.user?.role as string | undefined;
 
@@ -98,13 +97,6 @@ export default function OnboardingTour() {
         70% { box-shadow: 0 0 0 12px rgba(232, 55, 90, 0); }
         100% { box-shadow: 0 0 0 0 rgba(232, 55, 90, 0); }
       }
-      [data-onboarding-active="true"] {
-        outline: 2px solid #E8375A !important;
-        outline-offset: 4px;
-        animation: onboarding-pulse 2s infinite;
-        position: relative;
-        z-index: 10;
-      }
     `;
     document.head.appendChild(style);
     styleRef.current = style;
@@ -118,13 +110,10 @@ export default function OnboardingTour() {
 
   // Find and highlight the active step's target element
   useEffect(() => {
-    // Remove previous highlight
-    document.querySelectorAll("[data-onboarding-active]").forEach((el) => {
-      el.removeAttribute("data-onboarding-active");
-    });
     setHighlightRect(null);
     setActiveHint(null);
     setHintHidden(false);
+    activeSelectorRef.current = null;
 
     if (dismissed || collapsed || loading || !checkedStorage) return;
 
@@ -139,10 +128,10 @@ export default function OnboardingTour() {
       for (const h of highlights) {
         const el = document.querySelector(h.selector);
         if (el) {
-          el.setAttribute("data-onboarding-active", "true");
+          activeSelectorRef.current = h.selector;
           setHighlightRect(el.getBoundingClientRect());
           setActiveHint(h.hint);
-          break;
+          return;
         }
       }
     }, 500);
@@ -155,7 +144,9 @@ export default function OnboardingTour() {
     if (!highlightRect) return;
 
     function updateRect() {
-      const el = document.querySelector("[data-onboarding-active]");
+      const selector = activeSelectorRef.current;
+      if (!selector) return;
+      const el = document.querySelector(selector);
       if (el) {
         setHighlightRect(el.getBoundingClientRect());
       } else {
@@ -183,10 +174,6 @@ export default function OnboardingTour() {
     if (!role) return;
     localStorage.setItem(STORAGE_DISMISSED + "_" + role, "1");
     setDismissed(true);
-    // Clean up highlights
-    document.querySelectorAll("[data-onboarding-active]").forEach((el) => {
-      el.removeAttribute("data-onboarding-active");
-    });
   }
 
   if (!role || role === "ADMIN") return null;
@@ -238,6 +225,23 @@ export default function OnboardingTour() {
 
   return (
     <>
+      {/* Pulsing border around target element */}
+      {highlightRect && (
+        <div
+          style={{
+            position: "fixed",
+            top: highlightRect.top - 6,
+            left: highlightRect.left - 6,
+            width: highlightRect.width + 12,
+            height: highlightRect.height + 12,
+            border: "2px solid #E8375A",
+            zIndex: 901,
+            pointerEvents: "none",
+            animation: "onboarding-pulse 2s infinite",
+          }}
+        />
+      )}
+
       {/* Hint tooltip near highlighted element */}
       {activeHint && highlightRect && !hintHidden && (
         <div

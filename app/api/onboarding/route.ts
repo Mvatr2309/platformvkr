@@ -45,6 +45,14 @@ export async function GET() {
     const projectApproved = hasProject && (project.project.status === "OPEN" || project.project.status === "ACTIVE" || project.project.status === "COMPLETED");
     const hasSupervisor = !!project?.project.supervisorId;
 
+    // Заявка на НР считается тоже — шаг завершён если есть НР или отправлена заявка
+    const hasSupervisorRequest = hasProject
+      ? (await prisma.application.count({
+          where: { projectId: project.projectId, type: "SUPERVISION_REQUEST" },
+        })) > 0
+      : false;
+    const supervisorStepDone = hasSupervisor || hasSupervisorRequest;
+
     return NextResponse.json({
       role: "STUDENT",
       steps: [
@@ -54,7 +62,7 @@ export async function GET() {
           ? [{ id: "team", label: "Добавьте команду", done: hasTeam, href: `/projects/${project!.projectId}` }]
           : []),
         { id: "moderation", label: "Дождитесь модерации проекта", done: projectApproved, href: hasProject ? `/projects/${project!.projectId}` : "/my-projects" },
-        { id: "supervisor", label: "Найдите научного руководителя", done: hasSupervisor, href: "/supervisors" },
+        { id: "supervisor", label: "Найдите научного руководителя", done: supervisorStepDone, href: "/supervisors" },
       ],
     });
   }
