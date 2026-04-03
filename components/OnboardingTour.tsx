@@ -150,20 +150,32 @@ export default function OnboardingTour() {
     return () => clearTimeout(timer);
   }, [steps, pathname, dismissed, collapsed, loading, checkedStorage]);
 
-  // Update highlight position on scroll/resize
+  // Update highlight position on scroll/resize, hide if element disappeared
   useEffect(() => {
     if (!highlightRect) return;
 
     function updateRect() {
       const el = document.querySelector("[data-onboarding-active]");
-      if (el) setHighlightRect(el.getBoundingClientRect());
+      if (el) {
+        setHighlightRect(el.getBoundingClientRect());
+      } else {
+        // Element gone (e.g. button replaced by form)
+        setHighlightRect(null);
+        setActiveHint(null);
+      }
     }
 
     window.addEventListener("scroll", updateRect, true);
     window.addEventListener("resize", updateRect);
+
+    // Also observe DOM changes to detect element removal
+    const observer = new MutationObserver(updateRect);
+    observer.observe(document.body, { childList: true, subtree: true });
+
     return () => {
       window.removeEventListener("scroll", updateRect, true);
       window.removeEventListener("resize", updateRect);
+      observer.disconnect();
     };
   }, [highlightRect]);
 
