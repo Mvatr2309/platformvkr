@@ -174,48 +174,65 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         <nav className={styles.nav}>
           {role === "STUDENT" && (
             <>
-              <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
-              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")}>
-                Заявки
-                {pendingAppsCount > 0 && (
-                  <span className={styles.bellBadge}>{pendingAppsCount}</span>
-                )}
-              </a>
-              <div className={styles.divider} />
-              <a href="/projects" className={navClass("/projects")}>Проекты</a>
-              <a href="/supervisors" className={navClass("/supervisors")} data-onboarding="find-supervisor">Руководители</a>
-              <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
-              <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Моё</div>
+                <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
+                <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
+                <a href="/applications" className={navClass("/applications")}>
+                  Заявки
+                  {pendingAppsCount > 0 && (
+                    <span className={styles.bellBadge}>{pendingAppsCount}</span>
+                  )}
+                </a>
+              </div>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Каталог</div>
+                <a href="/projects" className={navClass("/projects")}>Проекты</a>
+                <a href="/supervisors" className={navClass("/supervisors")} data-onboarding="find-supervisor">Руководители</a>
+              </div>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Ресурсы</div>
+                <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
+                <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
+              </div>
             </>
           )}
 
           {role === "SUPERVISOR" && (
             <>
-              <a href="/profile" className={navClass("/profile")} data-onboarding="supervisor-profile">Профиль</a>
-              <a href="/my-projects" className={navClass("/my-projects")} data-onboarding="supervisor-projects">Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")} data-onboarding="supervisor-applications">
-                Заявки
-                {pendingAppsCount > 0 && (
-                  <span className={styles.bellBadge}>{pendingAppsCount}</span>
-                )}
-              </a>
-              <div className={styles.divider} />
-              <a href="/projects" className={navClass("/projects")}>Проекты</a>
-              <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
-              <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Моё</div>
+                <a href="/profile" className={navClass("/profile")} data-onboarding="supervisor-profile">Профиль</a>
+                <a href="/my-projects" className={navClass("/my-projects")} data-onboarding="supervisor-projects">Мои проекты</a>
+                <a href="/applications" className={navClass("/applications")} data-onboarding="supervisor-applications">
+                  Заявки
+                  {pendingAppsCount > 0 && (
+                    <span className={styles.bellBadge}>{pendingAppsCount}</span>
+                  )}
+                </a>
+              </div>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Каталог</div>
+                <a href="/projects" className={navClass("/projects")}>Проекты</a>
+              </div>
+              <div className={styles.navGroup}>
+                <div className={styles.navGroupTitle}>Ресурсы</div>
+                <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
+                <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
+              </div>
             </>
           )}
 
-          <div className={styles.divider} />
-          <a href="/notifications" className={navClass("/notifications")}>
-            Уведомления
-            {unreadCount > 0 && (
-              <span className={styles.bellBadge}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </a>
+          <div className={styles.navGroup}>
+            <a href="/notifications" className={navClass("/notifications")}>
+              Уведомления
+              {unreadCount > 0 && (
+                <span className={styles.bellBadge}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </a>
+          </div>
         </nav>
 
         <div className={styles.sidebarFooter}>
