@@ -139,8 +139,8 @@ export default function SupervisorsPage() {
           </p>
         ) : (
           <div className={styles.grid}>
-            {profiles.map((p) => (
-              <a key={p.id} href={`/supervisors/${p.id}`} className={styles.card}>
+            {profiles.map((p, idx) => (
+              <a key={p.id} href={`/supervisors/${p.id}`} className={styles.card} {...(idx === 0 ? { "data-onboarding": "supervisor-card" } : {})}>
                 <div className={styles.cardTop}>
                   {p.photoUrl ? (
                     <img src={p.photoUrl} alt="" className={styles.avatar} />

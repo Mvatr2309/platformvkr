@@ -11,29 +11,26 @@ interface OnboardingStep {
   href: string;
 }
 
-// Маппинг шагов → data-onboarding атрибут + подсказка
-const STEP_HIGHLIGHTS: Record<string, { selector: string; hint: string }> = {
-  project: {
-    selector: '[data-onboarding="create-project"]',
-    hint: "Нажмите сюда, чтобы создать проект",
-  },
-  team: {
-    selector: '[data-onboarding="add-team"]',
-    hint: "Нажмите «+ Добавить», чтобы добавить участников",
-  },
-  supervisor: {
-    selector: '[data-onboarding="find-supervisor"]',
-    hint: "Перейдите в каталог руководителей",
-  },
+// Маппинг шагов → массив вариантов подсветки (первый найденный на странице — используется)
+const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>> = {
+  project: [
+    { selector: '[data-onboarding="create-project"]', hint: "Нажмите сюда, чтобы создать проект" },
+  ],
+  team: [
+    { selector: '[data-onboarding="add-team"]', hint: "Нажмите «+ Добавить», чтобы добавить участников" },
+  ],
+  supervisor: [
+    { selector: '[data-onboarding="propose-project"]', hint: "Предложите свой проект этому руководителю" },
+    { selector: '[data-onboarding="supervisor-card"]', hint: "Выберите руководителя и откройте его профиль" },
+    { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей" },
+  ],
   // НР
-  moderation: {
-    selector: '[data-onboarding="supervisor-profile"]',
-    hint: "Заполните профиль и отправьте на модерацию",
-  },
-  projects: {
-    selector: '[data-onboarding="supervisor-projects"]',
-    hint: "Здесь появятся ваши проекты",
-  },
+  moderation: [
+    { selector: '[data-onboarding="supervisor-profile"]', hint: "Заполните профиль и отправьте на модерацию" },
+  ],
+  projects: [
+    { selector: '[data-onboarding="supervisor-projects"]', hint: "Здесь появятся ваши проекты" },
+  ],
 };
 
 const STORAGE_DISMISSED = "onboarding_dismissed";
@@ -129,16 +126,19 @@ export default function OnboardingTour() {
     const activeStep = steps.find((s) => !s.done);
     if (!activeStep) return;
 
-    const highlight = STEP_HIGHLIGHTS[activeStep.id];
-    if (!highlight) return;
+    const highlights = STEP_HIGHLIGHTS[activeStep.id];
+    if (!highlights) return;
 
     // Small delay to let page render
     const timer = setTimeout(() => {
-      const el = document.querySelector(highlight.selector);
-      if (el) {
-        el.setAttribute("data-onboarding-active", "true");
-        setHighlightRect(el.getBoundingClientRect());
-        setActiveHint(highlight.hint);
+      for (const h of highlights) {
+        const el = document.querySelector(h.selector);
+        if (el) {
+          el.setAttribute("data-onboarding-active", "true");
+          setHighlightRect(el.getBoundingClientRect());
+          setActiveHint(h.hint);
+          break;
+        }
       }
     }, 500);
 

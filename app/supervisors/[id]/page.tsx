@@ -217,6 +217,7 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
               <button
                 onClick={() => setShowPropose(true)}
                 className={styles.proposeButton}
+                data-onboarding="propose-project"
                 disabled={myProjects.length === 0}
               >
                 {myProjects.length === 0
