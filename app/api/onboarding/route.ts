@@ -27,6 +27,7 @@ export async function GET() {
               select: {
                 id: true,
                 projectType: true,
+                status: true,
                 requiredRoles: true,
                 supervisorId: true,
                 members: { select: { id: true, isCreator: true } },
@@ -37,10 +38,11 @@ export async function GET() {
       : null;
 
     const hasProject = !!project;
-    const isStartup = project?.project.projectType !== "CLASSIC_DISSERTATION";
+    const isStartup = hasProject && project.project.projectType !== "CLASSIC_DISSERTATION";
     const hasTeam = isStartup
-      ? (project?.project.members.filter((m) => !m.isCreator).length ?? 0) > 0
+      ? (project.project.members.filter((m) => !m.isCreator).length ?? 0) > 0
       : true; // для исследований команда не нужна
+    const projectApproved = hasProject && (project.project.status === "OPEN" || project.project.status === "ACTIVE" || project.project.status === "COMPLETED");
     const hasSupervisor = !!project?.project.supervisorId;
 
     return NextResponse.json({
@@ -48,9 +50,10 @@ export async function GET() {
       steps: [
         { id: "profile", label: "Заполните профиль", done: true, href: "/profile/student" },
         { id: "project", label: "Создайте проект", done: hasProject, href: "/projects/new" },
-        ...(isStartup || !hasProject
-          ? [{ id: "team", label: "Добавьте команду", done: hasTeam, href: hasProject ? `/projects/${project!.projectId}` : "/projects/new" }]
+        ...(isStartup
+          ? [{ id: "team", label: "Добавьте команду", done: hasTeam, href: `/projects/${project!.projectId}` }]
           : []),
+        { id: "moderation", label: "Дождитесь модерации проекта", done: projectApproved, href: hasProject ? `/projects/${project!.projectId}` : "/my-projects" },
         { id: "supervisor", label: "Найдите научного руководителя", done: hasSupervisor, href: "/supervisors" },
       ],
     });
@@ -70,7 +73,7 @@ export async function GET() {
       role: "SUPERVISOR",
       steps: [
         { id: "profile", label: "Заполните профиль", done: true, href: "/profile" },
-        { id: "moderation", label: "Пройдите модерацию", done: profile?.status === "APPROVED", href: "/profile" },
+        { id: "supervisor_moderation", label: "Пройдите модерацию", done: profile?.status === "APPROVED", href: "/profile" },
         { id: "projects", label: "Дождитесь предложений или создайте проект", done: hasProject, href: "/my-projects" },
       ],
     });

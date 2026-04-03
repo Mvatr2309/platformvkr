@@ -19,13 +19,16 @@ const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>>
   team: [
     { selector: '[data-onboarding="add-team"]', hint: "Нажмите «+ Добавить», чтобы добавить участников" },
   ],
+  moderation: [
+    { selector: '[data-onboarding="project-status"]', hint: "Ваш проект на модерации — администратор скоро проверит" },
+  ],
   supervisor: [
     { selector: '[data-onboarding="propose-project"]', hint: "Предложите свой проект этому руководителю" },
     { selector: '[data-onboarding="supervisor-card"]', hint: "Выберите руководителя и откройте его профиль" },
     { selector: '[data-onboarding="find-supervisor"]', hint: "Перейдите в каталог руководителей" },
   ],
   // НР
-  moderation: [
+  supervisor_moderation: [
     { selector: '[data-onboarding="supervisor-profile"]', hint: "Заполните профиль и отправьте на модерацию" },
   ],
   projects: [
