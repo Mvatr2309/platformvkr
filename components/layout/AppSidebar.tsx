@@ -16,6 +16,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingAppsCount, setPendingAppsCount] = useState(0);
+  const [onboardingDone, setOnboardingDone] = useState(true);
 
   const user = session?.user;
   const role = user?.role as string | undefined;
@@ -44,6 +45,17 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         }
       }
     } catch { /* ignore */ }
+    // Check onboarding progress
+    if (role && role !== "ADMIN") {
+      try {
+        const obRes = await fetch("/api/onboarding");
+        if (obRes.ok) {
+          const obData = await obRes.json();
+          const steps = obData.steps || [];
+          setOnboardingDone(steps.length === 0 || steps.every((s: { done: boolean }) => s.done));
+        }
+      } catch { /* ignore */ }
+    }
   }, [user, role]);
 
   useEffect(() => {
@@ -196,13 +208,15 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             >
               Выйти
             </button>
-            <button
-              onClick={() => window.dispatchEvent(new Event("onboarding:restart"))}
-              className={styles.helpBtn}
-              title="Пройти обучение"
-            >
-              ?
-            </button>
+            {!onboardingDone && (
+              <button
+                onClick={() => window.dispatchEvent(new Event("onboarding:restart"))}
+                className={styles.helpBtn}
+                title="Пройти обучение"
+              >
+                ?
+              </button>
+            )}
           </div>
         </div>
       </aside>
