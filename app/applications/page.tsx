@@ -180,7 +180,7 @@ export default function ApplicationsPage() {
               className={`${styles.tab} ${tab === "proposals" ? styles.tabActive : ""}`}
               onClick={() => setTab("proposals")}
             >
-              Заявки от научного руководителя ({myProposals.length})
+              Предложения руководителям ({myProposals.length})
             </button>
           </div>
 
