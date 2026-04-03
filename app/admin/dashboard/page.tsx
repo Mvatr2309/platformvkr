@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
         <h1 className={styles.title}>Дашборд</h1>
         <div className={styles.quickActions}>
           <Link href="/admin/invitations" className={styles.quickBtn}>+ Создать аккаунт</Link>
-          <Link href="/admin/moderation" className={styles.quickBtn}>Модерация</Link>
+          <Link href="/admin/projects" className={styles.quickBtn}>Модерация</Link>
           <Link href="/admin/calendar" className={styles.quickBtn}>Календарь</Link>
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
           <h2 className={styles.sectionTitle}>Требует внимания</h2>
           <div className={styles.statsRow}>
             {stats.pendingProjects > 0 && (
-              <Link href="/admin/moderation" className={styles.statAlert}>
+              <Link href="/admin/projects" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.pendingProjects}</div>
                 <div className={styles.statLabel}>Проектов на модерации</div>
               </Link>
