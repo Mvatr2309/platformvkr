@@ -48,6 +48,7 @@ export default function OnboardingTour() {
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [activeHint, setActiveHint] = useState<string | null>(null);
+  const [hintHidden, setHintHidden] = useState(false);
   const styleRef = useRef<HTMLStyleElement | null>(null);
 
   const role = session?.user?.role as string | undefined;
@@ -123,6 +124,7 @@ export default function OnboardingTour() {
     });
     setHighlightRect(null);
     setActiveHint(null);
+    setHintHidden(false);
 
     if (dismissed || collapsed || loading || !checkedStorage) return;
 
@@ -225,7 +227,7 @@ export default function OnboardingTour() {
   return (
     <>
       {/* Hint tooltip near highlighted element */}
-      {activeHint && highlightRect && (
+      {activeHint && highlightRect && !hintHidden && (
         <div
           style={{
             position: "fixed",
@@ -239,7 +241,9 @@ export default function OnboardingTour() {
             zIndex: 901,
             maxWidth: 280,
             boxShadow: "0 4px 12px rgba(232, 55, 90, 0.3)",
-            pointerEvents: "none",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 8,
           }}
         >
           <div style={{
@@ -252,7 +256,23 @@ export default function OnboardingTour() {
             borderRight: "6px solid transparent",
             borderBottom: "6px solid #E8375A",
           }} />
-          {activeHint}
+          <span style={{ flex: 1 }}>{activeHint}</span>
+          <button
+            onClick={() => setHintHidden(true)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.7)",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 700,
+              padding: 0,
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 
