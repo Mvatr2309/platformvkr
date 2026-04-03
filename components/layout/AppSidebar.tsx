@@ -95,17 +95,25 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
 
   // Admin on non-admin pages (e.g. /knowledge, /projects/[id]) — full admin sidebar
   if (role === "ADMIN") {
-    const adminNav = [
-      { href: "/admin/dashboard", label: "Дашборд" },
-      { href: "/admin/invitations", label: "Создание аккаунтов" },
-      { href: "/admin/students-list", label: "Список студентов" },
-      { href: "/admin/supervisors-list", label: "Научные руководители" },
-      { href: "/admin/projects", label: "Модерация проектов" },
-      { href: "/admin/projects-list", label: "Список проектов" },
-      { href: "/admin/calendar", label: "Календарь" },
-      { href: "/admin/knowledge-base", label: "База знаний", match: "/knowledge" },
-      { href: "/admin/feedback", label: "Обратная связь" },
-      { href: "/admin/dictionaries", label: "Справочники" },
+    const adminGroups = [
+      { title: "", items: [{ href: "/admin/dashboard", label: "Дашборд" }] },
+      { title: "Пользователи", items: [
+        { href: "/admin/invitations", label: "Создание аккаунтов" },
+        { href: "/admin/students-list", label: "Список студентов" },
+        { href: "/admin/supervisors-list", label: "Научные руководители" },
+      ]},
+      { title: "Проекты", items: [
+        { href: "/admin/projects", label: "Модерация" },
+        { href: "/admin/projects-list", label: "Список проектов" },
+      ]},
+      { title: "Контент", items: [
+        { href: "/admin/calendar", label: "Календарь" },
+        { href: "/admin/knowledge-base", label: "База знаний", match: "/knowledge" },
+      ]},
+      { title: "Система", items: [
+        { href: "/admin/feedback", label: "Обратная связь" },
+        { href: "/admin/dictionaries", label: "Справочники" },
+      ]},
     ];
     return (
       <div className={styles.layout}>
@@ -115,20 +123,25 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <span className={styles.badge}>Админ</span>
           </div>
           <nav className={styles.nav}>
-            {adminNav.map((item) => {
-              const isActive = pathname === item.href
-                || pathname.startsWith(item.href + "/")
-                || (item.match && (pathname === item.match || pathname.startsWith(item.match + "/")));
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
+            {adminGroups.map((group, gi) => (
+              <div key={gi} className={styles.navGroup}>
+                {group.title && <div className={styles.navGroupTitle}>{group.title}</div>}
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href
+                    || pathname.startsWith(item.href + "/")
+                    || ("match" in item && item.match && (pathname === item.match || pathname.startsWith(item.match + "/")));
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
+                    >
+                      {item.label}
+                    </a>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
           <div className={styles.sidebarFooter}>
             <div className={styles.userName}>{user.name}</div>
