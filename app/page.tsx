@@ -72,7 +72,7 @@ export default function Home() {
           <p className={styles.subtitle}>
             Сопровождение выпускных
             <br />
-            квалификационных работ МФТИ
+            квалификационных работ Центра «Пуск»
           </p>
         </div>
 
