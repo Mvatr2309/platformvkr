@@ -46,7 +46,7 @@ export default function MyProjectsPage() {
       <div className={styles.container}>
         <div className={styles.headerRow}>
           <h1 className={styles.title}>Мои проекты</h1>
-          <a href="/projects/new" className={styles.createButton}>Создать проект</a>
+          <a href="/projects/new" className={styles.createButton} data-onboarding="create-project">Создать проект</a>
         </div>
 
         {loading ? (

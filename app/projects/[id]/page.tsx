@@ -581,6 +581,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   onClick={() => setShowAddManual(!showAddManual)}
                   className={styles.editBtn}
                   style={{ fontSize: 14, padding: "4px 12px" }}
+                  data-onboarding="add-team"
                 >
                   {showAddManual ? "Отмена" : "+ Добавить"}
                 </button>

@@ -152,7 +152,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
               </a>
               <div className={styles.divider} />
               <a href="/projects" className={navClass("/projects")}>Проекты</a>
-              <a href="/supervisors" className={navClass("/supervisors")}>Руководители</a>
+              <a href="/supervisors" className={navClass("/supervisors")} data-onboarding="find-supervisor">Руководители</a>
               <a href="/calendar" className={navClass("/calendar")}>Календарь</a>
               <a href="/knowledge" className={navClass("/knowledge")}>База знаний</a>
             </>
@@ -160,9 +160,9 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
 
           {role === "SUPERVISOR" && (
             <>
-              <a href="/profile" className={navClass("/profile")}>Профиль</a>
-              <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
-              <a href="/applications" className={navClass("/applications")}>
+              <a href="/profile" className={navClass("/profile")} data-onboarding="supervisor-profile">Профиль</a>
+              <a href="/my-projects" className={navClass("/my-projects")} data-onboarding="supervisor-projects">Мои проекты</a>
+              <a href="/applications" className={navClass("/applications")} data-onboarding="supervisor-applications">
                 Заявки
                 {pendingAppsCount > 0 && (
                   <span className={styles.bellBadge}>{pendingAppsCount}</span>
