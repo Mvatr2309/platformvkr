@@ -47,25 +47,23 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
     } catch { /* ignore */ }
   }, [user, role]);
 
-  // Onboarding check — only while not done, stops polling once completed
+  // Onboarding check — once on mount + on navigation, no polling
   useEffect(() => {
-    if (!user || !role || role === "ADMIN" || onboardingDone) return;
+    if (!user || !role || role === "ADMIN") return;
+    let cancelled = false;
     async function checkOnboarding() {
       try {
         const res = await fetch("/api/onboarding");
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json();
           const steps = data.steps || [];
-          if (steps.length === 0 || steps.every((s: { done: boolean }) => s.done)) {
-            setOnboardingDone(true);
-          }
+          setOnboardingDone(steps.length === 0 || steps.every((s: { done: boolean }) => s.done));
         }
       } catch { /* ignore */ }
     }
     checkOnboarding();
-    const interval = setInterval(checkOnboarding, 10000);
-    return () => clearInterval(interval);
-  }, [user, role, onboardingDone]);
+    return () => { cancelled = true; };
+  }, [user, role, pathname]);
 
   useEffect(() => {
     if (!user) return;
