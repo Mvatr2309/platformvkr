@@ -16,7 +16,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingAppsCount, setPendingAppsCount] = useState(0);
-  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
   const user = session?.user;
   const role = user?.role as string | undefined;
@@ -215,7 +215,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             >
               Выйти
             </button>
-            {!onboardingDone && (
+            {onboardingDone === false && (
               <button
                 onClick={() => window.dispatchEvent(new Event("onboarding:restart"))}
                 className={styles.helpBtn}
