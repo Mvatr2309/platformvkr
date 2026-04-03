@@ -166,21 +166,30 @@ export default function ApplicationsPage() {
               className={`${styles.tab} ${tab === "my" ? styles.tabActive : ""}`}
               onClick={() => setTab("my")}
             >
-              Исходящие мои заявки ({myApps.length})
+              <span className={styles.tabWithHint}>
+                Исходящие мои заявки ({myApps.length})
+                <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Заявки, которые вы подали на участие в чужих проектах</span></span>
+              </span>
             </button>
             {authorApps.length > 0 && (
               <button
                 className={`${styles.tab} ${tab === "author" ? styles.tabActive : ""}`}
                 onClick={() => setTab("author")}
               >
-                Заявки от студентов ({authorApps.length})
+                <span className={styles.tabWithHint}>
+                  Заявки от студентов ({authorApps.length})
+                  <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Заявки других студентов на участие в ваших проектах, где вы — автор</span></span>
+                </span>
               </button>
             )}
             <button
               className={`${styles.tab} ${tab === "proposals" ? styles.tabActive : ""}`}
               onClick={() => setTab("proposals")}
             >
-              Предложения руководителям ({myProposals.length})
+              <span className={styles.tabWithHint}>
+                Предложения руководителям ({myProposals.length})
+                <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Ваши предложения научным руководителям о руководстве вашим проектом</span></span>
+              </span>
             </button>
           </div>
 
@@ -332,19 +341,28 @@ export default function ApplicationsPage() {
               className={`${styles.tab} ${supTab === "incoming" ? styles.tabActive : ""}`}
               onClick={() => setSupTab("incoming")}
             >
-              Входящие заявки ({supervisorApps.length})
+              <span className={styles.tabWithHint}>
+                Входящие заявки ({supervisorApps.length})
+                <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Заявки студентов на участие в ваших проектах</span></span>
+              </span>
             </button>
             <button
               className={`${styles.tab} ${supTab === "proposals" ? styles.tabActive : ""}`}
               onClick={() => setSupTab("proposals")}
             >
-              Предложения от студентов ({supervisorProposals.length})
+              <span className={styles.tabWithHint}>
+                Предложения от студентов ({supervisorProposals.length})
+                <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Студенты предлагают вам стать научным руководителем их проектов</span></span>
+              </span>
             </button>
             <button
               className={`${styles.tab} ${supTab === "my" ? styles.tabActive : ""}`}
               onClick={() => setSupTab("my")}
             >
-              Мои заявки на руководство ({supervisorOwnApps.length})
+              <span className={styles.tabWithHint}>
+                Мои заявки на руководство ({supervisorOwnApps.length})
+                <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Ваши заявки на руководство проектами, которые вы нашли в каталоге</span></span>
+              </span>
             </button>
           </div>
 
