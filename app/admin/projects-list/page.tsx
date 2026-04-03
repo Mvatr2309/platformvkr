@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
 interface Project {
@@ -60,6 +61,10 @@ export default function ProjectsListPage() {
     return list;
   }, [projects, search, statusFilter, sortAsc]);
 
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, setPage]);
+
   if (loading) return <p>Загрузка...</p>;
 
   return (
@@ -103,10 +108,10 @@ export default function ProjectsListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {paged.length === 0 && (
               <tr><td colSpan={7} className={styles.empty}>Проектов не найдено</td></tr>
             )}
-            {filtered.map((p) => (
+            {paged.map((p) => (
               <tr key={p.id}>
                 <td>
                   <a href={`/projects/${p.id}`} className={styles.link}>{p.title}</a>
@@ -128,6 +133,7 @@ export default function ProjectsListPage() {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

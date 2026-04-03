@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDictionaries } from "@/lib/useDictionary";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
 interface Student {
@@ -73,6 +74,10 @@ export default function StudentsListPage() {
     return list;
   }, [students, search, directionFilter, cohortFilter, statusFilter, sortAsc]);
 
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
+
+  useEffect(() => { setPage(1); }, [search, directionFilter, cohortFilter, statusFilter, setPage]);
+
   const inSystemCount = students.filter((s) => s.inSystem).length;
   const notInSystemCount = students.filter((s) => !s.inSystem).length;
 
@@ -134,10 +139,10 @@ export default function StudentsListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {paged.length === 0 && (
               <tr><td colSpan={7} className={styles.empty}>Студентов не найдено</td></tr>
             )}
-            {filtered.map((s) => (
+            {paged.map((s) => (
               <tr key={s.id}>
                 <td>{s.name || <span className={styles.muted}>Не указано</span>}</td>
                 <td>{s.email}</td>
@@ -168,6 +173,7 @@ export default function StudentsListPage() {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

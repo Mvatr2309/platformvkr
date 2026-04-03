@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./notifications.module.css";
 
 interface Notification {
@@ -28,6 +29,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged } = usePagination(notifications, 20);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -89,8 +91,9 @@ export default function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <p className={styles.empty}>Нет уведомлений</p>
         ) : (
+          <>
           <div className={styles.list}>
-            {notifications.map((n) => (
+            {paged.map((n) => (
               <div
                 key={n.id}
                 className={`${styles.item} ${!n.read ? styles.itemUnread : ""}`}
@@ -105,6 +108,8 @@ export default function NotificationsPage() {
               </div>
             ))}
           </div>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../projects/projects.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -33,6 +34,7 @@ interface ProjectCard {
 export default function MyProjectsPage() {
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged } = usePagination(projects, 20);
 
   useEffect(() => {
     fetch("/api/projects?my=true")
@@ -54,8 +56,9 @@ export default function MyProjectsPage() {
         ) : projects.length === 0 ? (
           <p className={styles.empty}>У вас пока нет проектов.</p>
         ) : (
+          <>
           <div className={styles.list}>
-            {projects.map((p) => (
+            {paged.map((p) => (
               <a key={p.id} href={`/projects/${p.id}`} className={styles.card}>
                 <div className={styles.cardHeader}>
                   <span className={styles.cardTitle}>{p.title}</span>
@@ -76,6 +79,8 @@ export default function MyProjectsPage() {
               </a>
             ))}
           </div>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

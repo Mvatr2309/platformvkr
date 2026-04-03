@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDictionary } from "@/lib/useDictionary";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./invitations.module.css";
 
 interface Invitation {
@@ -53,6 +54,15 @@ export default function InvitationsPage() {
   const [createdAccounts, setCreatedAccounts] = useState<CreatedAccount[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "STUDENT" | "SUPERVISOR">("ALL");
+
+  const filteredInvitations = useMemo(() =>
+    invitations.filter((inv) => roleFilter === "ALL" || inv.role === roleFilter),
+    [invitations, roleFilter]
+  );
+
+  const { page, setPage, totalPages, paged } = usePagination(filteredInvitations, 20);
+
+  useEffect(() => { setPage(1); }, [roleFilter, setPage]);
 
   const fetchInvitations = useCallback(async () => {
     const res = await fetch("/api/admin/invitations");
@@ -241,16 +251,14 @@ export default function InvitationsPage() {
           </tr>
         </thead>
         <tbody>
-          {invitations.filter((inv) => roleFilter === "ALL" || inv.role === roleFilter).length === 0 && (
+          {paged.length === 0 && (
             <tr>
               <td colSpan={5} className={styles.empty}>
                 Аккаунтов пока нет
               </td>
             </tr>
           )}
-          {invitations
-            .filter((inv) => roleFilter === "ALL" || inv.role === roleFilter)
-            .map((inv) => (
+          {paged.map((inv) => (
             <tr key={inv.id}>
               <td>{inv.email}</td>
               <td>
@@ -277,6 +285,7 @@ export default function InvitationsPage() {
           ))}
         </tbody>
       </table>
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

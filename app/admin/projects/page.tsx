@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../moderation/moderation.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -49,6 +50,8 @@ export default function ProjectModerationPage() {
     finally { setActionLoading(null); }
   }
 
+  const { page, setPage, totalPages, paged } = usePagination(projects, 20);
+
   if (loading) return <p>Загрузка...</p>;
 
   return (
@@ -62,7 +65,7 @@ export default function ProjectModerationPage() {
 
       {projects.length > 0 && (
         <div className={styles.list}>
-          {projects.map((p) => (
+          {paged.map((p) => (
             <div key={p.id} className={styles.card} style={{ cursor: "default" }}>
               <div className={styles.cardHeader}>
                 <a href={`/projects/${p.id}`} className={styles.name} style={{ textDecoration: "none", color: "inherit" }}>
@@ -121,6 +124,7 @@ export default function ProjectModerationPage() {
           ))}
         </div>
       )}
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

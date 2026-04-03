@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../invitations/invitations.module.css";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -56,6 +57,10 @@ export default function FeedbackPage() {
     if (res.ok) fetchFeedback();
   }
 
+  const { page, setPage, totalPages, paged } = usePagination(items, 20);
+
+  useEffect(() => { setPage(1); }, [categoryFilter, statusFilter, setPage]);
+
   if (loading) return <div><p>Загрузка...</p></div>;
 
   return (
@@ -88,6 +93,7 @@ export default function FeedbackPage() {
       {items.length === 0 ? (
         <p className={styles.empty}>Обращений пока нет</p>
       ) : (
+        <>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -100,7 +106,7 @@ export default function FeedbackPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {paged.map((item) => (
               <tr key={item.id}>
                 <td style={{ whiteSpace: "nowrap" }}>
                   {new Date(item.createdAt).toLocaleDateString("ru-RU")}
@@ -143,6 +149,8 @@ export default function FeedbackPage() {
             ))}
           </tbody>
         </table>
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

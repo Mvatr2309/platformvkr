@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./knowledge.module.css";
 
 interface ArticleItem {
@@ -74,6 +75,12 @@ export default function KnowledgePage() {
   }
 
   const isAdmin = session?.user?.role === "ADMIN";
+
+  const { page, setPage, totalPages, paged } = usePagination(articles, 20);
+
+  useEffect(() => {
+    setPage(1);
+  }, [category, search]);
 
   return (
     <div className={styles.page}>
@@ -157,8 +164,9 @@ export default function KnowledgePage() {
           {search ? "Ничего не найдено" : "Статей пока нет"}
         </p>
       ) : (
+        <>
         <div className={styles.list}>
-          {articles.map((a) => (
+          {paged.map((a) => (
             <a key={a.id} href={`/knowledge/${a.id}`} className={styles.card}>
               <div className={styles.cardBody}>
                 <div className={styles.cardTitle}>{a.title}</div>
@@ -173,6 +181,8 @@ export default function KnowledgePage() {
             </a>
           ))}
         </div>
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

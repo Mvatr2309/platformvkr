@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./moderation.module.css";
 
 interface PendingProfile {
@@ -30,6 +31,8 @@ export default function ModerationPage() {
     fetchProfiles();
   }, [fetchProfiles]);
 
+  const { page, setPage, totalPages, paged } = usePagination(profiles, 20);
+
   if (loading) return <p>Загрузка...</p>;
 
   return (
@@ -43,7 +46,7 @@ export default function ModerationPage() {
 
       {profiles.length > 0 && (
         <div className={styles.list}>
-          {profiles.map((p) => (
+          {paged.map((p) => (
             <a key={p.id} href={`/admin/moderation/${p.id}`} className={styles.card}>
               <div className={styles.cardHeader}>
                 <span className={styles.name}>{p.user.name}</span>
@@ -71,6 +74,7 @@ export default function ModerationPage() {
           ))}
         </div>
       )}
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

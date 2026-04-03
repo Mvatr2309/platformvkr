@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useDictionary } from "@/lib/useDictionary";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./projects.module.css";
 
 const PROJECT_TYPES = [
@@ -55,6 +56,12 @@ export default function ProjectsPage() {
 
   const hasFilters = search || projectType || direction;
 
+  const { page, setPage, totalPages, paged } = usePagination(projects, 20);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, projectType, direction]);
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
@@ -95,8 +102,9 @@ export default function ProjectsPage() {
             {hasFilters ? "Ничего не найдено." : "Пока нет открытых проектов."}
           </p>
         ) : (
+          <>
           <div className={styles.list}>
-            {projects.map((p) => (
+            {paged.map((p) => (
               <a key={p.id} href={`/projects/${p.id}`} className={styles.card}>
                 <div className={styles.cardHeader}>
                   <span className={styles.cardTitle}>{p.title}</span>
@@ -125,6 +133,8 @@ export default function ProjectsPage() {
               </a>
             ))}
           </div>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>

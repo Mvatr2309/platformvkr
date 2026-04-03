@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
 interface Supervisor {
@@ -50,6 +51,10 @@ export default function SupervisorsListPage() {
     return list;
   }, [supervisors, search, sortAsc]);
 
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
+
+  useEffect(() => { setPage(1); }, [search, setPage]);
+
   if (loading) return <p>Загрузка...</p>;
 
   return (
@@ -84,10 +89,10 @@ export default function SupervisorsListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {paged.length === 0 && (
               <tr><td colSpan={8} className={styles.empty}>Научные руководители не найдены</td></tr>
             )}
-            {filtered.map((s) => (
+            {paged.map((s) => (
               <tr key={s.id}>
                 <td>{s.name || <span className={styles.muted}>Не указано</span>}</td>
                 <td>{s.email}</td>
@@ -108,6 +113,7 @@ export default function SupervisorsListPage() {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useDictionaries } from "@/lib/useDictionary";
+import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./supervisors.module.css";
 
 const PROJECT_TYPES = [
@@ -67,6 +68,12 @@ export default function SupervisorsPage() {
   }
 
   const hasFilters = search || direction || academicTitle || recruitment || projectType;
+
+  const { page, setPage, totalPages, paged } = usePagination(profiles, 12);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, direction, academicTitle, recruitment, projectType]);
 
   return (
     <div className={styles.wrapper}>
@@ -138,8 +145,9 @@ export default function SupervisorsPage() {
             {hasFilters ? "Ничего не найдено. Попробуйте изменить фильтры." : "Пока нет подтверждённых руководителей."}
           </p>
         ) : (
+          <>
           <div className={styles.grid}>
-            {profiles.map((p, idx) => (
+            {paged.map((p, idx) => (
               <a key={p.id} href={`/supervisors/${p.id}`} className={styles.card} {...(idx === 0 ? { "data-onboarding": "supervisor-card" } : {})}>
                 <div className={styles.cardTop}>
                   {p.photoUrl ? (
@@ -187,6 +195,8 @@ export default function SupervisorsPage() {
               </a>
             ))}
           </div>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </div>
     </div>
