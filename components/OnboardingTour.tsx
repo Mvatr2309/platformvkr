@@ -18,8 +18,9 @@ export default function OnboardingTour() {
   const pathname = usePathname();
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [collapsed, setCollapsed] = useState(false);
-  const [dismissed, setDismissed] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [checkedStorage, setCheckedStorage] = useState(false);
 
   const role = session?.user?.role as string | undefined;
 
@@ -40,11 +41,12 @@ export default function OnboardingTour() {
     fetchProgress();
   }, [fetchProgress, pathname]); // refetch on navigation
 
-  // Check dismissed state
+  // Check dismissed state from localStorage
   useEffect(() => {
     if (!role) return;
     const d = localStorage.getItem(STORAGE_DISMISSED + "_" + role);
     setDismissed(!!d);
+    setCheckedStorage(true);
   }, [role]);
 
   // Listen for restart event from "?" button
@@ -74,7 +76,7 @@ export default function OnboardingTour() {
   // Don't show while filling profile for the first time (no sidebar)
   if (!session?.user?.profileCompleted) return null;
 
-  if (loading || dismissed) return null;
+  if (loading || !checkedStorage || dismissed) return null;
   if (steps.length === 0) return null;
 
   const doneCount = steps.filter((s) => s.done).length;
