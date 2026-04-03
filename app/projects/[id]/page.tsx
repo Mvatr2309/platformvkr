@@ -610,7 +610,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     onChange={(e) => setManualForm({ ...manualForm, direction: e.target.value })}
                     className={styles.editInput}
                   >
-                    <option value="">Магистратура</option>
+                    <option value="">Выберите магистратуру</option>
                     {DIRECTIONS.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
@@ -620,7 +620,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     onChange={(e) => setManualForm({ ...manualForm, role: e.target.value })}
                     className={styles.editInput}
                   >
-                    <option value="">Роль в проекте</option>
+                    <option value="">Выберите роль</option>
                     {openRoles.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
@@ -676,7 +676,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                       </div>
                       <div className={styles.memberMeta}>
                         {isManual
-                          ? (m.manualDirection || "Магистратура не указана")
+                          ? (m.manualDirection || "Не указана")
                           : `${m.student!.direction}, ${m.student!.course} курс`}
                       </div>
                       <div className={styles.memberBadges}>
