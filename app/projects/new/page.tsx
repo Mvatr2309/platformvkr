@@ -288,9 +288,6 @@ export default function NewProjectPage() {
           <div className={styles.section}>
             <div className={styles.field}>
               <label className={styles.label}>Команда</label>
-              <p style={{ fontSize: 13, color: "#666", margin: "0 0 12px" }}>
-                Добавьте участников, с которыми будете работать над проектом. Участник без аккаунта на платформе получит статус «не в системе».
-              </p>
 
               {members.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
