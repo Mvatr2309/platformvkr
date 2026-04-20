@@ -18,6 +18,7 @@ export default function NewProjectPage() {
   const dicts = useDictionaries("directions", "roles");
   const DIRECTIONS = dicts.directions || [];
   const ROLES = dicts.roles || [];
+  type MemberDraft = { name: string; email: string; direction: string; role: string };
   const isStudent = session?.user?.role === "STUDENT";
   const [limitReached, setLimitReached] = useState(false);
   const [limitMessage, setLimitMessage] = useState("");
@@ -52,6 +53,27 @@ export default function NewProjectPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [members, setMembers] = useState<MemberDraft[]>([]);
+  const [memberForm, setMemberForm] = useState<MemberDraft>({ name: "", email: "", direction: "", role: "" });
+  const [memberError, setMemberError] = useState("");
+
+  function addMember() {
+    setMemberError("");
+    if (!memberForm.name || !memberForm.email || !memberForm.role) {
+      setMemberError("ФИО, e-mail и роль обязательны");
+      return;
+    }
+    if (members.some((m) => m.email.toLowerCase() === memberForm.email.toLowerCase())) {
+      setMemberError("Участник с таким e-mail уже добавлен");
+      return;
+    }
+    setMembers((prev) => [...prev, memberForm]);
+    setMemberForm({ name: "", email: "", direction: "", role: "" });
+  }
+
+  function removeMember(email: string) {
+    setMembers((prev) => prev.filter((m) => m.email !== email));
+  }
 
   function toggleRole(role: string) {
     setRequiredRoles((prev) =>
@@ -97,7 +119,7 @@ export default function NewProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, description, projectType, direction, requiredRoles, authorRole, contact, submit, files,
+          title, description, projectType, direction, requiredRoles, authorRole, contact, submit, files, members,
         }),
       });
       const data = await res.json();
@@ -261,6 +283,93 @@ export default function NewProjectPage() {
             />
           </div>
         </div>
+
+        {projectType !== "CLASSIC_DISSERTATION" && (
+          <div className={styles.section}>
+            <div className={styles.field}>
+              <label className={styles.label}>Команда</label>
+              <p style={{ fontSize: 13, color: "#666", margin: "0 0 12px" }}>
+                Добавьте участников, с которыми будете работать над проектом. Участник без аккаунта на платформе получит статус «не в системе».
+              </p>
+
+              {members.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  {members.map((m) => (
+                    <div
+                      key={m.email}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 12px",
+                        border: "1px solid #e5e5e5",
+                        marginBottom: 6,
+                        fontSize: 13,
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600 }}>{m.name}</div>
+                        <div style={{ color: "#666", fontSize: 12 }}>
+                          {m.email}
+                          {m.role && ` · ${m.role}`}
+                          {m.direction && ` · ${m.direction}`}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeMember(m.email)}
+                        style={{ background: "none", border: "none", color: "#E8375A", cursor: "pointer", fontSize: 18 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                <input
+                  type="text"
+                  value={memberForm.name}
+                  onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                  className={styles.input}
+                  placeholder="ФИО *"
+                />
+                <input
+                  type="email"
+                  value={memberForm.email}
+                  onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+                  className={styles.input}
+                  placeholder="E-mail *"
+                />
+                <select
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                  className={styles.select}
+                >
+                  <option value="">Выберите роль *</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <select
+                  value={memberForm.direction}
+                  onChange={(e) => setMemberForm({ ...memberForm, direction: e.target.value })}
+                  className={styles.select}
+                >
+                  <option value="">Выберите магистратуру</option>
+                  {DIRECTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              {memberError && <p className={styles.error} style={{ marginTop: 0 }}>{memberError}</p>}
+              <button type="button" onClick={addMember} className={styles.saveButton}>
+                + Добавить участника
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className={styles.section}>
           <div className={styles.field}>

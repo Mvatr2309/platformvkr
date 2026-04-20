@@ -178,6 +178,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Добавляем ручных участников команды (02.01)
+    if (data.members && Array.isArray(data.members)) {
+      const seenEmails = new Set<string>();
+      for (const m of data.members) {
+        if (!m?.name || !m?.email) continue;
+        const email = String(m.email).toLowerCase();
+        if (seenEmails.has(email)) continue;
+        seenEmails.add(email);
+        await prisma.projectMember.create({
+          data: {
+            projectId: project.id,
+            manualName: m.name,
+            manualEmail: m.email,
+            manualDirection: m.direction || null,
+            role: m.role || null,
+            inSystem: false,
+          },
+        });
+      }
+    }
+
     return NextResponse.json(project, { status: 201 });
   } catch {
     return NextResponse.json(
