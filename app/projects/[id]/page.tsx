@@ -89,8 +89,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [applyErr, setApplyErr] = useState("");
   const [myApplication, setMyApplication] = useState<{ status: string } | null>(null);
   const [mySupervisorApp, setMySupervisorApp] = useState<{ status: string } | null>(null);
-  const [newEvent, setNewEvent] = useState({ title: "", date: "", eventType: "DEADLINE" });
-  const [addingEvent, setAddingEvent] = useState(false);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [showAddManual, setShowAddManual] = useState(false);
@@ -355,23 +353,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       fetchProject();
     } catch { /* ignore */ }
     finally { setRemovingMemberId(null); }
-  }
-
-  async function handleAddEvent() {
-    if (!newEvent.title || !newEvent.date) return;
-    setAddingEvent(true);
-    try {
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEvent, projectId: id }),
-      });
-      if (res.ok) {
-        setNewEvent({ title: "", date: "", eventType: "DEADLINE" });
-        fetchProject();
-      }
-    } catch { /* ignore */ }
-    finally { setAddingEvent(false); }
   }
 
   if (loading) return <div className={styles.wrapper}><p>Загрузка...</p></div>;
@@ -810,57 +791,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               </div>
             )}
             {uploadError && <p className={styles.error}>{uploadError}</p>}
-          </div>
-
-          {/* 03.05 — Таймлайн / дедлайны (06.03, 06.05) */}
-          <div className={styles.sectionFull}>
-            <h2 className={styles.sectionTitle}>Дедлайны и события</h2>
-            {project.events && project.events.length > 0 ? (
-              <div className={styles.timeline}>
-                {project.events
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                  .map((ev) => (
-                    <div key={ev.id} className={styles.timelineItem}>
-                      <span className={styles.timelineDate}>
-                        {new Date(ev.date).toLocaleDateString("ru-RU")}
-                      </span>
-                      <span className={`${styles.timelineBadge} ${styles[`badge_${ev.eventType}`] || ""}`}>
-                        {ev.eventType === "DEADLINE" ? "Дедлайн" : ev.eventType === "DEFENSE" ? "Защита" : ev.eventType === "CONSULTATION" ? "Консультация" : "Другое"}
-                      </span>
-                      <span className={styles.timelineTitle}>{ev.title}</span>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <p className={styles.muted}>Нет событий</p>
-            )}
-
-            {canManage && (
-              <div className={styles.addEventRow}>
-                <input
-                  placeholder="Название"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                />
-                <input
-                  type="date"
-                  value={newEvent.date}
-                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                />
-                <select
-                  value={newEvent.eventType}
-                  onChange={(e) => setNewEvent({ ...newEvent, eventType: e.target.value })}
-                >
-                  <option value="DEADLINE">Дедлайн</option>
-                  <option value="DEFENSE">Защита</option>
-                  <option value="CONSULTATION">Консультация</option>
-                  <option value="OTHER">Другое</option>
-                </select>
-                <button onClick={handleAddEvent} className={styles.addEventBtn} disabled={addingEvent}>
-                  + Событие
-                </button>
-              </div>
-            )}
           </div>
 
           {/* 03.06 — Лента активности */}
