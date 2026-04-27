@@ -492,7 +492,7 @@ export default function ApplicationsPage() {
 
                         {isInterested && (
                           <div className={styles.actionBlock}>
-                            <p className={styles.interestedHint}>Свяжитесь со студентом и встретьтесь. После встречи подтвердите или отклоните:</p>
+                            <p className={styles.interestedHint}>Сначала свяжитесь со студентом и проведите встречу. Не подтверждайте руководство до разговора:</p>
                             <div className={styles.actionButtons}>
                               <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
                                 Подтвердить руководство
