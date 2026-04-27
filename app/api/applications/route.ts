@@ -64,7 +64,10 @@ export async function GET(request: NextRequest) {
     if (projectIds.length === 0) return NextResponse.json([]);
 
     const applications = await prisma.application.findMany({
-      where: { projectId: { in: projectIds } },
+      where: {
+        projectId: { in: projectIds },
+        type: { in: ["STUDENT", "SUPERVISOR"] },
+      },
       orderBy: { createdAt: "desc" },
       include: {
         project: { select: { id: true, title: true } },
