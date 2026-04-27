@@ -1,6 +1,4 @@
 .page {
-  max-width: var(--container-max);
-  margin: 0 auto;
   padding: var(--space-xl) var(--space-2xl);
 }
 
