@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyMany } from "@/lib/notify";
 
 // GET /api/events — список событий с фильтрами (06.02)
 export async function GET(request: NextRequest) {
@@ -94,6 +95,28 @@ export async function POST(request: NextRequest) {
       projectId: projectId || null,
     },
   });
+
+  // Уведомление о новом дедлайне — всем пользователям, кроме создателя
+  if (event.eventType === "DEADLINE") {
+    const recipients = await prisma.user.findMany({
+      where: { id: { not: session.user.id } },
+      select: { id: true },
+    });
+    const formatRu = (d: Date) => d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+    const datePart = endDt && endDt.getTime() !== startDt.getTime()
+      ? `${formatRu(startDt)} — ${formatRu(endDt)}`
+      : formatRu(startDt);
+    const dirPart = event.direction ? ` (${event.direction})` : "";
+    notifyMany(
+      recipients.map((r) => r.id),
+      {
+        type: "DEADLINE_REMINDER",
+        title: "Новый дедлайн",
+        message: `${event.title}${dirPart} — ${datePart}`,
+        link: "/calendar",
+      }
+    ).catch(() => {});
+  }
 
   return NextResponse.json(event, { status: 201 });
 }

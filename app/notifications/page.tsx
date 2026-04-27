@@ -47,6 +47,22 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Авто-пометка прочитанным при открытии страницы — пользователь увидел уведомления
+  useEffect(() => {
+    if (loading || unreadCount === 0) return;
+    const t = setTimeout(() => {
+      fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      }).then(() => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
+      }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [loading, unreadCount]);
+
   async function markAllRead() {
     await fetch("/api/notifications", {
       method: "PATCH",
