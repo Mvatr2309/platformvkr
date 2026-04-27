@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useDictionaries } from "@/lib/useDictionary";
 import styles from "./calendar.module.css";
 
 interface CalendarEvent {
@@ -42,6 +43,8 @@ function chipClass(type: string) {
 export default function CalendarPage() {
   const { data: session } = useSession();
   const today = new Date();
+  const dicts = useDictionaries("directions");
+  const DIRECTIONS = dicts.directions || [];
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-indexed
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -220,11 +223,7 @@ export default function CalendarPage() {
             className={styles.filterSelect}
           >
             <option value="">Все магистратуры</option>
-            <option value="ПМИ">ПМИ</option>
-            <option value="ПМФ">ПМФ</option>
-            <option value="РЛ">РЛ</option>
-            <option value="БМ">БМ</option>
-            <option value="КИ">КИ</option>
+            {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
 
           <a
@@ -333,11 +332,7 @@ export default function CalendarPage() {
                   onChange={(e) => setForm({ ...form, direction: e.target.value })}
                 >
                   <option value="">—</option>
-                  <option value="ПМИ">ПМИ</option>
-                  <option value="ПМФ">ПМФ</option>
-                  <option value="РЛ">РЛ</option>
-                  <option value="БМ">БМ</option>
-                  <option value="КИ">КИ</option>
+                  {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div className={styles.formGroup}>

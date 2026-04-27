@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useDictionaries } from "@/lib/useDictionary";
 import listStyles from "../list.module.css";
 import cal from "./calendar-admin.module.css";
 
@@ -41,6 +42,8 @@ function chipClass(type: string) {
 
 export default function AdminCalendarPage() {
   const today = new Date();
+  const dicts = useDictionaries("directions");
+  const DIRECTIONS = dicts.directions || [];
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [filterType, setFilterType] = useState("");
   const [filterDirection, setFilterDirection] = useState("");
@@ -274,11 +277,7 @@ export default function AdminCalendarPage() {
           className={listStyles.filterSelect}
         >
           <option value="">Все магистратуры</option>
-          <option value="ПМИ">ПМИ</option>
-          <option value="ПМФ">ПМФ</option>
-          <option value="РЛ">РЛ</option>
-          <option value="БМ">БМ</option>
-          <option value="КИ">КИ</option>
+          {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
 
         <span className={listStyles.count}>Всего: {events.length}</span>
@@ -365,11 +364,7 @@ export default function AdminCalendarPage() {
                 style={{ padding: "8px 12px", border: "1px solid var(--color-border)", fontSize: 14, fontFamily: "inherit" }}
               >
                 <option value="">Все магистратуры</option>
-                <option value="ПМИ">ПМИ</option>
-                <option value="ПМФ">ПМФ</option>
-                <option value="РЛ">РЛ</option>
-                <option value="БМ">БМ</option>
-                <option value="КИ">КИ</option>
+                {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>
