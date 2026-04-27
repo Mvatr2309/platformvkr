@@ -433,7 +433,7 @@ export default function AdminCalendarPage() {
                         onClick={() => setSelectedEvent(ev)}
                         title={span.isMultiDay ? `${ev.title} (${ev.date.split("T")[0]} — ${(ev.endDate || ev.date).split("T")[0]})` : ev.title}
                       >
-                        {span.isMultiDay && !span.isFirst ? "" : ev.title}
+                        {ev.title}
                       </div>
                     );
                   })}
