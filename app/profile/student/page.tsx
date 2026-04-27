@@ -39,6 +39,14 @@ export default function StudentProfilePage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  function inputCls(field: string) {
+    return `${styles.input} ${fieldErrors[field] ? styles.inputError : ""}`;
+  }
+  function selectCls(field: string) {
+    return `${styles.select} ${fieldErrors[field] ? styles.inputError : ""}`;
+  }
 
   const loadProfile = useCallback(async () => {
     const res = await fetch("/api/profile/student");
@@ -73,12 +81,15 @@ export default function StudentProfilePage() {
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      setError("Укажите ФИО");
-      return;
-    }
-    if (!profile.direction || !profile.contact) {
-      setError("Заполните обязательные поля");
+    const errs: Record<string, boolean> = {};
+    if (!name.trim()) errs.name = true;
+    if (!profile.direction) errs.direction = true;
+    if (!profile.contact.trim()) errs.contact = true;
+
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setError("Заполните выделенные поля");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setSaving(true); setError(""); setMessage("");
@@ -119,8 +130,8 @@ export default function StudentProfilePage() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={styles.input}
+              onChange={(e) => { setName(e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, name: false })); }}
+              className={inputCls("name")}
               placeholder="Иванов Иван Иванович"
             />
           </div>
@@ -140,8 +151,8 @@ export default function StudentProfilePage() {
               <label className={styles.label}>Магистратура *</label>
               <select
                 value={profile.direction}
-                onChange={(e) => setProfile((p) => ({ ...p, direction: e.target.value }))}
-                className={styles.select}
+                onChange={(e) => { setProfile((p) => ({ ...p, direction: e.target.value })); if (e.target.value) setFieldErrors((p) => ({ ...p, direction: false })); }}
+                className={selectCls("direction")}
               >
                 <option value="">Выберите...</option>
                 {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -164,8 +175,8 @@ export default function StudentProfilePage() {
             <input
               type="text"
               value={profile.contact}
-              onChange={(e) => setProfile((p) => ({ ...p, contact: e.target.value }))}
-              className={styles.input}
+              onChange={(e) => { setProfile((p) => ({ ...p, contact: e.target.value })); if (e.target.value) setFieldErrors((p) => ({ ...p, contact: false })); }}
+              className={inputCls("contact")}
               placeholder="E-mail, Telegram или телефон"
             />
           </div>

@@ -61,6 +61,17 @@ export default function ProfilePage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  function inputCls(field: string) {
+    return `${styles.input} ${fieldErrors[field] ? styles.inputError : ""}`;
+  }
+  function selectCls(field: string) {
+    return `${styles.select} ${fieldErrors[field] ? styles.inputError : ""}`;
+  }
+  function fieldCls(field: string) {
+    return fieldErrors[field] ? `${styles.field} ${styles.fieldErrorContainer}` : styles.field;
+  }
 
   const loadProfile = useCallback(async () => {
     const res = await fetch("/api/profile/supervisor");
@@ -132,22 +143,26 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      setError("Укажите ФИО");
-      return;
-    }
-    if (!agreement) {
-      setError("Необходимо принять соглашение на обработку данных");
-      return;
-    }
-    if (!profile.resumeUrl || !profile.resumeUrl.trim()) {
-      setError("Прикрепите резюме (файл или ссылку)");
-      return;
-    }
-    if (!profile.workplace || !profile.position || !profile.academicTitle ||
-        !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
-        profile.directions.length === 0 || profile.projectTypes.length === 0) {
-      setError("Заполните все обязательные поля");
+    const errs: Record<string, boolean> = {};
+    if (!name.trim()) errs.name = true;
+    if (!profile.resumeUrl || !profile.resumeUrl.trim()) errs.resumeUrl = true;
+    if (!profile.workplace.trim()) errs.workplace = true;
+    if (!profile.position.trim()) errs.position = true;
+    if (!profile.academicTitle) errs.academicTitle = true;
+    if (!profile.academicDegree.trim()) errs.academicDegree = true;
+    if (!profile.contact.trim()) errs.contact = true;
+    if (profile.expertise.length === 0) errs.expertise = true;
+    if (profile.directions.length === 0) errs.directions = true;
+    if (profile.projectTypes.length === 0) errs.projectTypes = true;
+    if (!agreement) errs.agreement = true;
+
+    setFieldErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      setError("Заполните выделенные поля");
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
       return;
     }
 
@@ -219,8 +234,8 @@ export default function ProfilePage() {
               <input
                 type="url"
                 value={profile.resumeUrl?.startsWith("http") ? profile.resumeUrl : ""}
-                onChange={(e) => updateField("resumeUrl", e.target.value || null)}
-                className={styles.input}
+                onChange={(e) => { updateField("resumeUrl", e.target.value || null); if (e.target.value) setFieldErrors((p) => ({ ...p, resumeUrl: false })); }}
+                className={inputCls("resumeUrl")}
                 placeholder="https://hh.ru/resume/... или https://linkedin.com/in/..."
               />
             </div>
@@ -250,8 +265,8 @@ export default function ProfilePage() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={styles.input}
+              onChange={(e) => { setName(e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, name: false })); }}
+              className={inputCls("name")}
               placeholder="Иванов Иван Иванович"
             />
           </div>
@@ -272,8 +287,8 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={profile.workplace}
-                onChange={(e) => updateField("workplace", e.target.value)}
-                className={styles.input}
+                onChange={(e) => { updateField("workplace", e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, workplace: false })); }}
+                className={inputCls("workplace")}
                 placeholder="МФТИ, Сколтех, ВШЭ..."
                 />
             </div>
@@ -282,8 +297,8 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={profile.position}
-                onChange={(e) => updateField("position", e.target.value)}
-                className={styles.input}
+                onChange={(e) => { updateField("position", e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, position: false })); }}
+                className={inputCls("position")}
                 placeholder="Профессор кафедры..."
                 />
             </div>
@@ -294,8 +309,8 @@ export default function ProfilePage() {
               <label className={styles.label}>Учёное звание *</label>
               <select
                 value={profile.academicTitle}
-                onChange={(e) => updateField("academicTitle", e.target.value)}
-                className={styles.select}
+                onChange={(e) => { updateField("academicTitle", e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, academicTitle: false })); }}
+                className={selectCls("academicTitle")}
                 >
                 <option value="">Выберите...</option>
                 {ACADEMIC_TITLES.map((t) => (
@@ -308,8 +323,8 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={profile.academicDegree}
-                onChange={(e) => updateField("academicDegree", e.target.value)}
-                className={styles.input}
+                onChange={(e) => { updateField("academicDegree", e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, academicDegree: false })); }}
+                className={inputCls("academicDegree")}
                 placeholder="к.т.н., д.ф.-м.н...."
                 />
             </div>
@@ -320,8 +335,8 @@ export default function ProfilePage() {
             <input
               type="text"
               value={profile.contact}
-              onChange={(e) => updateField("contact", e.target.value)}
-              className={styles.input}
+              onChange={(e) => { updateField("contact", e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, contact: false })); }}
+              className={inputCls("contact")}
               placeholder="E-mail, Telegram или телефон"
             />
           </div>
@@ -331,7 +346,7 @@ export default function ProfilePage() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Экспертиза и магистратуры</h2>
 
-          <div className={styles.field}>
+          <div className={fieldCls("expertise")}>
             <label className={styles.label}>Доменная экспертиза * <span className={styles.hint}>Введите теги через Enter</span></label>
             <div className={styles.tagsInput}>
               {profile.expertise.map((tag) => (
@@ -344,14 +359,14 @@ export default function ProfilePage() {
                 type="text"
                 value={expertiseInput}
                 onChange={(e) => setExpertiseInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addExpertise(); } }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addExpertise(); setFieldErrors((p) => ({ ...p, expertise: false })); } }}
                 className={styles.tagInput}
                 placeholder={profile.expertise.length === 0 ? "ML, NLP, Computer Vision..." : ""}
               />
             </div>
           </div>
 
-          <div className={styles.field}>
+          <div className={fieldCls("directions")}>
             <label className={styles.label}>Магистратуры студентов *</label>
             <div className={styles.checkboxGroup}>
               {DIRECTIONS.map((dir) => (
@@ -359,7 +374,7 @@ export default function ProfilePage() {
                   <input
                     type="checkbox"
                     checked={profile.directions.includes(dir)}
-                    onChange={() => toggleArrayItem("directions", dir)}
+                    onChange={() => { toggleArrayItem("directions", dir); setFieldErrors((p) => ({ ...p, directions: false })); }}
                         />
                   <span>{dir}</span>
                 </label>
@@ -367,7 +382,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className={styles.field}>
+          <div className={fieldCls("projectTypes")}>
             <label className={styles.label}>С какими типами проектов работаете *</label>
             <div className={styles.checkboxGroup}>
               {PROJECT_TYPES.map((pt) => (
@@ -375,7 +390,7 @@ export default function ProfilePage() {
                   <input
                     type="checkbox"
                     checked={profile.projectTypes.includes(pt.value)}
-                    onChange={() => toggleArrayItem("projectTypes", pt.value)}
+                    onChange={() => { toggleArrayItem("projectTypes", pt.value); setFieldErrors((p) => ({ ...p, projectTypes: false })); }}
                   />
                   <span>{pt.label}</span>
                 </label>
@@ -439,12 +454,12 @@ export default function ProfilePage() {
         </section>
 
         {/* Соглашение (01.06) */}
-        <section className={styles.section}>
+        <section className={`${styles.section} ${fieldErrors.agreement ? styles.fieldErrorContainer : ""}`}>
           <label className={styles.agreementLabel}>
             <input
               type="checkbox"
               checked={agreement}
-              onChange={(e) => setAgreement(e.target.checked)}
+              onChange={(e) => { setAgreement(e.target.checked); if (e.target.checked) setFieldErrors((p) => ({ ...p, agreement: false })); }}
             />
             <span>
               Я даю согласие на обработку персональных данных в соответствии с политикой конфиденциальности *

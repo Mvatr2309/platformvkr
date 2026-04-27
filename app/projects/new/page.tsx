@@ -56,6 +56,11 @@ export default function NewProjectPage() {
   const [members, setMembers] = useState<MemberDraft[]>([]);
   const [memberForm, setMemberForm] = useState<MemberDraft>({ name: "", email: "", direction: "", role: "" });
   const [memberError, setMemberError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  const inputCls = (f: string) => `${styles.input} ${fieldErrors[f] ? styles.inputError : ""}`;
+  const textareaCls = (f: string) => `${styles.textarea} ${fieldErrors[f] ? styles.textareaError : ""}`;
+  const typeGroupCls = (f: string) => `${styles.typeGroup} ${fieldErrors[f] ? styles.fieldErrorContainer : ""}`;
 
   function addMember() {
     setMemberError("");
@@ -106,8 +111,16 @@ export default function NewProjectPage() {
   }
 
   async function handleSave(submit: boolean) {
-    if (!title || !description || !projectType || !contact) {
-      setError("Заполните обязательные поля");
+    const errs: Record<string, boolean> = {};
+    if (!title.trim()) errs.title = true;
+    if (!description.trim()) errs.description = true;
+    if (!projectType) errs.projectType = true;
+    if (!contact.trim()) errs.contact = true;
+
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setError("Заполните выделенные поля");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setSaving(true);
@@ -180,21 +193,21 @@ export default function NewProjectPage() {
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={styles.input}
+              onChange={(e) => { setTitle(e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, title: false })); }}
+              className={inputCls("title")}
               placeholder="Например: Roomschool — детская онлайн-школа с ИИ"
             />
           </div>
 
           <div className={styles.field}>
             <label className={styles.label}>Тип работы *</label>
-            <div className={styles.typeGroup}>
+            <div className={typeGroupCls("projectType")}>
               {PROJECT_TYPES.map((t) => (
                 <button
                   key={t.value}
                   type="button"
                   className={`${styles.typeOption} ${projectType === t.value ? styles.typeActive : ""}`}
-                  onClick={() => setProjectType(t.value)}
+                  onClick={() => { setProjectType(t.value); setFieldErrors((p) => ({ ...p, projectType: false })); }}
                 >
                   {t.label}
                 </button>
@@ -222,8 +235,8 @@ export default function NewProjectPage() {
             <label className={styles.label}>Описание *</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={styles.textarea}
+              onChange={(e) => { setDescription(e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, description: false })); }}
+              className={textareaCls("description")}
               rows={6}
               placeholder={
                 projectType === "CLASSIC_DISSERTATION"
@@ -277,8 +290,8 @@ export default function NewProjectPage() {
             <input
               type="text"
               value={contact}
-              onChange={(e) => setContact(e.target.value)}
-              className={styles.input}
+              onChange={(e) => { setContact(e.target.value); if (e.target.value) setFieldErrors((p) => ({ ...p, contact: false })); }}
+              className={inputCls("contact")}
               placeholder="E-mail, Telegram или телефон"
             />
           </div>

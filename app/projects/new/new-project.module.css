@@ -58,6 +58,19 @@
 .input:focus { border-bottom-color: var(--color-deep-blue); }
 .input::placeholder { color: var(--color-text-muted); }
 
+.inputError {
+  border-bottom-color: var(--color-coral) !important;
+}
+
+.textareaError {
+  border-color: var(--color-coral) !important;
+}
+
+.fieldErrorContainer {
+  outline: 1px solid var(--color-coral);
+  outline-offset: 4px;
+}
+
 .select {
   border: 1px solid var(--color-border);
   padding: 8px 12px;
