@@ -41,6 +41,14 @@ export async function GET(request: NextRequest) {
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${uid}`);
     lines.push(`DTSTART:${dateStr}`);
+    if (event.endDate) {
+      const endDt = new Date(event.endDate);
+      // RFC 5545: DTEND для VEVENT в DATE-TIME формате — момент окончания (эксклюзивно)
+      // Прибавляем 1 день, чтобы конечный день включался в событие
+      endDt.setUTCDate(endDt.getUTCDate() + 1);
+      const endStr = endDt.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      lines.push(`DTEND:${endStr}`);
+    }
     lines.push(`SUMMARY:${escapeIcal(event.title)}`);
     if (event.description) {
       lines.push(`DESCRIPTION:${escapeIcal(event.description)}`);

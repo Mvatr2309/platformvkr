@@ -9,6 +9,7 @@ interface CalendarEvent {
   title: string;
   description: string | null;
   date: string;
+  endDate: string | null;
   eventType: string;
   direction: string | null;
   projectId: string | null;
@@ -57,6 +58,7 @@ export default function AdminCalendarPage() {
     title: "",
     description: "",
     date: "",
+    endDate: "",
     eventType: "DEADLINE",
     direction: "",
   });
@@ -99,7 +101,7 @@ export default function AdminCalendarPage() {
 
   function openCreate() {
     setEditingId(null);
-    setForm({ title: "", description: "", date: "", eventType: "DEADLINE", direction: "" });
+    setForm({ title: "", description: "", date: "", endDate: "", eventType: "DEADLINE", direction: "" });
     setError("");
     setShowForm(true);
   }
@@ -110,6 +112,7 @@ export default function AdminCalendarPage() {
       title: ev.title,
       description: ev.description || "",
       date: ev.date.split("T")[0],
+      endDate: ev.endDate ? ev.endDate.split("T")[0] : "",
       eventType: ev.eventType,
       direction: ev.direction || "",
     });
@@ -127,7 +130,16 @@ export default function AdminCalendarPage() {
       return;
     }
 
-    const payload = { ...form, direction: form.direction || null };
+    if (form.endDate && form.endDate < form.date) {
+      setError("Дата окончания не может быть раньше даты начала");
+      return;
+    }
+
+    const payload = {
+      ...form,
+      direction: form.direction || null,
+      endDate: form.endDate || null,
+    };
     const url = editingId ? `/api/events/${editingId}` : "/api/events";
     const method = editingId ? "PATCH" : "POST";
 
@@ -185,8 +197,23 @@ export default function AdminCalendarPage() {
   }
 
   function eventsForDate(date: Date) {
-    const dateStr = date.toISOString().split("T")[0];
-    return events.filter((e) => e.date.split("T")[0] === dateStr);
+    const dateStr = date.toLocaleDateString("sv-SE"); // YYYY-MM-DD в локальной зоне
+    return events.filter((e) => {
+      const start = e.date.split("T")[0];
+      const end = (e.endDate || e.date).split("T")[0];
+      return dateStr >= start && dateStr <= end;
+    });
+  }
+
+  function eventSpanInfo(ev: CalendarEvent, date: Date) {
+    const dateStr = date.toLocaleDateString("sv-SE");
+    const start = ev.date.split("T")[0];
+    const end = (ev.endDate || ev.date).split("T")[0];
+    return {
+      isFirst: dateStr === start,
+      isLast: dateStr === end,
+      isMultiDay: start !== end,
+    };
   }
 
   function isToday(date: Date) {
@@ -294,15 +321,29 @@ export default function AdminCalendarPage() {
                 required
               />
             </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Дата *</label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                style={{ padding: "8px 12px", border: "1px solid var(--color-border)", fontSize: 14, fontFamily: "inherit" }}
-                required
-              />
+            <div style={{ display: "flex", gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Дата начала *</label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  style={{ padding: "8px 12px", border: "1px solid var(--color-border)", fontSize: 14, fontFamily: "inherit" }}
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                  Дата окончания <span style={{ color: "var(--color-text-muted)", fontWeight: 400 }}>(необязательно)</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  min={form.date}
+                  style={{ padding: "8px 12px", border: "1px solid var(--color-border)", fontSize: 14, fontFamily: "inherit" }}
+                />
+              </div>
             </div>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Тип события *</label>
@@ -380,16 +421,22 @@ export default function AdminCalendarPage() {
               return (
                 <div key={idx} className={cellClass}>
                   <div className={cal.dayNumber}>{day.date.getDate()}</div>
-                  {dayEvents.slice(0, 3).map((ev) => (
-                    <div
-                      key={ev.id}
-                      className={`${cal.eventChip} ${chipClass(ev.eventType)}`}
-                      onClick={() => setSelectedEvent(ev)}
-                      title={ev.title}
-                    >
-                      {ev.title}
-                    </div>
-                  ))}
+                  {dayEvents.slice(0, 3).map((ev) => {
+                    const span = eventSpanInfo(ev, day.date);
+                    const chipExtra = span.isMultiDay
+                      ? `${cal.eventChipSpan} ${span.isFirst ? cal.eventChipSpanStart : ""} ${span.isLast ? cal.eventChipSpanEnd : ""}`
+                      : "";
+                    return (
+                      <div
+                        key={ev.id}
+                        className={`${cal.eventChip} ${chipClass(ev.eventType)} ${chipExtra}`}
+                        onClick={() => setSelectedEvent(ev)}
+                        title={span.isMultiDay ? `${ev.title} (${ev.date.split("T")[0]} — ${(ev.endDate || ev.date).split("T")[0]})` : ev.title}
+                      >
+                        {span.isMultiDay && !span.isFirst ? "" : ev.title}
+                      </div>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
                     <div className={cal.moreChip}>+{dayEvents.length - 3}</div>
                   )}
@@ -410,6 +457,9 @@ export default function AdminCalendarPage() {
                   {new Date(selectedEvent.date).toLocaleDateString("ru-RU", {
                     day: "numeric", month: "long", year: "numeric",
                   })}
+                  {selectedEvent.endDate && selectedEvent.endDate.split("T")[0] !== selectedEvent.date.split("T")[0] && (
+                    <> — {new Date(selectedEvent.endDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</>
+                  )}
                   {selectedEvent.direction && ` · ${selectedEvent.direction}`}
                 </div>
                 {selectedEvent.description && (
@@ -451,7 +501,12 @@ export default function AdminCalendarPage() {
               ) : (
                 events.map((ev) => (
                   <tr key={ev.id}>
-                    <td style={{ whiteSpace: "nowrap" }}>{formatDate(ev.date)}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {formatDate(ev.date)}
+                      {ev.endDate && ev.endDate.split("T")[0] !== ev.date.split("T")[0] && (
+                        <> — {formatDate(ev.endDate)}</>
+                      )}
+                    </td>
                     <td style={{ fontWeight: 500 }}>{ev.title}</td>
                     <td>
                       <span className={listStyles.tag}>{EVENT_TYPE_LABELS[ev.eventType] || ev.eventType}</span>

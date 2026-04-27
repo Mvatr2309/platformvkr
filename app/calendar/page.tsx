@@ -9,6 +9,7 @@ interface CalendarEvent {
   title: string;
   description: string | null;
   date: string;
+  endDate: string | null;
   eventType: "DEADLINE" | "DEFENSE" | "CONSULTATION" | "OTHER";
   direction: string | null;
   projectId: string | null;
@@ -56,6 +57,7 @@ export default function CalendarPage() {
     title: "",
     description: "",
     date: "",
+    endDate: "",
     eventType: "DEADLINE",
     direction: "",
     projectId: "",
@@ -122,8 +124,23 @@ export default function CalendarPage() {
   }
 
   function eventsForDate(date: Date) {
-    const dateStr = date.toISOString().split("T")[0];
-    return events.filter((e) => e.date.split("T")[0] === dateStr);
+    const dateStr = date.toLocaleDateString("sv-SE");
+    return events.filter((e) => {
+      const start = e.date.split("T")[0];
+      const end = (e.endDate || e.date).split("T")[0];
+      return dateStr >= start && dateStr <= end;
+    });
+  }
+
+  function eventSpanInfo(ev: CalendarEvent, date: Date) {
+    const dateStr = date.toLocaleDateString("sv-SE");
+    const start = ev.date.split("T")[0];
+    const end = (ev.endDate || ev.date).split("T")[0];
+    return {
+      isFirst: dateStr === start,
+      isLast: dateStr === end,
+      isMultiDay: start !== end,
+    };
   }
 
   function isToday(date: Date) {
@@ -138,6 +155,11 @@ export default function CalendarPage() {
     e.preventDefault();
     setError(""); setMessage("");
 
+    if (form.endDate && form.endDate < form.date) {
+      setError("Дата окончания не может быть раньше даты начала");
+      return;
+    }
+
     const res = await fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -145,13 +167,14 @@ export default function CalendarPage() {
         ...form,
         projectId: form.projectId || null,
         direction: form.direction || null,
+        endDate: form.endDate || null,
       }),
     });
 
     if (res.ok) {
       setMessage("Событие создано");
       setShowCreate(false);
-      setForm({ title: "", description: "", date: "", eventType: "DEADLINE", direction: "", projectId: "" });
+      setForm({ title: "", description: "", date: "", endDate: "", eventType: "DEADLINE", direction: "", projectId: "" });
       fetchEvents();
     } else {
       const data = await res.json();
@@ -236,16 +259,22 @@ export default function CalendarPage() {
           return (
             <div key={idx} className={cellClass}>
               <div className={styles.dayNumber}>{day.date.getDate()}</div>
-              {dayEvents.slice(0, 3).map((ev) => (
-                <div
-                  key={ev.id}
-                  className={`${styles.eventChip} ${chipClass(ev.eventType)}`}
-                  onClick={() => setSelectedEvent(ev)}
-                  title={ev.title}
-                >
-                  {ev.title}
-                </div>
-              ))}
+              {dayEvents.slice(0, 3).map((ev) => {
+                const span = eventSpanInfo(ev, day.date);
+                const chipExtra = span.isMultiDay
+                  ? `${styles.eventChipSpan} ${span.isFirst ? styles.eventChipSpanStart : ""} ${span.isLast ? styles.eventChipSpanEnd : ""}`
+                  : "";
+                return (
+                  <div
+                    key={ev.id}
+                    className={`${styles.eventChip} ${chipClass(ev.eventType)} ${chipExtra}`}
+                    onClick={() => setSelectedEvent(ev)}
+                    title={span.isMultiDay ? `${ev.title} (${ev.date.split("T")[0]} — ${(ev.endDate || ev.date).split("T")[0]})` : ev.title}
+                  >
+                    {span.isMultiDay && !span.isFirst ? "" : ev.title}
+                  </div>
+                );
+              })}
               {dayEvents.length > 3 && (
                 <div className={styles.moreChip}>+{dayEvents.length - 3}</div>
               )}
@@ -269,12 +298,21 @@ export default function CalendarPage() {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label>Дата</label>
+                <label>Дата начала</label>
                 <input
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Дата окончания (необязательно)</label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  min={form.date}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                 />
               </div>
               <div className={styles.formGroup}>
@@ -332,6 +370,9 @@ export default function CalendarPage() {
               {new Date(selectedEvent.date).toLocaleDateString("ru-RU", {
                 day: "numeric", month: "long", year: "numeric",
               })}
+              {selectedEvent.endDate && selectedEvent.endDate.split("T")[0] !== selectedEvent.date.split("T")[0] && (
+                <> — {new Date(selectedEvent.endDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</>
+              )}
               {selectedEvent.direction && ` · ${selectedEvent.direction}`}
             </div>
             {selectedEvent.description && (

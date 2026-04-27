@@ -307,6 +307,7 @@ model Event {
   title       String
   description String?
   date        DateTime
+  endDate     DateTime? // Дата окончания для многодневных событий
   eventType   EventType
   direction   String?   // Привязка к направлению
   projectId   String?   // Привязка к проекту (06.03)

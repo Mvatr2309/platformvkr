@@ -14,12 +14,13 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { title, description, date, eventType, direction, projectId } = body;
+  const { title, description, date, endDate, eventType, direction, projectId } = body;
 
   const data: Record<string, unknown> = {};
   if (title !== undefined) data.title = title;
   if (description !== undefined) data.description = description || null;
   if (date !== undefined) data.date = new Date(date);
+  if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
   if (eventType !== undefined) data.eventType = eventType;
   if (direction !== undefined) data.direction = direction || null;
   if (projectId !== undefined) data.projectId = projectId || null;

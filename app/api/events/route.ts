@@ -22,15 +22,23 @@ export async function GET(request: NextRequest) {
   if (direction) where.direction = direction;
   if (projectId) where.projectId = projectId;
 
-  // Фильтр по месяцу
+  // Фильтр по месяцу — учитываем многодневные события (endDate)
   if (month) {
     const [y, m] = month.split("-").map(Number);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 1);
-    where.date = { gte: start, lt: end };
+    where.AND = [
+      { date: { lt: end } },
+      { OR: [{ endDate: null, date: { gte: start } }, { endDate: { gte: start } }] },
+    ];
   } else if (year) {
     const y = Number(year);
-    where.date = { gte: new Date(y, 0, 1), lt: new Date(y + 1, 0, 1) };
+    const start = new Date(y, 0, 1);
+    const end = new Date(y + 1, 0, 1);
+    where.AND = [
+      { date: { lt: end } },
+      { OR: [{ endDate: null, date: { gte: start } }, { endDate: { gte: start } }] },
+    ];
   }
 
   const events = await prisma.event.findMany({
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, description, date, eventType, direction, projectId } = body;
+  const { title, description, date, endDate, eventType, direction, projectId } = body;
 
   if (!title || !date || !eventType) {
     return NextResponse.json(
@@ -66,11 +74,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const startDt = new Date(date);
+  const endDt = endDate ? new Date(endDate) : null;
+  if (endDt && endDt < startDt) {
+    return NextResponse.json(
+      { error: "Дата окончания не может быть раньше даты начала" },
+      { status: 400 }
+    );
+  }
+
   const event = await prisma.event.create({
     data: {
       title,
       description: description || null,
-      date: new Date(date),
+      date: startDt,
+      endDate: endDt,
       eventType,
       direction: direction || null,
       projectId: projectId || null,

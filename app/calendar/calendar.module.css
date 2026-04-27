@@ -195,6 +195,24 @@
   cursor: pointer;
 }
 
+/* Многодневные события — полоса между ячейками */
+.eventChipSpan {
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: none;
+  font-weight: 600;
+  min-height: 18px;
+}
+
+.eventChipSpanStart {
+  margin-left: 0;
+  border-left: 3px solid currentColor;
+}
+
+.eventChipSpanEnd {
+  margin-right: 0;
+}
+
 /* Create event button */
 .createBtn {
   background: var(--color-deep-blue);
