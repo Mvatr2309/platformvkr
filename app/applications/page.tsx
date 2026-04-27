@@ -177,8 +177,8 @@ export default function ApplicationsPage() {
                 onClick={() => setTab("author")}
               >
                 <span className={styles.tabWithHint}>
-                  Заявки от студентов ({authorApps.length})
-                  <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Заявки других студентов на участие в ваших проектах, где вы — автор</span></span>
+                  Входящие заявки ({authorApps.length})
+                  <span className={styles.hintIcon}>?<span className={styles.hintTooltip}>Заявки на ваши проекты — от студентов (хотят войти в команду) и от научных руководителей (хотят возглавить проект)</span></span>
                 </span>
               </button>
             )}
@@ -256,7 +256,9 @@ export default function ApplicationsPage() {
                         <div key={app.id} className={`${styles.card} ${styles.cardResolved}`}>
                           <div className={styles.cardHeader}>
                             <span className={styles.studentName}>
-                              {isSup && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[Науч. рук.]</span>}
+                              <span style={{ color: isSup ? "#003092" : "#E8375A", fontWeight: 600, marginRight: 6 }}>
+                                {isSup ? "[Науч. рук.]" : "[Студент]"}
+                              </span>
                               {isSup && app.supervisor?.id
                                 ? <a href={`/supervisors/${app.supervisor.id}`} className={styles.link}>{name}</a>
                                 : name
@@ -573,7 +575,9 @@ export default function ApplicationsPage() {
       <div key={app.id} className={styles.card}>
         <div className={styles.cardHeader}>
           <span className={styles.studentName}>
-            {isSupervisorApp && <span style={{ color: "#003092", fontWeight: 600, marginRight: 6 }}>[Науч. рук.]</span>}
+            <span style={{ color: isSupervisorApp ? "#003092" : "#E8375A", fontWeight: 600, marginRight: 6 }}>
+              {isSupervisorApp ? "[Науч. рук.]" : "[Студент]"}
+            </span>
             {isSupervisorApp && app.supervisor?.id
               ? <a href={`/supervisors/${app.supervisor.id}`} className={styles.link}>{applicantName}</a>
               : applicantName
