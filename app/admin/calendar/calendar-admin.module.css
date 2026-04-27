@@ -188,22 +188,10 @@
   cursor: pointer;
 }
 
-/* Многодневные события — растягиваются как полоса между ячейками */
+/* Многодневные события */
 .eventChipSpan {
-  margin-left: -1px;
-  margin-right: -1px;
-  border-left: none;
   font-weight: 600;
   min-height: 18px;
-}
-
-.eventChipSpanStart {
-  margin-left: 0;
-  border-left: 3px solid currentColor;
-}
-
-.eventChipSpanEnd {
-  margin-right: 0;
 }
 
 /* Event detail overlay */
