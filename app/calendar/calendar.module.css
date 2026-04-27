@@ -1,7 +1,7 @@
 .page {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: var(--space-xl) var(--container-padding);
+  padding: var(--space-xl) var(--space-2xl);
 }
 
 .title {
@@ -116,7 +116,6 @@
 
 .dayCell:nth-child(7n) {
   border-right: none;
-  padding-right: 14px;
 }
 
 .otherMonth {
