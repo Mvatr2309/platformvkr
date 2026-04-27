@@ -40,12 +40,20 @@ export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
 
+    const resumeUrl = (data.resumeUrl || "").trim();
+    if (!resumeUrl) {
+      return NextResponse.json(
+        { error: "Прикрепите резюме (файл или ссылку)" },
+        { status: 400 }
+      );
+    }
+
     const profileData = {
       workplace: data.workplace || "",
       position: data.position || "",
       academicTitle: data.academicTitle || "",
       academicDegree: data.academicDegree || "",
-      resumeUrl: data.resumeUrl || null,
+      resumeUrl,
       photoUrl: data.photoUrl || null,
       expertise: data.expertise || [],
       workPreferences: data.workPreferences || [],

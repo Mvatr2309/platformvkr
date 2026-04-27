@@ -140,6 +140,10 @@ export default function ProfilePage() {
       setError("Необходимо принять соглашение на обработку данных");
       return;
     }
+    if (!profile.resumeUrl || !profile.resumeUrl.trim()) {
+      setError("Прикрепите резюме (файл или ссылку)");
+      return;
+    }
     if (!profile.workplace || !profile.position || !profile.academicTitle ||
         !profile.academicDegree || !profile.contact || profile.expertise.length === 0 ||
         profile.directions.length === 0 || profile.projectTypes.length === 0) {
@@ -184,6 +188,58 @@ export default function ProfilePage() {
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <h1 className={styles.title}>Профиль научного руководителя</h1>
+
+        {/* Секция 0: Резюме (CV) — обязательно */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Резюме *</h2>
+          <p className={styles.fieldHint}>
+            Прикрепите файл резюме (PDF, DOCX) или укажите ссылку (LinkedIn, hh.ru, личная страница и т.п.)
+          </p>
+
+          {profile.resumeUrl && (
+            <div className={styles.filePreview}>
+              <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
+                {profile.resumeUrl.startsWith("http") ? "Открыть ссылку" : "Просмотреть файл"}
+              </a>
+              <button
+                type="button"
+                onClick={() => updateField("resumeUrl", null)}
+                className={styles.tagRemove}
+                style={{ marginLeft: 8 }}
+                title="Удалить"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label className={styles.label}>Ссылка на резюме</label>
+              <input
+                type="url"
+                value={profile.resumeUrl?.startsWith("http") ? profile.resumeUrl : ""}
+                onChange={(e) => updateField("resumeUrl", e.target.value || null)}
+                className={styles.input}
+                placeholder="https://hh.ru/resume/... или https://linkedin.com/in/..."
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>или загрузите файл</label>
+              <label className={styles.fileButton}>
+                {resumeUploading ? "Загрузка..." : "Выбрать файл"}
+                <input
+                  type="file"
+                  accept=".pdf,.docx,image/jpeg,image/png"
+                  onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "resume")}
+                  hidden
+                  disabled={resumeUploading}
+                />
+              </label>
+              <span className={styles.hint}>PDF, DOCX, до 5 МБ</span>
+            </div>
+          </div>
+        </section>
 
         {/* Секция 1: Основная информация */}
         <section className={styles.section}>
@@ -358,52 +414,27 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Секция 3: Файлы */}
+        {/* Секция 3: Фото */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Файлы</h2>
+          <h2 className={styles.sectionTitle}>Фото</h2>
 
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label}>Фото</label>
-              {profile.photoUrl && (
-                <div className={styles.filePreview}>
-                  <img src={profile.photoUrl} alt="Фото" className={styles.photoPreview} />
-                </div>
-              )}
-              <label className={styles.fileButton}>
-                {photoUploading ? "Загрузка..." : "Загрузить фото"}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "photo")}
-                  hidden
-                  disabled={photoUploading}
-                />
-              </label>
-              <span className={styles.hint}>JPG, PNG, до 5 МБ</span>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Резюме</label>
-              {profile.resumeUrl && (
-                <div className={styles.filePreview}>
-                  <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
-                    Просмотреть файл
-                  </a>
-                </div>
-              )}
-              <label className={styles.fileButton}>
-                {resumeUploading ? "Загрузка..." : "Загрузить резюме"}
-                <input
-                  type="file"
-                  accept=".pdf,.docx,image/jpeg,image/png"
-                  onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "resume")}
-                  hidden
-                  disabled={resumeUploading}
-                />
-              </label>
-              <span className={styles.hint}>PDF, DOCX, до 5 МБ</span>
-            </div>
+          <div className={styles.field}>
+            {profile.photoUrl && (
+              <div className={styles.filePreview}>
+                <img src={profile.photoUrl} alt="Фото" className={styles.photoPreview} />
+              </div>
+            )}
+            <label className={styles.fileButton}>
+              {photoUploading ? "Загрузка..." : "Загрузить фото"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "photo")}
+                hidden
+                disabled={photoUploading}
+              />
+            </label>
+            <span className={styles.hint}>JPG, PNG, до 5 МБ</span>
           </div>
         </section>
 
