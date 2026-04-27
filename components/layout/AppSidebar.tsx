@@ -49,7 +49,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
 
   // Onboarding check — once on mount + on navigation, no polling
   useEffect(() => {
-    if (!user || !role || role === "ADMIN") return;
+    if (!user || !role || role === "ADMIN" || role === "SUPERVISOR") return;
     let cancelled = false;
     async function checkOnboarding() {
       try {

@@ -56,7 +56,7 @@ export default function OnboardingTour() {
   const role = session?.user?.role as string | undefined;
 
   const fetchProgress = useCallback(async () => {
-    if (!role || role === "ADMIN") return;
+    if (!role || role === "ADMIN" || role === "SUPERVISOR") return;
     try {
       const res = await fetch("/api/onboarding");
       if (res.ok) {
@@ -198,7 +198,7 @@ export default function OnboardingTour() {
     setDismissed(true);
   }
 
-  if (!role || role === "ADMIN") return null;
+  if (!role || role === "ADMIN" || role === "SUPERVISOR") return null;
   if (pathname === "/" || pathname === "/login" || pathname === "/register") return null;
   if (pathname.startsWith("/admin")) return null;
   if (!session?.user?.profileCompleted) return null;
