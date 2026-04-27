@@ -193,7 +193,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                   Каталог
                   <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Поиск проектов для участия и научных руководителей</span></span>
                 </div>
-                <a href="/projects" className={navClass("/projects")}>Проекты</a>
+                <a href="/projects" className={navClass("/projects")}>Проекты/Исследования</a>
                 <a href="/supervisors" className={navClass("/supervisors")} data-onboarding="find-supervisor">Руководители</a>
               </div>
               <div className={styles.navGroup}>
@@ -228,7 +228,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                   Каталог
                   <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Проекты студентов, которым можно предложить руководство</span></span>
                 </div>
-                <a href="/projects" className={navClass("/projects")}>Проекты</a>
+                <a href="/projects" className={navClass("/projects")}>Проекты/Исследования</a>
               </div>
               <div className={styles.navGroup}>
                 <div className={styles.navGroupTitle}>
