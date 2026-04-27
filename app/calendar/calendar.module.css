@@ -116,6 +116,7 @@
 
 .dayCell:nth-child(7n) {
   border-right: none;
+  padding-right: 14px;
 }
 
 .otherMonth {
