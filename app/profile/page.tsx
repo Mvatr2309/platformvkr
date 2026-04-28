@@ -463,7 +463,7 @@ export default function ProfilePage() {
               onChange={(e) => { setAgreement(e.target.checked); if (e.target.checked) setFieldErrors((p) => ({ ...p, agreement: false })); }}
             />
             <span>
-              Я даю согласие на обработку персональных данных в соответствии с политикой конфиденциальности *
+              Я даю согласие на <a href="https://mipt.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-deep-blue)", textDecoration: "underline" }}>обработку персональных данных</a> в соответствии с политикой конфиденциальности *
             </span>
           </label>
         </section>
