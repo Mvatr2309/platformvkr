@@ -160,13 +160,14 @@ export default function StudentProfilePage() {
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Курс *</label>
-              <input
-                type="number"
+              <select
                 value={profile.course}
                 onChange={(e) => setProfile((p) => ({ ...p, course: parseInt(e.target.value) || 1 }))}
-                className={styles.input}
-                min={1} max={6}
-              />
+                className={styles.select}
+              >
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+              </select>
             </div>
           </div>
 
