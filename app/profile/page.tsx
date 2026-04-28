@@ -368,6 +368,7 @@ export default function ProfilePage() {
 
           <div className={fieldCls("directions")}>
             <label className={styles.label}>Магистратуры студентов *</label>
+            <p className={styles.fieldHint}>Направления, с которыми вы готовы работать</p>
             <div className={styles.checkboxGroup}>
               {DIRECTIONS.map((dir) => (
                 <label key={dir} className={styles.checkboxLabel}>
