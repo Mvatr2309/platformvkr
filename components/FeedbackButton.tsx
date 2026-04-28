@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
@@ -21,6 +21,12 @@ export default function FeedbackButton() {
   const [error, setError] = useState("");
 
   const role = session?.user?.role;
+
+  useEffect(() => {
+    function handleOpen() { setOpen(true); setSuccess(false); setError(""); }
+    window.addEventListener("feedback:open", handleOpen);
+    return () => window.removeEventListener("feedback:open", handleOpen);
+  }, []);
 
   // Показываем только студентам и НР, не на лендинге/логине/админке
   if (!role || role === "ADMIN") return null;

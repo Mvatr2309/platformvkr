@@ -250,6 +250,14 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                 </span>
               )}
             </a>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("feedback:open"))}
+              className={navClass("")}
+              style={{ background: "none", border: "none", textAlign: "left", cursor: "pointer", font: "inherit", width: "100%" }}
+            >
+              Обратная связь
+            </button>
           </div>
         </nav>
 
