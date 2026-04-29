@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
+import { sendMail } from "@/lib/mail";
 
 // GET /api/projects/[id] — детали проекта (02.06)
 export async function GET(
@@ -96,7 +97,7 @@ export async function PUT(
       }
       const proj = await prisma.project.findUnique({
         where: { id },
-        select: { title: true, supervisor: { select: { userId: true, user: { select: { name: true } } } } },
+        select: { title: true, supervisor: { select: { userId: true, user: { select: { name: true, email: true } } } } },
       });
       await prisma.project.update({
         where: { id },
@@ -110,6 +111,20 @@ export async function PUT(
           message: `Администратор снял вас с руководства проектом «${proj.title}»`,
           link: `/my-projects`,
         }).catch(() => {});
+        // Email бывшему НР
+        if (proj.supervisor.user.email) {
+          const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
+          sendMail({
+            to: proj.supervisor.user.email,
+            subject: `Вы сняты с проекта — ${proj.title}`,
+            html: `<div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Вы сняты с проекта</h2>
+              <p>Администратор снял вас с руководства проектом «<strong>${proj.title}</strong>».</p>
+              <p>По вопросам — обращайтесь к администратору платформы.</p>
+              <p><a href="${platformUrl}/my-projects" style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">Мои проекты</a></p>
+            </div>`,
+          }).catch((err) => console.error("Failed to send remove-supervisor email:", err.message));
+        }
       }
       return NextResponse.json({ ok: true });
     }
@@ -121,7 +136,7 @@ export async function PUT(
         select: {
           title: true,
           supervisor: { select: { userId: true, user: { select: { name: true } } } },
-          members: { where: { isCreator: true }, select: { student: { select: { userId: true } } } },
+          members: { where: { isCreator: true }, select: { student: { select: { userId: true, user: { select: { email: true } } } } } },
         },
       });
       if (!proj?.supervisor || proj.supervisor.userId !== session.user.id) {
@@ -148,6 +163,21 @@ export async function PUT(
           message: `${proj.supervisor.user.name || "Научный руководитель"} покинул проект «${proj.title}»`,
           link: `/projects/${id}`,
         }).catch(() => {});
+        // Email автору проекта
+        if (creator.student.user.email) {
+          const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
+          const supName = proj.supervisor.user.name || "Научный руководитель";
+          sendMail({
+            to: creator.student.user.email,
+            subject: `Научный руководитель покинул проект — ${proj.title}`,
+            html: `<div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Научный руководитель покинул проект</h2>
+              <p><strong>${supName}</strong> покинул проект «<strong>${proj.title}</strong>».</p>
+              <p>Можете предложить проект другому руководителю.</p>
+              <p><a href="${platformUrl}/projects/${id}" style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">Открыть проект</a></p>
+            </div>`,
+          }).catch((err) => console.error("Failed to send leave-supervisor email:", err.message));
+        }
       }
       return NextResponse.json({ ok: true });
     }
