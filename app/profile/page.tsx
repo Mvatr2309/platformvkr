@@ -143,6 +143,15 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
+    // Если в инпуте экспертизы есть незакоммиченный текст — добавляем в массив
+    let expertise = profile.expertise;
+    const pendingTag = expertiseInput.trim();
+    if (pendingTag && !expertise.includes(pendingTag)) {
+      expertise = [...expertise, pendingTag];
+      setProfile((p) => ({ ...p, expertise }));
+      setExpertiseInput("");
+    }
+
     const errs: Record<string, boolean> = {};
     if (!name.trim()) errs.name = true;
     if (!profile.resumeUrl || !profile.resumeUrl.trim()) errs.resumeUrl = true;
@@ -151,7 +160,7 @@ export default function ProfilePage() {
     if (!profile.academicTitle) errs.academicTitle = true;
     if (!profile.academicDegree.trim()) errs.academicDegree = true;
     if (!profile.contact.trim()) errs.contact = true;
-    if (profile.expertise.length === 0) errs.expertise = true;
+    if (expertise.length === 0) errs.expertise = true;
     if (profile.directions.length === 0) errs.directions = true;
     if (profile.projectTypes.length === 0) errs.projectTypes = true;
     if (!agreement) errs.agreement = true;
@@ -173,7 +182,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile/supervisor", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, name, agreementAccepted: agreement }),
+        body: JSON.stringify({ ...profile, expertise, name, agreementAccepted: agreement }),
       });
       if (res.ok) {
         await updateSession();

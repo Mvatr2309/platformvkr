@@ -81,6 +81,15 @@ export default function StudentProfilePage() {
   }
 
   async function handleSave() {
+    // Если в инпуте компетенций есть незакоммиченный текст — добавляем в массив
+    let competencies = profile.competencies;
+    const pendingTag = compInput.trim();
+    if (pendingTag && !competencies.includes(pendingTag)) {
+      competencies = [...competencies, pendingTag];
+      setProfile((p) => ({ ...p, competencies }));
+      setCompInput("");
+    }
+
     const errs: Record<string, boolean> = {};
     if (!name.trim()) errs.name = true;
     if (!profile.direction) errs.direction = true;
@@ -97,7 +106,7 @@ export default function StudentProfilePage() {
       const res = await fetch("/api/profile/student", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, name }),
+        body: JSON.stringify({ ...profile, competencies, name }),
       });
       if (res.ok) {
         await updateSession();
