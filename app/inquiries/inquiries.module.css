@@ -79,43 +79,119 @@
   color: var(--color-text-muted);
 }
 
-.message {
-  font-size: 15px;
+.preview {
+  font-size: 14px;
   line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
   white-space: pre-wrap;
-  margin-bottom: var(--space-md);
 }
 
-.response {
-  background: #f0f4ff;
-  border-left: 3px solid var(--color-deep-blue);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.responseHeader {
+.toggleBtn {
+  background: none;
+  border: none;
+  color: var(--color-deep-blue);
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-deep-blue);
-  margin-bottom: 6px;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
 }
 
-.responseDate {
+.toggleBtn:hover {
+  text-decoration: underline;
+}
+
+.thread {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  padding: 10px 14px;
+  max-width: 80%;
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.messageUser {
+  align-self: flex-end;
+  background: rgba(232, 55, 90, 0.08);
+  border-left: 3px solid var(--color-coral);
+}
+
+.messageAdmin {
+  align-self: flex-start;
+  background: #f0f4ff;
+  border-left: 3px solid var(--color-deep-blue);
+}
+
+.messageMeta {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.messageUser .messageMeta { color: var(--color-coral); }
+.messageAdmin .messageMeta { color: var(--color-deep-blue); }
+
+.messageDate {
   font-weight: 400;
   color: var(--color-text-muted);
   margin-left: 4px;
 }
 
-.responseText {
-  font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+.messageText {
+  color: var(--color-text-primary);
 }
 
-.pending {
+.resolvedHint {
   background: #fafafa;
-  border-left: 3px solid var(--color-text-muted);
-  padding: var(--space-sm) var(--space-md);
+  padding: 8px 12px;
   font-size: 13px;
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.replyBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--space-sm);
+}
+
+.replyTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.replyTextarea:focus {
+  outline: none;
+  border-color: var(--color-deep-blue);
+}
+
+.replyBtn {
+  align-self: flex-end;
+  padding: 8px 20px;
+  background: var(--color-deep-blue);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.replyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

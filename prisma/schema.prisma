@@ -41,6 +41,7 @@ model User {
   student       StudentProfile?
   invitations   Invitation[]       // Приглашения, отправленные админом
   feedbacks     Feedback[]
+  feedbackMessages FeedbackMessage[]
 }
 
 // Токены подтверждения email
@@ -415,13 +416,26 @@ model Feedback {
   userId      String
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    FeedbackCategory
-  message     String
+  message     String           // Первое сообщение (исходный вопрос)
   status      FeedbackStatus   @default(NEW)
-  response    String?          // Ответ от команды разработки
-  respondedAt DateTime?        // Когда был дан ответ
+  response    String?          // Устарело: первый ответ админа (теперь в messages)
+  respondedAt DateTime?        // Устарело: когда был дан первый ответ
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  messages    FeedbackMessage[]
 
   @@index([userId])
   @@index([status])
+}
+
+model FeedbackMessage {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([feedbackId, createdAt])
 }
