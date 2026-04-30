@@ -1,0 +1,121 @@
+.wrapper {
+  padding: var(--space-xl) var(--space-2xl);
+}
+
+.container {
+  max-width: 900px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 400;
+  margin-bottom: var(--space-sm);
+}
+
+.hint {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-lg);
+  font-size: 14px;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin-top: var(--space-lg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.headerLeft {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+}
+
+.category_BUG { color: var(--color-coral); border-color: var(--color-coral); }
+.category_SUGGESTION { color: var(--color-deep-blue); border-color: var(--color-deep-blue); }
+.category_QUESTION { color: var(--color-text-secondary); }
+
+.status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(0, 48, 146, 0.06);
+  color: var(--color-deep-blue);
+}
+
+.status_NEW { background: rgba(232, 55, 90, 0.08); color: var(--color-coral); }
+.status_IN_PROGRESS { background: rgba(0, 48, 146, 0.08); color: var(--color-deep-blue); }
+.status_RESOLVED { background: rgba(46, 125, 50, 0.1); color: #2e7d32; }
+
+.date {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.message {
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-bottom: var(--space-md);
+}
+
+.response {
+  background: #f0f4ff;
+  border-left: 3px solid var(--color-deep-blue);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.responseHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  margin-bottom: 6px;
+}
+
+.responseDate {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+
+.responseText {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.pending {
+  background: #fafafa;
+  border-left: 3px solid var(--color-text-muted);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

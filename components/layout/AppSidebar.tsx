@@ -250,6 +250,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                 </span>
               )}
             </a>
+            <a href="/inquiries" className={navClass("/inquiries")}>Обращения</a>
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event("feedback:open"))}

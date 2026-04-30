@@ -2,10 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/feedback — список обратной связи (только админ)
+// GET /api/feedback — список обратной связи
+// ?mine=true — обращения текущего пользователя (студент/НР)
+// без mine — все (только админ)
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
+  const mine = request.nextUrl.searchParams.get("mine") === "true";
+
+  if (mine) {
+    const feedbacks = await prisma.feedback.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(feedbacks);
+  }
+
+  if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
   }
 

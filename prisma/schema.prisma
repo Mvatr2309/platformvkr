@@ -411,13 +411,16 @@ enum FeedbackStatus {
 }
 
 model Feedback {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category  FeedbackCategory
-  message   String
-  status    FeedbackStatus   @default(NEW)
-  createdAt DateTime         @default(now())
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    FeedbackCategory
+  message     String
+  status      FeedbackStatus   @default(NEW)
+  response    String?          // Ответ от команды разработки
+  respondedAt DateTime?        // Когда был дан ответ
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([userId])
   @@index([status])
