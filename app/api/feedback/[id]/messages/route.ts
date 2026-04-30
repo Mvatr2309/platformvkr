@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify, notifyMany } from "@/lib/notify";
-import { sendMail } from "@/lib/mail";
 
 // GET /api/feedback/[id]/messages — получить все сообщения треда
 export async function GET(
@@ -145,10 +144,8 @@ export async function POST(
     await prisma.feedback.update({ where: { id }, data: { status: newStatus } });
   }
 
-  const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
-
   if (isAdmin) {
-    // Уведомить пользователя
+    // Уведомить пользователя (in-app)
     notify({
       userId: fb.userId,
       type: "SYSTEM",
@@ -156,20 +153,6 @@ export async function POST(
       message: `Команда разработки ответила: «${trimmed.slice(0, 100)}${trimmed.length > 100 ? "…" : ""}»`,
       link: "/inquiries",
     }).catch(() => {});
-
-    if (fb.user.email) {
-      sendMail({
-        to: fb.user.email,
-        subject: "Новое сообщение по обращению — Платформа ВКР",
-        html: `<div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
-          <h2 style="color: #003092;">Новое сообщение по обращению</h2>
-          <p>Команда разработки ответила:</p>
-          <div style="background: #f0f4ff; padding: 12px 16px; margin: 8px 0;">${trimmed.replace(/\n/g, "<br>")}</div>
-          <p>Вы можете продолжить переписку, открыв обращение на платформе.</p>
-          <p><a href="${platformUrl}/inquiries" style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">Открыть мои обращения</a></p>
-        </div>`,
-      }).catch((err) => console.error("Failed to send thread email:", err.message));
-    }
   } else {
     // Пользователь ответил → уведомить всех админов
     const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
