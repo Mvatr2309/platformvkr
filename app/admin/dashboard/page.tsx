@@ -5,7 +5,7 @@ import Link from "next/link";
 import styles from "./dashboard.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корп. стартап",
 };

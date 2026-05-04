@@ -5,7 +5,7 @@ import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../moderation/moderation.module.css";
 
 const TYPE_LABELS: Record<string, string> = {
-  CLASSIC_DISSERTATION: "Классическая диссертация",
+  CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
   CORPORATE_STARTUP: "Корпоративный стартап",
 };

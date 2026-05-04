@@ -431,7 +431,7 @@ export default function ApplicationsPage() {
                           </a>
                           {app.project.projectType && (
                             <span className={styles.projectBadge}>
-                              {app.project.projectType === "CLASSIC_DISSERTATION" ? "Диссертация" :
+                              {app.project.projectType === "CLASSIC_DISSERTATION" ? "Исследование" :
                                app.project.projectType === "STARTUP" ? "Стартап" : "Корп. стартап"}
                             </span>
                           )}
