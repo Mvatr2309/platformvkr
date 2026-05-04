@@ -19,8 +19,11 @@ const STEP_HIGHLIGHTS: Record<string, Array<{ selector: string; hint: string }>>
   team: [
     { selector: '[data-onboarding="add-team"]', hint: "Нажмите «+ Добавить», чтобы добавить участников" },
   ],
+  submit: [
+    { selector: '[data-onboarding="submit-for-moderation"]', hint: "Когда проект готов — нажмите, чтобы отправить на модерацию" },
+  ],
   moderation: [
-    { selector: '[data-onboarding="project-status"]', hint: "Ваш проект на модерации — администратор скоро проверит" },
+    { selector: '[data-onboarding="project-status"]', hint: "Проект на модерации — администратор скоро проверит" },
   ],
   supervisor: [
     { selector: '[data-onboarding="propose-project"]', hint: "Предложите свой проект этому руководителю" },

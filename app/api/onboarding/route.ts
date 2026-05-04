@@ -42,7 +42,9 @@ export async function GET() {
     const hasTeam = isStartup
       ? (project.project.members.filter((m) => !m.isCreator).length ?? 0) > 0
       : true; // для исследований команда не нужна
-    const projectApproved = hasProject && (project.project.status === "OPEN" || project.project.status === "ACTIVE" || project.project.status === "COMPLETED");
+    const projectStatus = project?.project.status;
+    const projectSubmitted = hasProject && projectStatus !== "DRAFT"; // отправлен на модерацию или дальше
+    const projectApproved = hasProject && (projectStatus === "OPEN" || projectStatus === "ACTIVE" || projectStatus === "COMPLETED");
     const hasSupervisor = !!project?.project.supervisorId;
 
     // Заявка на НР считается тоже — шаг завершён если есть НР или отправлена заявка
@@ -61,7 +63,8 @@ export async function GET() {
         ...(isStartup
           ? [{ id: "team", label: "Добавьте команду", done: hasTeam, href: `/projects/${project!.projectId}` }]
           : []),
-        { id: "moderation", label: "Дождитесь модерации проекта", done: projectApproved, href: hasProject ? `/projects/${project!.projectId}` : "/my-projects" },
+        { id: "submit", label: "Отправьте проект на модерацию", done: projectSubmitted, href: hasProject ? `/projects/${project!.projectId}` : "/my-projects" },
+        { id: "moderation", label: "Дождитесь одобрения модератором", done: projectApproved, href: hasProject ? `/projects/${project!.projectId}` : "/my-projects" },
         { id: "supervisor", label: "Найдите научного руководителя", done: supervisorStepDone, href: "/supervisors" },
       ],
     });

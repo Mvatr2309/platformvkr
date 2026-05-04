@@ -386,7 +386,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             {canEdit && (
               <div className={styles.headerActions}>
                 {project.status === "DRAFT" && (isAuthor || isAdmin) && !editing && (
-                  <button onClick={handleSubmitForModeration} className={styles.editBtn} disabled={submitting} style={{ background: "#003092", color: "#fff" }}>
+                  <button onClick={handleSubmitForModeration} className={styles.editBtn} disabled={submitting} style={{ background: "#003092", color: "#fff" }} data-onboarding="submit-for-moderation">
                     {submitting ? "Отправка..." : "Отправить на модерацию"}
                   </button>
                 )}
