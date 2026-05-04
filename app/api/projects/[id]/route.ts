@@ -55,9 +55,23 @@ export async function GET(
   return NextResponse.json(project);
 }
 
-// Проверка прав на редактирование: только админ или автор проекта (isCreator)
+// Проверка прав на редактирование: админ, автор-студент или научный руководитель проекта
 async function checkEditAccess(projectId: string, userId: string, userRole: string) {
   if (userRole === "ADMIN") return true;
+
+  if (userRole === "SUPERVISOR") {
+    const profile = await prisma.supervisorProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (profile) {
+      const proj = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { supervisorId: true },
+      });
+      if (proj?.supervisorId === profile.id) return true;
+    }
+  }
 
   const creator = await prisma.projectMember.findFirst({
     where: { projectId, isCreator: true, student: { userId } },

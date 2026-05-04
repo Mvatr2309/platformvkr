@@ -243,10 +243,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const isSupervisorOwner = userRole === "SUPERVISOR" && project?.supervisor?.userId === userId;
   const isMember = project?.members.some((m) => m.student?.userId === userId);
   const isAuthor = project?.members.some((m) => m.isCreator && m.student?.userId === userId);
-  const canEdit = isAdmin || isAuthor;
+  const canEdit = isAdmin || isAuthor || isSupervisorOwner;
   const canManage = isAdmin || isAuthor || isSupervisorOwner || isMember;
   const otherMembers = project?.members.filter((m) => !m.isCreator) || [];
-  const canDelete = isAdmin || (isAuthor && otherMembers.length === 0);
+  const canDelete = isAdmin || ((isAuthor || isSupervisorOwner) && otherMembers.length === 0);
 
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ title: "", description: "", contact: "" });
@@ -385,7 +385,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             )}
             {canEdit && (
               <div className={styles.headerActions}>
-                {project.status === "DRAFT" && (isAuthor || isAdmin) && !editing && (
+                {project.status === "DRAFT" && (isAuthor || isAdmin || isSupervisorOwner) && !editing && (
                   <button onClick={handleSubmitForModeration} className={styles.editBtn} disabled={submitting} style={{ background: "#003092", color: "#fff" }} data-onboarding="submit-for-moderation">
                     {submitting ? "Отправка..." : "Отправить на модерацию"}
                   </button>
