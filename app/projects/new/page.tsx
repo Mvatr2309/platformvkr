@@ -48,8 +48,12 @@ export default function NewProjectPage() {
   const [requiredRoles, setRequiredRoles] = useState<string[]>([]);
   const [authorRole, setAuthorRole] = useState("");
   const [contact, setContact] = useState("");
-  const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
+  const [files, setFiles] = useState<{ name: string; url: string; fileType: "FILE" | "LINK" }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [addMode, setAddMode] = useState<"FILE" | "LINK">("FILE");
+  const [linkTitle, setLinkTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkError, setLinkError] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -95,7 +99,7 @@ export default function NewProjectPage() {
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (res.ok) {
-        setFiles((prev) => [...prev, { name: file.name, url: data.url }]);
+        setFiles((prev) => [...prev, { name: file.name, url: data.url, fileType: "FILE" }]);
       } else {
         setError(data.error || "Ошибка загрузки файла");
       }
@@ -104,6 +108,21 @@ export default function NewProjectPage() {
     } finally {
       setUploading(false);
     }
+  }
+
+  function addLink() {
+    setLinkError("");
+    const title = linkTitle.trim();
+    const url = linkUrl.trim();
+    if (!title) { setLinkError("Укажите название документа"); return; }
+    if (!url) { setLinkError("Укажите ссылку"); return; }
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      setLinkError("Ссылка должна начинаться с http:// или https://");
+      return;
+    }
+    setFiles((prev) => [...prev, { name: title, url, fileType: "LINK" }]);
+    setLinkTitle("");
+    setLinkUrl("");
   }
 
   function removeFile(url: string) {
@@ -383,12 +402,15 @@ export default function NewProjectPage() {
 
         <div className={styles.section}>
           <div className={styles.field}>
-            <label className={styles.label}>Файлы (паспорт проекта, презентация и др.)</label>
+            <label className={styles.label}>Документы (паспорт проекта, презентация и др.)</label>
             {files.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
+              <div style={{ marginBottom: 12 }}>
                 {files.map((f) => (
                   <div key={f.url} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <a href={f.url} target="_blank" rel="noopener noreferrer" className={styles.label} style={{ color: "#003092" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: f.fileType === "LINK" ? "#003092" : "#555", border: "1px solid", borderColor: f.fileType === "LINK" ? "#003092" : "#bbb", padding: "1px 6px" }}>
+                      {f.fileType === "LINK" ? "ССЫЛКА" : "ФАЙЛ"}
+                    </span>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" style={{ color: "#003092", fontSize: 14 }}>
                       {f.name}
                     </a>
                     <button type="button" onClick={() => removeFile(f.url)} style={{ background: "none", border: "none", color: "#E8375A", cursor: "pointer", fontSize: 16 }}>×</button>
@@ -396,17 +418,83 @@ export default function NewProjectPage() {
                 ))}
               </div>
             )}
-            <label className={styles.saveButton} style={{ display: "inline-block", cursor: "pointer", textAlign: "center" }}>
-              {uploading ? "Загрузка..." : "Прикрепить файл"}
-              <input
-                type="file"
-                accept=".pdf,.docx,.pptx,.xlsx,image/jpeg,image/png"
-                onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-                hidden
-                disabled={uploading}
-              />
-            </label>
-            <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>PDF, DOCX, PPTX, до 5 МБ</span>
+
+            <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={() => setAddMode("FILE")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: "1px solid #ddd",
+                  background: addMode === "FILE" ? "#003092" : "#fff",
+                  color: addMode === "FILE" ? "#fff" : "#555",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                Загрузить файл
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddMode("LINK")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: "1px solid #ddd",
+                  background: addMode === "LINK" ? "#003092" : "#fff",
+                  color: addMode === "LINK" ? "#fff" : "#555",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                Вставить ссылку
+              </button>
+            </div>
+
+            {addMode === "FILE" ? (
+              <div>
+                <label className={styles.saveButton} style={{ display: "inline-block", cursor: "pointer", textAlign: "center" }}>
+                  {uploading ? "Загрузка..." : "Выбрать файл"}
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.pptx,.xlsx,image/jpeg,image/png"
+                    onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+                    hidden
+                    disabled={uploading}
+                  />
+                </label>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>PDF, DOCX, PPTX, до 5 МБ</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 600 }}>
+                <input
+                  type="text"
+                  value={linkTitle}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  placeholder="Название (напр. «Концепция в Notion»)"
+                  className={styles.input}
+                />
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://drive.google.com/... или https://notion.so/..."
+                  className={styles.input}
+                />
+                {linkError && <span style={{ color: "#E8375A", fontSize: 13 }}>{linkError}</span>}
+                <button
+                  type="button"
+                  onClick={addLink}
+                  className={styles.saveButton}
+                  style={{ alignSelf: "flex-start" }}
+                >
+                  Добавить ссылку
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

@@ -161,20 +161,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Прикрепляем файлы, если переданы
+    // Прикрепляем файлы и ссылки, если переданы
     if (data.files && Array.isArray(data.files)) {
       for (const file of data.files) {
-        if (file.url && file.name) {
-          await prisma.projectFile.create({
-            data: {
-              projectId: project.id,
-              title: file.name,
-              fileType: "FILE",
-              filename: file.name,
-              filepath: file.url,
-            },
-          });
-        }
+        if (!file.url || !file.name) continue;
+        const isLink = file.fileType === "LINK";
+        await prisma.projectFile.create({
+          data: {
+            projectId: project.id,
+            title: file.name,
+            fileType: isLink ? "LINK" : "FILE",
+            filename: isLink ? null : file.name,
+            filepath: isLink ? null : file.url,
+            url: isLink ? file.url : null,
+          },
+        });
       }
     }
 
