@@ -116,6 +116,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   padding: var(--space-md);
+  min-width: 0;
 }
 
 .panel .sectionTitle {
@@ -138,11 +139,18 @@
 .barLabel {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
   color: var(--color-text-primary);
 }
 
+.barLabel > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .barCount {
+  flex-shrink: 0;
   font-weight: 600;
   color: var(--color-deep-blue);
 }
