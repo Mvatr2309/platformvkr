@@ -71,7 +71,7 @@ export async function GET() {
     prisma.supervisorProfile.count({
       where: { status: "APPROVED", projects: { none: {} } },
     }),
-    // Нагрузка НР (топ-10 по количеству проектов)
+    // Нагрузка НР (все approved, сортировка по убыванию количества проектов)
     prisma.supervisorProfile.findMany({
       where: { status: "APPROVED" },
       select: {
@@ -81,7 +81,6 @@ export async function GET() {
         _count: { select: { projects: true } },
       },
       orderBy: { projects: { _count: "desc" } },
-      take: 10,
     }),
     // Последние заявки (5 шт)
     prisma.application.findMany({

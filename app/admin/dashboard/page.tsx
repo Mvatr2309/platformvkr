@@ -87,6 +87,7 @@ interface DashboardData {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [workloadPage, setWorkloadPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/dashboard");
@@ -311,25 +312,34 @@ export default function AdminDashboardPage() {
       {/* Нагрузка НР */}
       {supervisorWorkload.length > 0 && (
         <>
-          <h2 className={styles.sectionTitle}>Нагрузка научных руководителей</h2>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>Нагрузка научных руководителей</h2>
+            <Link href="/admin/workload" style={{ fontSize: 13, fontWeight: 600, color: "#003092" }}>Подробнее →</Link>
+          </div>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>НР</th>
-                  <th>Проектов</th>
-                  <th>Макс. слотов</th>
+                  <th>Загрузка</th>
+                  <th style={{ width: "40%" }}>Прогресс</th>
                   <th>Свободно</th>
                 </tr>
               </thead>
               <tbody>
-                {supervisorWorkload.map((sv) => {
+                {supervisorWorkload.slice((workloadPage - 1) * 10, workloadPage * 10).map((sv) => {
                   const free = sv.maxSlots - sv._count.projects;
+                  const pct = sv.maxSlots > 0 ? Math.min(100, (sv._count.projects / sv.maxSlots) * 100) : 0;
+                  const overloaded = sv._count.projects >= sv.maxSlots;
                   return (
                     <tr key={sv.id}>
                       <td>{sv.user.name || "Без имени"}</td>
-                      <td>{sv._count.projects}</td>
-                      <td>{sv.maxSlots}</td>
+                      <td>{sv._count.projects} / {sv.maxSlots}</td>
+                      <td>
+                        <div style={{ height: 8, background: "#eee", overflow: "hidden", maxWidth: 220 }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: overloaded ? "#E8375A" : "#003092", transition: "width 0.3s" }} />
+                        </div>
+                      </td>
                       <td className={free <= 0 ? styles.noSlots : styles.hasSlots}>
                         {free > 0 ? free : "Нет"}
                       </td>
@@ -339,6 +349,27 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+          {supervisorWorkload.length > 10 && (
+            <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                onClick={() => setWorkloadPage((p) => Math.max(1, p - 1))}
+                disabled={workloadPage === 1}
+                style={{ padding: "4px 10px", border: "1px solid #ddd", background: "#fff", cursor: workloadPage === 1 ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 13, opacity: workloadPage === 1 ? 0.5 : 1 }}
+              >
+                ←
+              </button>
+              <span style={{ fontSize: 13, color: "#555" }}>
+                Стр. {workloadPage} из {Math.ceil(supervisorWorkload.length / 10)} · всего {supervisorWorkload.length}
+              </span>
+              <button
+                onClick={() => setWorkloadPage((p) => Math.min(Math.ceil(supervisorWorkload.length / 10), p + 1))}
+                disabled={workloadPage >= Math.ceil(supervisorWorkload.length / 10)}
+                style={{ padding: "4px 10px", border: "1px solid #ddd", background: "#fff", cursor: workloadPage >= Math.ceil(supervisorWorkload.length / 10) ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 13, opacity: workloadPage >= Math.ceil(supervisorWorkload.length / 10) ? 0.5 : 1 }}
+              >
+                →
+              </button>
+            </div>
+          )}
         </>
       )}
 
