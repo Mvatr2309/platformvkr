@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
@@ -30,6 +30,14 @@ interface Supervisor {
 }
 
 export default function SupervisorsListPage() {
+  return (
+    <Suspense fallback={<p>Загрузка...</p>}>
+      <SupervisorsListInner />
+    </Suspense>
+  );
+}
+
+function SupervisorsListInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectTypeFilter = searchParams.get("projectType");
