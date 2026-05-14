@@ -72,6 +72,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const { data: session } = useSession();
   const DIRECTIONS = useDictionary("directions");
+  const ROLES = useDictionary("roles");
   const [project, setProject] = useState<Project | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,7 +276,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const canDelete = isAdmin || ((isAuthor || isSupervisorOwner) && otherMembers.length === 0);
 
   const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState({ title: "", description: "", contact: "" });
+  const [editData, setEditData] = useState<{ title: string; description: string; contact: string; requiredRoles: string[] }>({ title: "", description: "", contact: "", requiredRoles: [] });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -418,7 +419,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 )}
                 {!editing && (
                   <button
-                    onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact }); }}
+                    onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact, requiredRoles: project.requiredRoles || [] }); }}
                     className={styles.editBtn}
                   >
                     Редактировать
@@ -563,19 +564,44 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           </div>
 
           {/* Требуемые роли — только для стартапов */}
-          {!isResearch && project.requiredRoles.length > 0 && (
+          {!isResearch && (editing || project.requiredRoles.length > 0) && (
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Роли в команде</h2>
-              <div className={styles.tags}>
-                {project.requiredRoles.map((r) => {
-                  const filled = filledRoles.includes(r);
-                  return (
-                    <span key={r} className={filled ? styles.filledRoleTag : styles.openRoleTag}>
-                      {filled ? `${r} — занята` : `${r} — ищем`}
-                    </span>
-                  );
-                })}
-              </div>
+              {editing ? (
+                <div className={styles.tags} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {ROLES.map((role) => {
+                    const checked = editData.requiredRoles.includes(role);
+                    return (
+                      <label key={role} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", border: "1px solid var(--color-border)", cursor: "pointer", background: checked ? "rgba(0,48,146,0.06)" : "transparent" }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setEditData((d) => ({
+                              ...d,
+                              requiredRoles: checked
+                                ? d.requiredRoles.filter((r) => r !== role)
+                                : [...d.requiredRoles, role],
+                            }));
+                          }}
+                        />
+                        <span style={{ fontSize: 13 }}>{role}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.tags}>
+                  {project.requiredRoles.map((r) => {
+                    const filled = filledRoles.includes(r);
+                    return (
+                      <span key={r} className={filled ? styles.filledRoleTag : styles.openRoleTag}>
+                        {filled ? `${r} — занята` : `${r} — ищем`}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
