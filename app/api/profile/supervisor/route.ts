@@ -26,6 +26,42 @@ export async function GET() {
   return NextResponse.json({ ...profile, name: user?.name || "" });
 }
 
+// PATCH — частичное обновление профиля (например, переключение recruitmentStatus)
+export async function PATCH(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+  if (session.user.role !== "SUPERVISOR") {
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+  }
+
+  try {
+    const data = await request.json();
+    const patch: Record<string, unknown> = {};
+
+    if (data.recruitmentStatus !== undefined) {
+      if (!["OPEN", "CLOSED"].includes(data.recruitmentStatus)) {
+        return NextResponse.json({ error: "Недопустимое значение recruitmentStatus" }, { status: 400 });
+      }
+      patch.recruitmentStatus = data.recruitmentStatus;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ error: "Нет полей для обновления" }, { status: 400 });
+    }
+
+    const profile = await prisma.supervisorProfile.update({
+      where: { userId: session.user.id },
+      data: patch,
+    });
+
+    return NextResponse.json(profile);
+  } catch {
+    return NextResponse.json({ error: "Ошибка обновления" }, { status: 500 });
+  }
+}
+
 // PUT — создать или обновить профиль НР
 export async function PUT(request: NextRequest) {
   const session = await auth();

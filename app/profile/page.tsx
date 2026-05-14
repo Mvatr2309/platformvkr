@@ -27,6 +27,7 @@ interface ProfileData {
   maxProjects: number;
   contact: string;
   status?: string;
+  recruitmentStatus?: string;
 }
 
 const EMPTY_PROFILE: ProfileData = {
@@ -43,6 +44,7 @@ const EMPTY_PROFILE: ProfileData = {
   projectTypes: [],
   maxProjects: 4,
   contact: "",
+  recruitmentStatus: "OPEN",
 };
 
 export default function ProfilePage() {
@@ -437,6 +439,37 @@ export default function ProfilePage() {
               max={4}
             />
           </div>
+
+          {/* Приём новых проектов — тумблер */}
+          {profile.status && (
+            <div className={styles.field}>
+              <label className={styles.label}>Приём новых проектов</label>
+              <p className={styles.fieldHint}>
+                Когда выключено — студенты не смогут предложить вам проект и каталог будет показывать «Набор закрыт». Если все слоты заняты — приём блокируется автоматически независимо от настройки.
+              </p>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={profile.recruitmentStatus !== "CLOSED"}
+                  onChange={async (e) => {
+                    const newStatus = e.target.checked ? "OPEN" : "CLOSED";
+                    updateField("recruitmentStatus", newStatus);
+                    try {
+                      await fetch("/api/profile/supervisor", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ recruitmentStatus: newStatus }),
+                      });
+                    } catch { /* ignore */ }
+                  }}
+                  style={{ width: 18, height: 18 }}
+                />
+                <span style={{ fontSize: 15, fontWeight: 600, color: profile.recruitmentStatus === "CLOSED" ? "#888" : "#2e7d32" }}>
+                  {profile.recruitmentStatus === "CLOSED" ? "Набор закрыт" : "Принимаю новые проекты"}
+                </span>
+              </label>
+            </div>
+          )}
         </section>
 
         {/* Секция 3: Фото */}

@@ -27,5 +27,17 @@ export async function GET() {
     orderBy: { projects: { _count: "desc" } },
   });
 
-  return NextResponse.json(supervisors);
+  // Эффективный статус: CLOSED, если НР сам закрыл ИЛИ если слоты заполнены
+  const enriched = supervisors.map((s) => {
+    const slotsFull = s._count.projects >= s.maxSlots;
+    const effectiveStatus = s.recruitmentStatus === "CLOSED" || slotsFull ? "CLOSED" : "OPEN";
+    const closureReason = s.recruitmentStatus === "CLOSED"
+      ? "manual"
+      : slotsFull
+        ? "full"
+        : null;
+    return { ...s, effectiveStatus, closureReason };
+  });
+
+  return NextResponse.json(enriched);
 }

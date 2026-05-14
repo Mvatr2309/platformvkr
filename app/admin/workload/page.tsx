@@ -15,21 +15,18 @@ interface WorkloadItem {
   directions: string[];
   projectTypes: string[];
   recruitmentStatus: string;
+  effectiveStatus: "OPEN" | "CLOSED";
+  closureReason: "manual" | "full" | null;
   user: { id: string; name: string; email: string };
   _count: { projects: number };
 }
-
-const RECRUITMENT_LABELS: Record<string, string> = {
-  OPEN: "Принимает",
-  CLOSED: "Не принимает",
-};
 
 export default function WorkloadPage() {
   const [items, setItems] = useState<WorkloadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"load_desc" | "load_asc" | "name_asc" | "name_desc">("load_desc");
-  const [statusFilter, setStatusFilter] = useState<"" | "free" | "full" | "overloaded">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "free" | "full" | "overloaded" | "closed">("");
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/workload");
@@ -50,11 +47,13 @@ export default function WorkloadPage() {
       );
     }
     if (statusFilter === "free") {
-      list = list.filter((s) => s._count.projects < s.maxSlots);
+      list = list.filter((s) => s._count.projects < s.maxSlots && s.recruitmentStatus === "OPEN");
     } else if (statusFilter === "full") {
       list = list.filter((s) => s._count.projects === s.maxSlots);
     } else if (statusFilter === "overloaded") {
       list = list.filter((s) => s._count.projects > s.maxSlots);
+    } else if (statusFilter === "closed") {
+      list = list.filter((s) => s.recruitmentStatus === "CLOSED");
     }
     list = [...list].sort((a, b) => {
       if (sort === "load_desc") return b._count.projects - a._count.projects;
@@ -117,6 +116,7 @@ export default function WorkloadPage() {
           <option value="free">Со свободными слотами</option>
           <option value="full">Полная загрузка</option>
           <option value="overloaded">Перегружены</option>
+          <option value="closed">Закрыли набор вручную</option>
         </select>
         <span className={styles.count}>Найдено: {filtered.length}</span>
       </div>
@@ -166,10 +166,16 @@ export default function WorkloadPage() {
                       padding: "2px 8px",
                       fontSize: 12,
                       fontWeight: 600,
-                      background: s.recruitmentStatus === "OPEN" ? "rgba(46,125,50,0.1)" : "#f0f0f0",
-                      color: s.recruitmentStatus === "OPEN" ? "#2e7d32" : "#888",
-                    }}>
-                      {RECRUITMENT_LABELS[s.recruitmentStatus] || s.recruitmentStatus}
+                      background: s.effectiveStatus === "OPEN" ? "rgba(46,125,50,0.1)" : s.closureReason === "manual" ? "#f0f0f0" : "rgba(232,55,90,0.08)",
+                      color: s.effectiveStatus === "OPEN" ? "#2e7d32" : s.closureReason === "manual" ? "#888" : "#E8375A",
+                    }}
+                    title={s.closureReason === "manual" ? "Закрыто вручную" : s.closureReason === "full" ? "Все слоты заняты" : ""}
+                    >
+                      {s.effectiveStatus === "OPEN"
+                        ? "Принимает"
+                        : s.closureReason === "manual"
+                          ? "Закрыто вручную"
+                          : "Слоты заняты"}
                     </span>
                   </td>
                 </tr>
