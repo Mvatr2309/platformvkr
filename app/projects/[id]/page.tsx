@@ -87,6 +87,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [applying, setApplying] = useState(false);
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
+  const [myProjectTypes, setMyProjectTypes] = useState<string[]>([]);
   const [myApplication, setMyApplication] = useState<{ status: string } | null>(null);
   const [mySupervisorApp, setMySupervisorApp] = useState<{ status: string } | null>(null);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
@@ -136,6 +137,15 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     fetchActivities();
     checkMyApplication();
   }, [fetchProject, fetchActivities, checkMyApplication]);
+
+  // Подтянуть массив projectTypes собственного профиля НР, чтобы проверить соответствие при подаче заявки на руководство
+  useEffect(() => {
+    if (session?.user?.role !== "SUPERVISOR") return;
+    fetch("/api/profile/supervisor")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.projectTypes) setMyProjectTypes(data.projectTypes); })
+      .catch(() => {});
+  }, [session]);
 
   async function handleAddFileSlot(file?: File) {
     if (!newFileTitle.trim()) {
@@ -221,6 +231,22 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   async function handleApply() {
     if (!motivation.trim()) { setApplyErr("Напишите мотивационное письмо"); return; }
+
+    // Если НР подаёт заявку на руководство проектом, тип которого не указан в его профиле — предупреждение
+    if (
+      session?.user?.role === "SUPERVISOR" &&
+      project &&
+      myProjectTypes.length > 0 &&
+      !myProjectTypes.includes(project.projectType)
+    ) {
+      const myTypes = myProjectTypes.map((t) => TYPE_LABELS[t] || t).join(", ");
+      const projType = TYPE_LABELS[project.projectType] || project.projectType;
+      const ok = confirm(
+        `Внимание: тип этого проекта — «${projType}», а в своём профиле вы указали, что работаете только с: ${myTypes}.\n\nВсё равно подать заявку на руководство?`
+      );
+      if (!ok) return;
+    }
+
     setApplying(true); setApplyErr(""); setApplyMsg("");
     try {
       const body: Record<string, string> = { projectId: id, motivation };

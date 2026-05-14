@@ -88,6 +88,18 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
   async function handlePropose() {
     if (!selectedProject) { setProposeErr("Выберите проект"); return; }
     if (!proposeMsg.trim()) { setProposeErr("Напишите сообщение руководителю"); return; }
+
+    // Предупреждение о несоответствии типа проекта (если у НР задан список типов и проект не в нём)
+    const proj = myProjects.find((p) => p.id === selectedProject);
+    if (proj && profile && profile.projectTypes.length > 0 && !profile.projectTypes.includes(proj.projectType)) {
+      const supervisorTypes = profile.projectTypes.map((t) => PROJECT_TYPE_LABELS[t] || t).join(", ");
+      const projType = PROJECT_TYPE_LABELS[proj.projectType] || proj.projectType;
+      const ok = confirm(
+        `Внимание: тип вашего проекта — «${projType}», а этот руководитель указал, что работает только с: ${supervisorTypes}.\n\nВсё равно отправить предложение?`
+      );
+      if (!ok) return;
+    }
+
     setProposing(true); setProposeErr(""); setProposeSuccess("");
     try {
       const res = await fetch("/api/applications", {
