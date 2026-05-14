@@ -80,6 +80,8 @@ interface DashboardData {
     supervisor: { user: { name: string } } | null;
     _count: { members: number };
   }>;
+  supervisorsByProjectType: Record<string, number>;
+  supervisorsByDirection: Array<{ direction: string; count: number }>;
 }
 
 export default function AdminDashboardPage() {
@@ -97,7 +99,15 @@ export default function AdminDashboardPage() {
   if (loading) return <p>Загрузка...</p>;
   if (!data) return <p>Ошибка загрузки</p>;
 
-  const { stats, upcomingDeadlines, directionCounts, supervisorWorkload, recentApplications, recentProjects } = data;
+  const { stats, upcomingDeadlines, directionCounts, supervisorWorkload, recentApplications, recentProjects, supervisorsByProjectType, supervisorsByDirection } = data;
+
+  const supTypeOrdered: Array<{ key: string; label: string; count: number }> = [
+    { key: "CLASSIC_DISSERTATION", label: "Исследование", count: supervisorsByProjectType.CLASSIC_DISSERTATION || 0 },
+    { key: "STARTUP", label: "Стартап", count: supervisorsByProjectType.STARTUP || 0 },
+    { key: "CORPORATE_STARTUP", label: "Корп. стартап", count: supervisorsByProjectType.CORPORATE_STARTUP || 0 },
+  ];
+  const maxSupType = Math.max(...supTypeOrdered.map((s) => s.count), 1);
+  const maxSupDir = Math.max(...supervisorsByDirection.map((s) => s.count), 1);
 
   const hasAlerts = stats.pendingModeration > 0 || stats.pendingProjects > 0 ||
     stats.studentsWithoutProject > 0 || stats.unassignedProjects > 0 ||
@@ -244,6 +254,57 @@ export default function AdminDashboardPage() {
         <div className={styles.statCard}>
           <div className={styles.statValue}>{stats.totalApplications}</div>
           <div className={styles.statLabel}>Заявок подано</div>
+        </div>
+      </div>
+
+      {/* Аналитика по НР: типы проектов и магистратуры */}
+      <h2 className={styles.sectionTitle}>Распределение научных руководителей</h2>
+      <p className={styles.hint} style={{ marginBottom: 16, fontSize: 13, color: "#888" }}>
+        Один руководитель может выбрать несколько типов проектов и магистратур, поэтому суммы могут превышать общее число НР.
+      </p>
+      <div className={styles.twoCol}>
+        <div className={styles.panel}>
+          <h2 className={styles.sectionTitle}>НР по типам проектов</h2>
+          <div className={styles.barList}>
+            {supTypeOrdered.map((it) => {
+              const pct = (it.count / maxSupType) * 100;
+              return (
+                <Link key={it.key} href={`/admin/supervisors-list?projectType=${it.key}`} className={styles.barItem} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className={styles.barLabel}>
+                    <span>{it.label}</span>
+                    <span className={styles.barCount}>{it.count}</span>
+                  </div>
+                  <div className={styles.barTrack}>
+                    <div className={styles.barFill} style={{ width: `${pct}%` }} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className={styles.panel}>
+          <h2 className={styles.sectionTitle}>НР по магистратурам</h2>
+          {supervisorsByDirection.length === 0 ? (
+            <p className={styles.noData}>Нет данных</p>
+          ) : (
+            <div className={styles.barList}>
+              {supervisorsByDirection.map((d) => {
+                const pct = (d.count / maxSupDir) * 100;
+                return (
+                  <Link key={d.direction} href={`/admin/supervisors-list?direction=${encodeURIComponent(d.direction)}`} className={styles.barItem} style={{ textDecoration: "none", color: "inherit" }}>
+                    <div className={styles.barLabel}>
+                      <span>{d.direction || "Не указано"}</span>
+                      <span className={styles.barCount}>{d.count}</span>
+                    </div>
+                    <div className={styles.barTrack}>
+                      <div className={styles.barFill} style={{ width: `${pct}%` }} />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

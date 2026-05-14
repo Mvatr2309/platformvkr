@@ -121,6 +121,46 @@ export async function GET() {
     where: { supervisorId: null, status: { not: "DRAFT" } },
   });
 
+  // НР по типам проектов и магистратурам
+  const approvedSupervisors = await prisma.supervisorProfile.findMany({
+    where: { status: "APPROVED" },
+    select: { projectTypes: true, directions: true },
+  });
+
+  const supervisorsByProjectType: Record<string, number> = {
+    CLASSIC_DISSERTATION: 0,
+    STARTUP: 0,
+    CORPORATE_STARTUP: 0,
+  };
+  for (const sp of approvedSupervisors) {
+    for (const t of sp.projectTypes) {
+      if (t in supervisorsByProjectType) supervisorsByProjectType[t]++;
+    }
+  }
+
+  // Все магистратуры из справочника (чтобы показать те, что с 0)
+  const directionsDict = await prisma.dictionary.findUnique({
+    where: { type: "directions" },
+    include: { values: { orderBy: { sortOrder: "asc" } } },
+  });
+  const directionsList = directionsDict?.values.map((v) => v.value) || [];
+
+  const supervisorsByDirectionCounts: Record<string, number> = {};
+  for (const d of directionsList) supervisorsByDirectionCounts[d] = 0;
+  for (const sp of approvedSupervisors) {
+    for (const d of sp.directions) {
+      if (d in supervisorsByDirectionCounts) {
+        supervisorsByDirectionCounts[d]++;
+      } else {
+        // если НР указал направление, которого уже нет в справочнике — всё равно показываем
+        supervisorsByDirectionCounts[d] = 1;
+      }
+    }
+  }
+  const supervisorsByDirection = Object.entries(supervisorsByDirectionCounts)
+    .map(([direction, count]) => ({ direction, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Проекты без участников
   const emptyProjects = await prisma.project.count({
     where: {
@@ -163,5 +203,7 @@ export async function GET() {
     supervisorWorkload,
     recentApplications,
     recentProjects,
+    supervisorsByProjectType,
+    supervisorsByDirection,
   });
 }

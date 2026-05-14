@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
+
+const TYPE_LABELS: Record<string, string> = {
+  CLASSIC_DISSERTATION: "Исследование",
+  STARTUP: "Стартап",
+  CORPORATE_STARTUP: "Корп. стартап",
+};
 
 interface Supervisor {
   id: string;
@@ -16,10 +23,18 @@ interface Supervisor {
     contact: string;
     expertise: string[];
     maxProjects: number;
+    projectTypes: string[];
+    directions: string[];
+    status: string;
   } | null;
 }
 
 export default function SupervisorsListPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const projectTypeFilter = searchParams.get("projectType");
+  const directionFilter = searchParams.get("direction");
+
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -36,6 +51,13 @@ export default function SupervisorsListPage() {
   const filtered = useMemo(() => {
     let list = supervisors;
 
+    if (projectTypeFilter) {
+      list = list.filter((s) => s.supervisor?.projectTypes?.includes(projectTypeFilter));
+    }
+    if (directionFilter) {
+      list = list.filter((s) => s.supervisor?.directions?.includes(directionFilter));
+    }
+
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((s) =>
@@ -49,17 +71,42 @@ export default function SupervisorsListPage() {
     });
 
     return list;
-  }, [supervisors, search, sortAsc]);
+  }, [supervisors, search, sortAsc, projectTypeFilter, directionFilter]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
-  useEffect(() => { setPage(1); }, [search, setPage]);
+  useEffect(() => { setPage(1); }, [search, projectTypeFilter, directionFilter, setPage]);
 
   if (loading) return <p>Загрузка...</p>;
+
+  const hasUrlFilter = !!(projectTypeFilter || directionFilter);
 
   return (
     <div>
       <h1 className={styles.title}>Список научных руководителей</h1>
+
+      {hasUrlFilter && (
+        <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#555" }}>Фильтр:</span>
+          {projectTypeFilter && (
+            <span style={{ background: "rgba(0,48,146,0.08)", color: "#003092", padding: "4px 10px", fontSize: 13, fontWeight: 600 }}>
+              Тип проектов: {TYPE_LABELS[projectTypeFilter] || projectTypeFilter}
+            </span>
+          )}
+          {directionFilter && (
+            <span style={{ background: "rgba(0,48,146,0.08)", color: "#003092", padding: "4px 10px", fontSize: 13, fontWeight: 600 }}>
+              Магистратура: {directionFilter}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => router.push("/admin/supervisors-list")}
+            style={{ background: "none", border: "1px solid #ddd", padding: "4px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Сбросить фильтр
+          </button>
+        </div>
+      )}
 
       <div className={styles.controls}>
         <input
