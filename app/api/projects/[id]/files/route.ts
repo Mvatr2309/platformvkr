@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, unlink } from "fs/promises";
+import { writeFile, mkdir, unlink, stat } from "fs/promises";
 import path from "path";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requireProjectAccess, isGuardError } from "@/lib/api-guard";
+import { validateUpload, isInside } from "@/lib/upload-validation";
 
-// GET /api/projects/[id]/files — список файлов проекта
+const PUBLIC_ROOT = path.join(process.cwd(), "public");
+const UPLOAD_DIR = path.join(PUBLIC_ROOT, "uploads", "projects");
+const PROJECT_QUOTA = 100 * 1024 * 1024;
+
+// GET /api/projects/[id]/files — список файлов проекта (только участники + НР + админ)
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const guard = await requireProjectAccess(id);
+  if (isGuardError(guard)) return guard;
 
   const files = await prisma.projectFile.findMany({
     where: { projectId: id },
@@ -24,107 +32,91 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-  }
-
   const { id } = await params;
-
-  const project = await prisma.project.findUnique({
-    where: { id },
-    select: { id: true },
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: "Проект не найден" }, { status: 404 });
-  }
+  const guard = await requireProjectAccess(id, { write: true });
+  if (isGuardError(guard)) return guard;
 
   try {
     const formData = await request.formData();
-    const title = (formData.get("title") as string)?.trim();
-    const fileType = formData.get("fileType") as string; // "FILE" or "LINK"
+    const title = String(formData.get("title") ?? "").trim().slice(0, 200);
+    const fileType = String(formData.get("fileType") ?? "FILE");
 
     if (!title) {
       return NextResponse.json({ error: "Укажите название документа" }, { status: 400 });
     }
 
-    // === LINK ===
     if (fileType === "LINK") {
-      const url = (formData.get("url") as string)?.trim();
-      if (!url) {
-        return NextResponse.json({ error: "Укажите ссылку" }, { status: 400 });
+      const url = String(formData.get("url") ?? "").trim();
+      if (!/^https?:\/\//i.test(url)) {
+        return NextResponse.json(
+          { error: "Ссылка должна начинаться с http:// или https://" },
+          { status: 400 }
+        );
       }
 
       const projectFile = await prisma.projectFile.create({
-        data: {
-          projectId: id,
-          title,
-          fileType: "LINK",
-          url,
-        },
+        data: { projectId: id, title, fileType: "LINK", url },
       });
-
       await prisma.activity.create({
         data: {
           projectId: id,
           action: `Добавлена ссылка: ${title}`,
-          actorEmail: session.user.email,
+          actorEmail: guard.session.user.email,
         },
       });
-
+      revalidatePath(`/projects/${id}`);
       return NextResponse.json(projectFile, { status: 201 });
     }
 
-    // === FILE (default) ===
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "Файл не выбран" }, { status: 400 });
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "Файл слишком большой (макс. 10 МБ)" }, { status: 400 });
+    const validation = await validateUpload(file, "doc");
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // Проверка общего размера файлов проекта (макс. 100 МБ)
-    const existingFiles = await prisma.projectFile.findMany({
+    // Проверка общей квоты проекта (100 МБ)
+    const existing = await prisma.projectFile.findMany({
       where: { projectId: id, fileType: "FILE" },
       select: { filepath: true },
     });
-    const fs = await import("fs");
-    let totalSize = 0;
-    for (const f of existingFiles) {
+    let used = 0;
+    for (const f of existing) {
       if (!f.filepath) continue;
+      const abs = path.join(PUBLIC_ROOT, f.filepath);
       try {
-        const stat = fs.statSync(path.join(process.cwd(), "public", f.filepath));
-        totalSize += stat.size;
-      } catch { /* файл мог быть удалён */ }
+        const s = await stat(abs);
+        used += s.size;
+      } catch {
+        /* файл мог быть удалён */
+      }
     }
-    if (totalSize + file.size > 100 * 1024 * 1024) {
+    if (used + validation.value.size > PROJECT_QUOTA) {
       return NextResponse.json(
         { error: "Превышен лимит хранилища проекта (100 МБ). Удалите ненужные файлы." },
         { status: 400 }
       );
     }
 
-    const ext = file.name.split(".").pop() || "bin";
-    const filename = `${id}-${Date.now()}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "projects");
-    await mkdir(uploadDir, { recursive: true });
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    const absPath = path.join(UPLOAD_DIR, validation.value.safeFilename);
+    if (!isInside(UPLOAD_DIR, absPath)) {
+      return NextResponse.json({ error: "Недопустимый путь файла" }, { status: 400 });
+    }
+    await writeFile(absPath, validation.value.buffer);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadDir, filename), buffer);
-
-    const filepath = `/uploads/projects/${filename}`;
+    const publicPath = `/uploads/projects/${validation.value.safeFilename}`;
 
     const projectFile = await prisma.projectFile.create({
       data: {
         projectId: id,
         title,
         fileType: "FILE",
-        filename: file.name,
-        filepath,
+        filename: validation.value.originalName,
+        filepath: publicPath,
       },
     });
 
@@ -132,46 +124,43 @@ export async function POST(
       data: {
         projectId: id,
         action: `Загружен файл: ${title}`,
-        actorEmail: session.user.email,
+        actorEmail: guard.session.user.email,
       },
     });
 
+    revalidatePath(`/projects/${id}`);
     return NextResponse.json(projectFile, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Ошибка загрузки" }, { status: 500 });
   }
 }
 
-// DELETE /api/projects/[id]/files — удаление файла/ссылки
+// DELETE /api/projects/[id]/files — удаление файла/ссылки (только админ + НР + автор)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-  }
-
   const { id } = await params;
-  const { fileId } = await request.json();
+  const guard = await requireProjectAccess(id, { write: true });
+  if (isGuardError(guard)) return guard;
 
-  if (!fileId) {
+  const { fileId } = await request.json();
+  if (typeof fileId !== "string") {
     return NextResponse.json({ error: "fileId обязателен" }, { status: 400 });
   }
 
   const file = await prisma.projectFile.findFirst({
     where: { id: fileId, projectId: id },
   });
-
   if (!file) {
     return NextResponse.json({ error: "Файл не найден" }, { status: 404 });
   }
 
-  // Удалить физический файл с диска
   if (file.fileType === "FILE" && file.filepath) {
-    try {
-      await unlink(path.join(process.cwd(), "public", file.filepath));
-    } catch { /* файл мог быть уже удалён */ }
+    const abs = path.join(PUBLIC_ROOT, file.filepath);
+    if (isInside(UPLOAD_DIR, abs)) {
+      await unlink(abs).catch(() => undefined);
+    }
   }
 
   await prisma.projectFile.delete({ where: { id: fileId } });
@@ -180,9 +169,10 @@ export async function DELETE(
     data: {
       projectId: id,
       action: `Удалён документ: ${file.title}`,
-      actorEmail: session.user.email,
+      actorEmail: guard.session.user.email,
     },
   });
 
+  revalidatePath(`/projects/${id}`);
   return NextResponse.json({ ok: true });
 }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 
 function generateCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
 // POST /api/auth/verify-email — подтвердить email по коду

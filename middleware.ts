@@ -23,6 +23,17 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
 
+  // === Защита /api/admin/* — JSON-ответы, без редиректов ===
+  if (pathname.startsWith("/api/admin")) {
+    if (!user) {
+      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+    }
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
   // Проверка авторизации для защищённых маршрутов
   const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
   const isAdmin = adminPaths.some((path) => pathname.startsWith(path));
@@ -59,5 +70,6 @@ export default auth((req) => {
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico|uploads).*)",
+    "/api/admin/:path*",
   ],
 };

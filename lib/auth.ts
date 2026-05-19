@@ -3,7 +3,22 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+// Защита от запуска без секрета: NextAuth подписывает JWT этим ключом,
+// при пустом/слабом значении сессии становятся подделываемыми.
+const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
+if (!secret) {
+  throw new Error(
+    "NEXTAUTH_SECRET (или AUTH_SECRET) не задан. Сгенерируйте: `openssl rand -base64 32` и положите в .env"
+  );
+}
+if (secret.length < 32) {
+  console.warn(
+    `[auth] NEXTAUTH_SECRET длиной ${secret.length} символов — рекомендуется ≥ 32. Сгенерируйте новый: openssl rand -base64 32`
+  );
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret,
   providers: [
     CredentialsProvider({
       name: "credentials",
