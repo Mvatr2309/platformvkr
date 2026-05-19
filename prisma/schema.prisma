@@ -82,7 +82,7 @@ model SupervisorProfile {
   directions      String[]          // Направления студентов (мультиселект)
   projectTypes    String[]          // Типы проектов (CLASSIC_DISSERTATION, STARTUP, CORPORATE_STARTUP)
   maxSlots        Int               @default(3) // Макс. одновременных проектов (руководство)
-  maxProjects     Int               @default(4) // Макс. проектов под авторством НР (1–4)
+  maxProjects     Int               @default(3) // Макс. проектов под авторством НР (1–3)
   contact         String            // Контакт (e-mail, Telegram, телефон)
 
   status          ProfileStatus     @default(DRAFT)

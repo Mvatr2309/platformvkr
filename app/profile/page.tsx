@@ -42,7 +42,7 @@ const EMPTY_PROFILE: ProfileData = {
   proposedTopics: null,
   directions: [],
   projectTypes: [],
-  maxProjects: 4,
+  maxProjects: 3,
   contact: "",
   recruitmentStatus: "OPEN",
 };
@@ -425,18 +425,18 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.field} style={{ maxWidth: 200 }}>
-            <label className={styles.label}>Макс. проектов (1–4)</label>
+            <label className={styles.label}>Макс. проектов (1–3)</label>
             <p className={styles.fieldHint}>Суммарное количество проектов: ваших и под руководством</p>
             <input
               type="number"
               value={profile.maxProjects}
               onChange={(e) => {
                 const v = parseInt(e.target.value) || 1;
-                updateField("maxProjects", Math.min(4, Math.max(1, v)));
+                updateField("maxProjects", Math.min(3, Math.max(1, v)));
               }}
               className={styles.input}
               min={1}
-              max={4}
+              max={3}
             />
           </div>
 
