@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // GET /api/admin/matching — проекты без НР + доступные НР (04.01, 04.05)
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   // Проекты без руководителя или со статусом OPEN/PENDING
   const projects = await prisma.project.findMany({
@@ -42,10 +40,8 @@ export async function GET() {
 
 // POST /api/admin/matching — предложить НР на проект (04.02, 04.03)
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const { projectId, supervisorId } = await request.json();
 
@@ -84,7 +80,7 @@ export async function POST(request: NextRequest) {
     data: {
       projectId,
       action: `Предложено руководство: ${supervisor.user.name} (ожидает подтверждения)`,
-      actorEmail: session.user.email,
+      actorEmail: guard.session.user.email,
     },
   });
 

@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // GET /api/admin/projects-list — список всех проектов
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const projects = await prisma.project.findMany({
     include: {
-      supervisor: { include: { user: { select: { name: true } } } },
+      supervisor: { select: { id: true, user: { select: { name: true } } } },
       _count: { select: { members: true, applications: true } },
     },
     orderBy: { title: "asc" },
+    take: 500,
   });
 
   return NextResponse.json(projects);

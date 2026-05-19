@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // GET /api/admin/students-list — список всех студентов с профилями
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
-    include: {
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      profileCompleted: true,
       student: true,
     },
     orderBy: { name: "asc" },
+    take: 500,
   });
 
   const registered = students.map((s) => ({
@@ -37,6 +40,7 @@ export async function GET() {
       role: true,
       project: { select: { title: true } },
     },
+    take: 500,
   });
 
   const manual = manualMembers.map((m) => ({

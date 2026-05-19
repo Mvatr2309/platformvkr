@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // Генерация случайного пароля
 function generatePassword(length = 10) {
@@ -12,10 +12,8 @@ function generatePassword(length = 10) {
 
 // DELETE /api/admin/invitations — удалить аккаунт и приглашение
 export async function DELETE(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   try {
     const { invitationId } = await request.json();
@@ -76,10 +74,8 @@ export async function DELETE(request: NextRequest) {
 
 // GET /api/admin/invitations — список приглашений
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const invitations = await prisma.invitation.findMany({
     orderBy: { createdAt: "desc" },
@@ -104,10 +100,8 @@ export async function GET() {
 
 // POST /api/admin/invitations — создать аккаунт и отправить данные на почту
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   try {
     const { email, role, cohort } = await request.json();
@@ -172,7 +166,7 @@ export async function POST(request: NextRequest) {
     const invitation = await prisma.invitation.create({
       data: {
         email,
-        sentById: session.user.id,
+        sentById: guard.session.user.id,
         status: "ACCEPTED",
       },
     });

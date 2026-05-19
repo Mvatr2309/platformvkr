@@ -1,55 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { requireAuth, isGuardError } from "@/lib/api-guard";
+import { validateUpload, isInside, type UploadKind } from "@/lib/upload-validation";
 
-const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_DOC = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const MAX_SIZE = 10 * 1024 * 1024; // 10 МБ
+const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
+
+// Whitelist допустимых значений параметра `type` и какие правила применяем
+const TYPE_TO_KIND: Record<string, UploadKind> = {
+  photo: "image",
+  resume: "doc",
+  project: "doc",
+};
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-  }
+  const guard = await requireAuth();
+  if (isGuardError(guard)) return guard;
+  const { session } = guard;
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const type = formData.get("type") as string; // "photo" или "resume"
+    const file = formData.get("file");
+    const type = String(formData.get("type") ?? "");
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "Файл не выбран" }, { status: 400 });
     }
 
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Файл слишком большой (макс. 10 МБ)" }, { status: 400 });
+    const kind = TYPE_TO_KIND[type];
+    if (!kind) {
+      return NextResponse.json(
+        { error: "Неизвестный тип загрузки (ожидается photo, resume или project)" },
+        { status: 400 }
+      );
     }
 
-    const allowed = type === "photo" ? ALLOWED_IMAGE
-      : type === "project" ? [...ALLOWED_IMAGE, ...ALLOWED_DOC]
-      : [...ALLOWED_IMAGE, ...ALLOWED_DOC];
-    if (!allowed.includes(file.type)) {
-      return NextResponse.json({ error: "Недопустимый формат файла" }, { status: 400 });
+    const validation = await validateUpload(file, kind);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // Генерируем уникальное имя
-    const ext = file.name.split(".").pop() || "bin";
-    const filename = `${session.user.id}-${type}-${Date.now()}.${ext}`;
+    await mkdir(UPLOAD_ROOT, { recursive: true });
+    const filename = `${session.user.id}-${type}-${validation.value.safeFilename}`;
+    const abs = path.join(UPLOAD_ROOT, filename);
+    if (!isInside(UPLOAD_ROOT, abs)) {
+      return NextResponse.json({ error: "Недопустимый путь файла" }, { status: 400 });
+    }
+    await writeFile(abs, validation.value.buffer);
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadDir, filename), buffer);
-
-    const url = `/uploads/${filename}`;
-    return NextResponse.json({ url });
+    return NextResponse.json({ url: `/uploads/${filename}` });
   } catch {
     return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
   }

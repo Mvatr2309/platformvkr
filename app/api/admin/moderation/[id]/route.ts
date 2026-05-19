@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // GET /api/admin/moderation/[id] — детальный просмотр профиля
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const { id } = await params;
 
@@ -35,10 +33,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const { id } = await params;
   const { action, comment } = await request.json();

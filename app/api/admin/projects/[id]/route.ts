@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // PUT /api/admin/projects/[id] — одобрить или отклонить проект
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const { id } = await params;
   const { action, comment } = await request.json();
@@ -47,7 +45,7 @@ export async function PUT(
       action: action === "approve"
         ? "Проект одобрен модератором и открыт"
         : `Проект отклонён модератором${comment ? `: ${comment}` : ""}`,
-      actorEmail: session.user.email,
+      actorEmail: guard.session.user.email,
     },
   });
 

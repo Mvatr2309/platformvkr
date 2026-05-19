@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 // GET /api/admin/workload — нагрузка НР: список всех approved НР с проектами/максимумом
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const supervisors = await prisma.supervisorProfile.findMany({
     where: { status: "APPROVED" },

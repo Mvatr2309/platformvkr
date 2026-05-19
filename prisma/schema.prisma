@@ -42,6 +42,8 @@ model User {
   invitations   Invitation[]       // Приглашения, отправленные админом
   feedbacks     Feedback[]
   feedbackMessages FeedbackMessage[]
+
+  @@index([role])
 }
 
 // Токены подтверждения email
@@ -94,6 +96,8 @@ model SupervisorProfile {
 
   projects        Project[]         // Связь с проектами (FR-02)
   applications    Application[]     // Заявки на рассмотрение
+
+  @@index([status])
 }
 
 // ============================================
@@ -142,6 +146,9 @@ model Invitation {
   sentById    String
   sentBy      User             @relation(fields: [sentById], references: [id])
   createdAt   DateTime         @default(now())
+
+  @@index([status])
+  @@index([email])
 }
 
 // ============================================
@@ -192,6 +199,10 @@ model Project {
   files           ProjectFile[]    // Файлы и материалы (03.04)
   events          Event[]          // Привязанные события (06.03)
   activities      Activity[]       // Лента активности (03.06)
+
+  @@index([supervisorId])
+  @@index([status])
+  @@index([supervisorId, status])
 }
 
 model ProjectMember {
@@ -211,6 +222,8 @@ model ProjectMember {
   inSystem        Boolean   @default(true) // true = в системе, false = не в системе
 
   @@unique([projectId, studentId])
+  @@index([projectId])
+  @@index([studentId])
 }
 
 // ============================================
@@ -289,6 +302,11 @@ model Application {
   updatedAt       DateTime          @updatedAt
 
   @@unique([projectId, studentId])
+  @@index([projectId])
+  @@index([studentId])
+  @@index([supervisorId])
+  @@index([status])
+  @@index([type])
 }
 
 // ============================================
@@ -314,6 +332,9 @@ model Event {
   projectId   String?   // Привязка к проекту (06.03)
   project     Project?  @relation(fields: [projectId], references: [id])
   createdAt   DateTime  @default(now())
+
+  @@index([date])
+  @@index([projectId])
 }
 
 // ============================================

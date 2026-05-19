@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 function invitationEmailHtml(name: string, token: string) {
   const registerUrl = `${process.env.NEXTAUTH_URL}/register?token=${token}`;
@@ -33,10 +33,8 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   try {
     const { id } = await params;

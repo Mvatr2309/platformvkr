@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, isGuardError } from "@/lib/api-guard";
 
 function generatePassword(length = 10) {
   return crypto.randomBytes(length).toString("base64url").slice(0, length);
@@ -10,10 +10,8 @@ function generatePassword(length = 10) {
 
 // GET /api/admin/students — список студентов
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
@@ -85,10 +83,8 @@ export async function GET() {
 
 // PUT /api/admin/students — пригласить ручного участника (создать аккаунт + привязать)
 export async function PUT(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   try {
     const { memberId } = await request.json();
@@ -162,10 +158,8 @@ export async function PUT(request: NextRequest) {
 
 // POST /api/admin/students — создать аккаунт студента
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (isGuardError(guard)) return guard;
 
   try {
     const { name, email } = await request.json();

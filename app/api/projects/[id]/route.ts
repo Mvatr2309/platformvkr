@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
+
+function revalidateProject(id: string) {
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${id}`);
+  revalidatePath("/my-projects");
+}
 
 // GET /api/projects/[id] — детали проекта (02.06)
 export async function GET(
@@ -140,6 +147,7 @@ export async function PUT(
           }).catch((err) => console.error("Failed to send remove-supervisor email:", err.message));
         }
       }
+      revalidateProject(id);
       return NextResponse.json({ ok: true });
     }
 
@@ -193,6 +201,7 @@ export async function PUT(
           }).catch((err) => console.error("Failed to send leave-supervisor email:", err.message));
         }
       }
+      revalidateProject(id);
       return NextResponse.json({ ok: true });
     }
 
@@ -211,6 +220,7 @@ export async function PUT(
       },
     });
 
+    revalidateProject(id);
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json(
@@ -263,5 +273,6 @@ export async function DELETE(
   }
 
   await prisma.project.delete({ where: { id } });
+  revalidateProject(id);
   return NextResponse.json({ ok: true });
 }

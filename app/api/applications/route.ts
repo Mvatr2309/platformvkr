@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   if (session.user.role === "ADMIN") {
     const applications = await prisma.application.findMany({
       orderBy: { createdAt: "desc" },
+      take: 500,
       include: {
         project: { select: { id: true, title: true } },
         student: {
