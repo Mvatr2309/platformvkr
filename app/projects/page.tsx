@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useDictionary } from "@/lib/useDictionary";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./projects.module.css";
@@ -25,12 +26,18 @@ interface ProjectCard {
   status: string;
   direction: string | null;
   requiredRoles: string[];
+  openRoles: string[];
   updatedAt: string;
   supervisor: { id: string; user: { name: string } } | null;
   _count: { members: number; applications: number };
 }
 
 export default function ProjectsPage() {
+  const { data: session } = useSession();
+  const role = session?.user?.role;
+  const showSupervisorBadge = role !== "STUDENT";
+  const showOpenRolesBadge = role !== "SUPERVISOR";
+
   const DIRECTIONS = useDictionary("directions");
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [search, setSearch] = useState("");
@@ -114,14 +121,17 @@ export default function ProjectsPage() {
                   {p.description.length > 200 ? p.description.slice(0, 200) + "..." : p.description}
                 </p>
                 <div className={styles.cardFooter}>
-                  {p.supervisor
-                    ? <span className={styles.supervisor}>Науч. рук.: {p.supervisor.user.name}</span>
-                    : <span className={styles.needsSupervisor}>Ищет научного руководителя</span>
-                  }
-                  {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
-                  {p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
-                    <span className={styles.roles}>{p.requiredRoles.join(", ")}</span>
+                  {showSupervisorBadge && (
+                    p.supervisor
+                      ? <span className={styles.supervisor}>Науч. рук.: {p.supervisor.user.name}</span>
+                      : <span className={styles.needsSupervisor}>Ищет научного руководителя</span>
                   )}
+                  {showOpenRolesBadge && p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
+                    p.openRoles.length > 0
+                      ? <span className={styles.openRoles}>Открытые роли: {p.openRoles.join(", ")}</span>
+                      : <span className={styles.teamComplete}>Команда укомплектована</span>
+                  )}
+                  {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
                   {p.projectType !== "CLASSIC_DISSERTATION" ? (
                     <span className={styles.stats}>
                       {p._count.members} участн. · {p._count.applications} заявок

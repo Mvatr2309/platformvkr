@@ -63,11 +63,22 @@ export async function GET(request: NextRequest) {
       supervisor: {
         select: { id: true, user: { select: { name: true } } },
       },
+      members: { select: { role: true } },
       _count: { select: { members: true, applications: true } },
     },
   });
 
-  return NextResponse.json(projects);
+  const withOpenRoles = projects.map((p) => {
+    const takenRoles = new Set(
+      p.members.map((m) => m.role).filter((r): r is string => Boolean(r))
+    );
+    const openRoles = p.requiredRoles.filter((r) => !takenRoles.has(r));
+    const { members: _members, ...rest } = p;
+    void _members;
+    return { ...rest, openRoles };
+  });
+
+  return NextResponse.json(withOpenRoles);
 }
 
 // POST /api/projects — создание проекта (02.01)
