@@ -390,6 +390,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const openRoles = project.requiredRoles.filter((r) => !filledRoles.includes(r));
   const isResearch = project.projectType === "CLASSIC_DISSERTATION";
   const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
+  // Исследование, созданное НР (есть руководитель, нет студента) — студент может откликнуться
+  const researchOpenForStudent = isResearch && !!project.supervisor && project.members.length === 0;
 
   return (
     <div className={styles.wrapper}>
@@ -881,7 +883,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Блок подачи заявки (05.01) — только для студентов, только открытые проекты */}
-        {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && !isResearch && (
+        {session?.user?.role === "STUDENT" && project.status === "OPEN" && !isMember && (!isResearch || researchOpenForStudent) && (
           <div className={styles.applyBlock}>
             {myApplication ? (
               <>
@@ -897,7 +899,12 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               <p className={styles.applySuccess}>{applyMsg}</p>
             ) : (
               <>
-                <h2 className={styles.sectionTitle}>Подать заявку</h2>
+                <h2 className={styles.sectionTitle}>{isResearch ? "Откликнуться на исследование" : "Подать заявку"}</h2>
+                {isResearch && (
+                  <p className={styles.text} style={{ marginBottom: 12 }}>
+                    Это исследование ведёт научный руководитель и ищет студента (формат 1 на 1). Перед откликом свяжитесь с руководителем — контакты в карточке проекта.
+                  </p>
+                )}
                 {(() => {
                   const author = project.members.find((m) => m.isCreator && m.student);
                   if (author && author.student) {

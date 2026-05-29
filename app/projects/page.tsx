@@ -159,6 +159,9 @@ export default function ProjectsPage() {
                       ? <span className={styles.openRoles}>Открытые роли: {p.openRoles.join(", ")}</span>
                       : <span className={styles.teamComplete}>Команда укомплектована</span>
                   )}
+                  {showOpenRolesBadge && p.projectType === "CLASSIC_DISSERTATION" && p.supervisor && p._count.members === 0 && (
+                    <span className={styles.openRoles}>Ищет студента</span>
+                  )}
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
                   {p.projectType !== "CLASSIC_DISSERTATION" ? (
                     <span className={styles.stats}>
