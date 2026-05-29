@@ -664,8 +664,22 @@ export default function ApplicationsPage() {
               placeholder="Комментарий (необязательно)"
               rows={2}
             />
+            {isSupervisorApp && (
+              <p className={styles.interestedHint}>
+                Перед назначением свяжитесь с научным руководителем и обсудите проект — его контакты указаны выше в карточке. Назначение сразу закрепит {app.supervisor?.user.name || "этого руководителя"} вашим научным руководителем, остальные заявки на проект будут отклонены.
+              </p>
+            )}
             <div className={styles.actionButtons}>
-              <button onClick={() => handleAction(app.id, "accept")} className={styles.acceptButton}>
+              <button
+                onClick={() => {
+                  if (isSupervisorApp) {
+                    const name = app.supervisor?.user.name || "этого руководителя";
+                    if (!confirm(`Назначить ${name} научным руководителем проекта?\n\nВы должны были предварительно связаться и пообщаться с ним (контакты — в карточке заявки). Это решение закрепит руководителя за проектом.`)) return;
+                  }
+                  handleAction(app.id, "accept");
+                }}
+                className={styles.acceptButton}
+              >
                 {isSupervisorApp ? "Назначить руководителем" : "Принять"}
               </button>
               <button onClick={() => handleAction(app.id, "reject")} className={styles.rejectButton}>Отклонить</button>
