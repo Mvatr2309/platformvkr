@@ -124,6 +124,12 @@ export async function PUT(
         where: { id },
         data: { supervisorId: null, assignmentStatus: "NONE" },
       });
+      // Удаляем прежнюю заявку НР на этот проект, чтобы он мог снова подать
+      if (project.supervisorId) {
+        await prisma.application.deleteMany({
+          where: { projectId: id, supervisorId: project.supervisorId, type: { in: ["SUPERVISOR", "SUPERVISION_REQUEST"] } },
+        });
+      }
       if (proj?.supervisor) {
         notify({
           userId: proj.supervisor.userId,
@@ -168,6 +174,12 @@ export async function PUT(
         where: { id },
         data: { supervisorId: null, assignmentStatus: "NONE" },
       });
+      // Удаляем прежнюю заявку НР на этот проект, чтобы он мог снова подать
+      if (project.supervisorId) {
+        await prisma.application.deleteMany({
+          where: { projectId: id, supervisorId: project.supervisorId, type: { in: ["SUPERVISOR", "SUPERVISION_REQUEST"] } },
+        });
+      }
       await prisma.activity.create({
         data: {
           projectId: id,

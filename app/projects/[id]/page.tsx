@@ -507,6 +507,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                         body: JSON.stringify({ leaveSupervisor: true }),
                       });
                       if (res.ok) {
+                        setMySupervisorApp(null);
+                        setApplyMsg("");
                         fetchProject();
                         fetchActivities();
                       } else {
