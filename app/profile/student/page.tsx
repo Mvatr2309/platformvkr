@@ -69,9 +69,15 @@ export default function StudentProfilePage() {
   }, [session, name]);
 
   function addCompetency() {
-    const tag = compInput.trim();
-    if (tag && !profile.competencies.includes(tag)) {
-      setProfile((p) => ({ ...p, competencies: [...p.competencies, tag] }));
+    const tags = compInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (tags.length > 0) {
+      setProfile((p) => {
+        const merged = [...p.competencies];
+        for (const tag of tags) {
+          if (!merged.includes(tag)) merged.push(tag);
+        }
+        return { ...p, competencies: merged };
+      });
     }
     setCompInput("");
   }
@@ -81,11 +87,14 @@ export default function StudentProfilePage() {
   }
 
   async function handleSave() {
-    // Если в инпуте компетенций есть незакоммиченный текст — добавляем в массив
+    // Если в инпуте компетенций есть незакоммиченный текст — добавляем в массив (со сплитом по запятой)
     let competencies = profile.competencies;
-    const pendingTag = compInput.trim();
-    if (pendingTag && !competencies.includes(pendingTag)) {
-      competencies = [...competencies, pendingTag];
+    const pendingTags = compInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (pendingTags.length > 0) {
+      competencies = [...competencies];
+      for (const tag of pendingTags) {
+        if (!competencies.includes(tag)) competencies.push(tag);
+      }
       setProfile((p) => ({ ...p, competencies }));
       setCompInput("");
     }
@@ -217,7 +226,7 @@ export default function StudentProfilePage() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Компетенции</h2>
           <div className={styles.field}>
-            <label className={styles.label}>Ваши навыки <span className={styles.hint}>Введите через Enter</span></label>
+            <label className={styles.label}>Ваши навыки <span className={styles.hint}>Введите через Enter или запятую</span></label>
             <div className={styles.tagsInput}>
               {profile.competencies.map((tag) => (
                 <span key={tag} className={styles.tag}>

@@ -112,9 +112,13 @@ export default function ProfilePage() {
   }
 
   function addExpertise() {
-    const tag = expertiseInput.trim();
-    if (tag && !profile.expertise.includes(tag)) {
-      updateField("expertise", [...profile.expertise, tag]);
+    const tags = expertiseInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (tags.length > 0) {
+      const merged = [...profile.expertise];
+      for (const tag of tags) {
+        if (!merged.includes(tag)) merged.push(tag);
+      }
+      updateField("expertise", merged);
     }
     setExpertiseInput("");
   }
@@ -145,11 +149,14 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
-    // Если в инпуте экспертизы есть незакоммиченный текст — добавляем в массив
+    // Если в инпуте экспертизы есть незакоммиченный текст — добавляем в массив (со сплитом по запятой)
     let expertise = profile.expertise;
-    const pendingTag = expertiseInput.trim();
-    if (pendingTag && !expertise.includes(pendingTag)) {
-      expertise = [...expertise, pendingTag];
+    const pendingTags = expertiseInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (pendingTags.length > 0) {
+      expertise = [...expertise];
+      for (const tag of pendingTags) {
+        if (!expertise.includes(tag)) expertise.push(tag);
+      }
       setProfile((p) => ({ ...p, expertise }));
       setExpertiseInput("");
     }
@@ -358,7 +365,7 @@ export default function ProfilePage() {
           <h2 className={styles.sectionTitle}>Экспертиза и магистратуры</h2>
 
           <div className={fieldCls("expertise")}>
-            <label className={styles.label}>Доменная экспертиза * <span className={styles.hint}>Введите теги через Enter</span></label>
+            <label className={styles.label}>Доменная экспертиза * <span className={styles.hint}>Введите теги через Enter или запятую</span></label>
             <div className={styles.tagsInput}>
               {profile.expertise.map((tag) => (
                 <span key={tag} className={styles.tag}>
