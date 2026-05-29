@@ -43,6 +43,7 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [projectType, setProjectType] = useState("");
   const [direction, setDirection] = useState("");
+  const [onlyOpenRoles, setOnlyOpenRoles] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProjects = useCallback(async () => {
@@ -61,13 +62,17 @@ export default function ProjectsPage() {
     return () => clearTimeout(timer);
   }, [fetchProjects]);
 
-  const hasFilters = search || projectType || direction;
+  const hasFilters = search || projectType || direction || onlyOpenRoles;
 
-  const { page, setPage, totalPages, paged } = usePagination(projects, 20);
+  const visibleProjects = onlyOpenRoles
+    ? projects.filter((p) => p.projectType !== "CLASSIC_DISSERTATION" && p.openRoles.length > 0)
+    : projects;
+
+  const { page, setPage, totalPages, paged } = usePagination(visibleProjects, 20);
 
   useEffect(() => {
     setPage(1);
-  }, [search, projectType, direction]);
+  }, [search, projectType, direction, onlyOpenRoles, setPage]);
 
   return (
     <div className={styles.wrapper}>
@@ -94,8 +99,18 @@ export default function ProjectsPage() {
               <option value="">Все магистратуры</option>
               {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
+            {showOpenRolesBadge && (
+              <label className={styles.checkboxFilter}>
+                <input
+                  type="checkbox"
+                  checked={onlyOpenRoles}
+                  onChange={(e) => setOnlyOpenRoles(e.target.checked)}
+                />
+                <span>Есть открытые роли</span>
+              </label>
+            )}
             {hasFilters && (
-              <button onClick={() => { setSearch(""); setProjectType(""); setDirection(""); }} className={styles.clearButton}>
+              <button onClick={() => { setSearch(""); setProjectType(""); setDirection(""); setOnlyOpenRoles(false); }} className={styles.clearButton}>
                 Сбросить
               </button>
             )}
@@ -104,7 +119,7 @@ export default function ProjectsPage() {
 
         {loading ? (
           <p className={styles.empty}>Загрузка...</p>
-        ) : projects.length === 0 ? (
+        ) : visibleProjects.length === 0 ? (
           <p className={styles.empty}>
             {hasFilters ? "Ничего не найдено." : "Пока нет открытых проектов."}
           </p>
