@@ -44,6 +44,7 @@ export default function ProjectsPage() {
   const [projectType, setProjectType] = useState("");
   const [direction, setDirection] = useState("");
   const [onlyOpenRoles, setOnlyOpenRoles] = useState(false);
+  const [onlyNoSupervisor, setOnlyNoSupervisor] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProjects = useCallback(async () => {
@@ -62,17 +63,19 @@ export default function ProjectsPage() {
     return () => clearTimeout(timer);
   }, [fetchProjects]);
 
-  const hasFilters = search || projectType || direction || onlyOpenRoles;
+  const hasFilters = search || projectType || direction || onlyOpenRoles || onlyNoSupervisor;
 
-  const visibleProjects = onlyOpenRoles
-    ? projects.filter((p) => p.projectType !== "CLASSIC_DISSERTATION" && p.openRoles.length > 0)
-    : projects;
+  const visibleProjects = projects.filter((p) => {
+    if (onlyOpenRoles && !(p.projectType !== "CLASSIC_DISSERTATION" && p.openRoles.length > 0)) return false;
+    if (onlyNoSupervisor && p.supervisor) return false;
+    return true;
+  });
 
   const { page, setPage, totalPages, paged } = usePagination(visibleProjects, 20);
 
   useEffect(() => {
     setPage(1);
-  }, [search, projectType, direction, onlyOpenRoles, setPage]);
+  }, [search, projectType, direction, onlyOpenRoles, onlyNoSupervisor, setPage]);
 
   return (
     <div className={styles.wrapper}>
@@ -109,8 +112,18 @@ export default function ProjectsPage() {
                 <span>Есть открытые роли</span>
               </label>
             )}
+            {showSupervisorBadge && (
+              <label className={styles.checkboxFilter}>
+                <input
+                  type="checkbox"
+                  checked={onlyNoSupervisor}
+                  onChange={(e) => setOnlyNoSupervisor(e.target.checked)}
+                />
+                <span>Без научного руководителя</span>
+              </label>
+            )}
             {hasFilters && (
-              <button onClick={() => { setSearch(""); setProjectType(""); setDirection(""); setOnlyOpenRoles(false); }} className={styles.clearButton}>
+              <button onClick={() => { setSearch(""); setProjectType(""); setDirection(""); setOnlyOpenRoles(false); setOnlyNoSupervisor(false); }} className={styles.clearButton}>
                 Сбросить
               </button>
             )}
