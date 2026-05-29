@@ -79,6 +79,7 @@
 
 /* Статусы предложений */
 .status_INTERESTED { background: #E3F2FD; color: #1565C0; }
+.status_AWAITING_STUDENT { background: #FFF8E1; color: #b8860b; }
 .status_CONFIRMED { background: #E8F5E9; color: #2a7d2a; }
 .status_DECLINED { background: #FFEBEE; color: #c62828; }
 

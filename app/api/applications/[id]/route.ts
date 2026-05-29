@@ -20,7 +20,7 @@ export async function PUT(
   const { id } = await params;
   const { action, comment } = await request.json();
 
-  if (!["accept", "reject", "interested", "confirm", "decline", "withdraw"].includes(action)) {
+  if (!["accept", "reject", "interested", "confirm", "decline", "withdraw", "student_accept", "student_decline"].includes(action)) {
     return NextResponse.json({ error: "Недопустимое действие" }, { status: 400 });
   }
 
@@ -150,12 +150,13 @@ export async function PUT(
     }
 
     // НР подтверждает руководство после встречи
+    // НР готов взять проект → ждём финального подтверждения студента
     if (action === "confirm" && isTargetSupervisor) {
       if (application.status !== "INTERESTED") {
         return NextResponse.json({ error: "Сначала отметьте заинтересованность" }, { status: 400 });
       }
 
-      // Проверка лимита проектов НР
+      // Проверка лимита проектов НР (предварительная — финальная будет при подтверждении студентом)
       const supProfile = await prisma.supervisorProfile.findUnique({
         where: { id: application.supervisor!.id },
         select: { maxProjects: true },
@@ -163,9 +164,87 @@ export async function PUT(
       const supProjectCount = await prisma.project.count({
         where: { supervisorId: application.supervisor!.id },
       });
-      if (supProjectCount >= (supProfile?.maxProjects || 4)) {
+      if (supProjectCount >= (supProfile?.maxProjects || 3)) {
         return NextResponse.json(
-          { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 4})` },
+          { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 3})` },
+          { status: 400 }
+        );
+      }
+
+      await prisma.application.update({
+        where: { id },
+        data: { status: "AWAITING_STUDENT" },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `Научный руководитель ${application.supervisor!.user.name} готов взять проект — ожидается подтверждение студента`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      notify({
+        userId: application.student!.userId,
+        type: "APPLICATION_ACCEPTED",
+        title: "Научный руководитель готов взять проект",
+        message: `${application.supervisor!.user.name} готов руководить проектом «${application.project.title}». Подтвердите выбор в разделе «Заявки» → «Предложения руководителям».`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      try {
+        await sendMail({
+          to: application.student!.user.email,
+          subject: `Научный руководитель готов взять проект — ${application.project.title}`,
+          html: `
+            <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Научный руководитель готов!</h2>
+              <p style="color: #555; font-size: 15px;">
+                ${application.supervisor!.user.name} готов руководить проектом «${application.project.title}».
+                Чтобы закрепить руководителя, подтвердите выбор на платформе.
+              </p>
+              <p>
+                <a href="${process.env.NEXTAUTH_URL}/applications"
+                   style="display: inline-block; background: #E8375A; color: #fff; padding: 14px 28px; text-decoration: none; font-weight: 600;">
+                  Подтвердить руководителя
+                </a>
+              </p>
+            </div>
+          `,
+        });
+      } catch { /* ignore */ }
+
+      return NextResponse.json({ status: "AWAITING_STUDENT" });
+    }
+
+    // Студент финально подтверждает выбранного НР → закрепление
+    if (action === "student_accept") {
+      const isStudentAuthor = application.student?.userId === session.user.id;
+      if (!isStudentAuthor) {
+        return NextResponse.json({ error: "Подтвердить может только автор проекта" }, { status: 403 });
+      }
+      if (application.status !== "AWAITING_STUDENT") {
+        return NextResponse.json({ error: "Руководитель ещё не подтвердил готовность" }, { status: 400 });
+      }
+
+      // Финальная проверка лимита и занятости проекта
+      const proj = await prisma.project.findUnique({
+        where: { id: application.project.id },
+        select: { supervisorId: true },
+      });
+      if (proj?.supervisorId) {
+        return NextResponse.json({ error: "У проекта уже есть научный руководитель" }, { status: 400 });
+      }
+      const supProfile = await prisma.supervisorProfile.findUnique({
+        where: { id: application.supervisor!.id },
+        select: { maxProjects: true },
+      });
+      const supProjectCount = await prisma.project.count({
+        where: { supervisorId: application.supervisor!.id },
+      });
+      if (supProjectCount >= (supProfile?.maxProjects || 3)) {
+        return NextResponse.json(
+          { error: `У выбранного руководителя уже максимум проектов (${supProfile?.maxProjects || 3})` },
           { status: 400 }
         );
       }
@@ -183,42 +262,43 @@ export async function PUT(
         },
       });
 
-      // Отклонить другие предложения на этот проект
+      // Отклонить все остальные предложения/заявки на этот проект
       await prisma.application.updateMany({
         where: {
           projectId: application.project.id,
           type: { in: ["SUPERVISION_REQUEST", "SUPERVISOR"] },
           id: { not: id },
-          status: { in: ["PENDING", "INTERESTED"] },
+          status: { in: ["PENDING", "INTERESTED", "AWAITING_STUDENT"] },
         },
-        data: { status: "DECLINED", comment: "Другой научный руководитель подтвердил руководство" },
+        data: { status: "DECLINED", comment: "Студент выбрал другого научного руководителя" },
       });
 
       await prisma.activity.create({
         data: {
           projectId: application.project.id,
-          action: `Научный руководитель ${application.supervisor!.user.name} подтвердил руководство проектом`,
+          action: `Студент подтвердил руководителя ${application.supervisor!.user.name}`,
           actorEmail: session.user.email,
         },
       });
 
+      // Уведомление НР — его выбрали
       notify({
-        userId: application.student!.userId,
+        userId: application.supervisor!.userId,
         type: "APPLICATION_ACCEPTED",
-        title: "Научный руководитель подтвердил руководство!",
-        message: `${application.supervisor!.user.name} подтвердил руководство проектом «${application.project.title}»!`,
+        title: "Студент подтвердил ваше руководство",
+        message: `Вы закреплены руководителем проекта «${application.project.title}».`,
         link: `/projects/${application.project.id}`,
       }).catch(() => {});
 
       try {
         await sendMail({
-          to: application.student!.user.email,
-          subject: `Научный руководитель подтвердил руководство — ${application.project.title}`,
+          to: application.supervisor!.user.email,
+          subject: `Вы закреплены руководителем — ${application.project.title}`,
           html: `
             <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
-              <h2 style="color: #003092;">Научный руководитель подтверждён!</h2>
+              <h2 style="color: #003092;">Студент подтвердил ваше руководство</h2>
               <p style="color: #555; font-size: 15px;">
-                ${application.supervisor!.user.name} подтвердил руководство проектом «${application.project.title}».
+                Вы закреплены научным руководителем проекта «${application.project.title}».
               </p>
               <p>
                 <a href="${process.env.NEXTAUTH_URL}/projects/${application.project.id}"
@@ -232,6 +312,40 @@ export async function PUT(
       } catch { /* ignore */ }
 
       return NextResponse.json({ status: "CONFIRMED" });
+    }
+
+    // Студент отклоняет готовность НР → возврат к INTERESTED (можно выбрать другого)
+    if (action === "student_decline") {
+      const isStudentAuthor = application.student?.userId === session.user.id;
+      if (!isStudentAuthor) {
+        return NextResponse.json({ error: "Действие доступно только автору проекта" }, { status: 403 });
+      }
+      if (application.status !== "AWAITING_STUDENT") {
+        return NextResponse.json({ error: "Нечего отклонять" }, { status: 400 });
+      }
+
+      await prisma.application.update({
+        where: { id },
+        data: { status: "DECLINED", comment: comment || "Студент отклонил предложение" },
+      });
+
+      await prisma.activity.create({
+        data: {
+          projectId: application.project.id,
+          action: `Студент отклонил готовность руководителя ${application.supervisor!.user.name}`,
+          actorEmail: session.user.email,
+        },
+      });
+
+      notify({
+        userId: application.supervisor!.userId,
+        type: "APPLICATION_REJECTED",
+        title: "Студент отклонил предложение",
+        message: `Студент не стал закреплять вас руководителем проекта «${application.project.title}».`,
+        link: `/applications`,
+      }).catch(() => {});
+
+      return NextResponse.json({ status: "DECLINED" });
     }
 
     // НР отказывается после встречи

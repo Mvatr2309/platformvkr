@@ -9,6 +9,7 @@ const STATUS_LABELS: Record<string, string> = {
   ACCEPTED: "Принята",
   REJECTED: "Отклонена",
   INTERESTED: "Заинтересован",
+  AWAITING_STUDENT: "Ждёт вашего подтверждения",
   CONFIRMED: "Руководство подтверждено",
   DECLINED: "Отклонено",
 };
@@ -136,9 +137,11 @@ export default function ApplicationsPage() {
         accept: "Заявка принята",
         reject: "Заявка отклонена",
         interested: "Вы отметили заинтересованность. Контакты раскрыты!",
-        confirm: "Руководство подтверждено!",
+        confirm: "Готовность подтверждена. Ожидается подтверждение студента.",
         decline: "Предложение отклонено",
         withdraw: "Заявка отозвана",
+        student_accept: "Руководитель закреплён за проектом!",
+        student_decline: "Предложение руководителя отклонено",
       };
       setMessage(msgs[action] || "Готово");
       setActionId(null);
@@ -298,13 +301,36 @@ export default function ApplicationsPage() {
                       <p className={styles.supervisorTarget}>
                         Руководитель: <strong>{app.supervisor?.user.name}</strong>
                       </p>
-                      {app.status === "INTERESTED" && app.supervisor?.contact && (
+                      {(app.status === "INTERESTED" || app.status === "AWAITING_STUDENT") && app.supervisor?.contact && (
                         <p className={styles.contactRevealed}>
                           Контакт: <strong>{app.supervisor.contact}</strong>
                         </p>
                       )}
                       <p className={styles.motivation}>{app.motivation}</p>
                       {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
+
+                      {app.status === "AWAITING_STUDENT" && (
+                        <div className={styles.actionBlock}>
+                          <p className={styles.interestedHint}>
+                            Руководитель готов взять проект. Закрепить его за проектом? После подтверждения остальные ваши предложения по этому проекту будут автоматически отозваны.
+                          </p>
+                          <div className={styles.actionButtons}>
+                            <button
+                              onClick={() => { if (confirm(`Закрепить ${app.supervisor?.user.name} руководителем проекта «${app.project.title}»?`)) handleAction(app.id, "student_accept"); }}
+                              className={styles.acceptButton}
+                            >
+                              Принять руководителя
+                            </button>
+                            <button
+                              onClick={() => { if (confirm("Отклонить предложение этого руководителя?")) handleAction(app.id, "student_decline"); }}
+                              className={styles.rejectButton}
+                            >
+                              Отклонить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
                         {app.status === "PENDING" && (
@@ -414,6 +440,7 @@ export default function ApplicationsPage() {
                   {supervisorProposals.map((app) => {
                     const isPending = app.status === "PENDING";
                     const isInterested = app.status === "INTERESTED";
+                    const isAwaitingStudent = app.status === "AWAITING_STUDENT";
 
                     return (
                       <div key={app.id} className={styles.card}>
@@ -492,10 +519,10 @@ export default function ApplicationsPage() {
 
                         {isInterested && (
                           <div className={styles.actionBlock}>
-                            <p className={styles.interestedHint}>Сначала свяжитесь со студентом и проведите встречу. Не подтверждайте руководство до разговора:</p>
+                            <p className={styles.interestedHint}>Сначала свяжитесь со студентом и проведите встречу. Нажмите «Готов взять проект» только после разговора — финально руководителя закрепит студент:</p>
                             <div className={styles.actionButtons}>
                               <button onClick={() => handleAction(app.id, "confirm")} className={styles.acceptButton}>
-                                Подтвердить руководство
+                                Готов взять проект
                               </button>
                               {actionId === app.id ? (
                                 <>
@@ -514,6 +541,10 @@ export default function ApplicationsPage() {
                               )}
                             </div>
                           </div>
+                        )}
+
+                        {isAwaitingStudent && (
+                          <p className={styles.interestedHint}>Вы подтвердили готовность. Ожидается финальное подтверждение студента — после него проект закрепится за вами.</p>
                         )}
                       </div>
                     );
