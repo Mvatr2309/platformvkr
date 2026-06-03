@@ -460,13 +460,13 @@ export default function NewProjectPage() {
                   {uploading ? "Загрузка..." : "Выбрать файл"}
                   <input
                     type="file"
-                    accept=".pdf,.docx,.pptx,.xlsx,image/jpeg,image/png"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
                     hidden
                     disabled={uploading}
                   />
                 </label>
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>PDF, DOCX, PPTX, до 5 МБ</span>
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>PDF, DOC, DOCX, PPT, XLS, TXT, ZIP, до 10 МБ</span>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 600 }}>

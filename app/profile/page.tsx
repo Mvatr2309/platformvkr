@@ -263,13 +263,13 @@ export default function ProfilePage() {
                 {resumeUploading ? "Загрузка..." : "Выбрать файл"}
                 <input
                   type="file"
-                  accept=".pdf,.docx,image/jpeg,image/png"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "resume")}
                   hidden
                   disabled={resumeUploading}
                 />
               </label>
-              <span className={styles.hint}>PDF, DOCX, до 5 МБ</span>
+              <span className={styles.hint}>PDF, DOC, DOCX, до 10 МБ</span>
             </div>
           </div>
         </section>
