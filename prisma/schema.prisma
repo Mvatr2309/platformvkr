@@ -96,6 +96,7 @@ model SupervisorProfile {
 
   projects        Project[]         // Связь с проектами (FR-02)
   applications    Application[]     // Заявки на рассмотрение
+  favoritedBy     FavoriteSupervisor[] // Студенты, добавившие НР в избранное
 
   @@index([status])
 }
@@ -124,6 +125,24 @@ model StudentProfile {
 
   projects      ProjectMember[]  // Участие в проектах
   applications  Application[]    // Поданные заявки
+  favorites     FavoriteSupervisor[] // Избранные научные руководители
+}
+
+// ============================================
+// Избранные научные руководители (студент → НР)
+// ============================================
+
+model FavoriteSupervisor {
+  id           String            @id @default(cuid())
+  studentId    String
+  student      StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  supervisorId String
+  supervisor   SupervisorProfile @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+
+  @@unique([studentId, supervisorId])
+  @@index([studentId])
+  @@index([supervisorId])
 }
 
 // ============================================

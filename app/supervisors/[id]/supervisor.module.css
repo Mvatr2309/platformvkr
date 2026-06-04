@@ -58,6 +58,45 @@
   margin-bottom: 4px;
 }
 
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.favButton {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border: 1px solid var(--color-coral);
+  background: var(--color-surface);
+  color: var(--color-coral);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.favButton:hover:not(:disabled) {
+  background: rgba(232, 55, 90, 0.06);
+}
+
+.favButtonActive {
+  background: var(--color-coral);
+  color: #fff;
+}
+
+.favButtonActive:hover:not(:disabled) {
+  background: var(--color-coral-dark);
+}
+
+.favButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .meta {
   font-size: 15px;
   color: var(--color-text-secondary);

@@ -47,6 +47,9 @@ const PROJECT_TYPE_LABELS: Record<string, string> = {
 export default function SupervisorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: session } = useSession();
+  const isStudent = session?.user?.role === "STUDENT";
+  const [isFav, setIsFav] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
   const [profile, setProfile] = useState<SupervisorProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,10 +83,41 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
     } catch { /* ignore */ }
   }, [session]);
 
+  const fetchFavorite = useCallback(async () => {
+    if (!session?.user || session.user.role !== "STUDENT") return;
+    const res = await fetch("/api/favorites");
+    if (res.ok) {
+      const data: Array<{ id: string }> = await res.json();
+      setIsFav(data.some((s) => s.id === id));
+    }
+  }, [session, id]);
+
   useEffect(() => {
     fetchProfile();
     fetchMyProjects();
-  }, [fetchProfile, fetchMyProjects]);
+    fetchFavorite();
+  }, [fetchProfile, fetchMyProjects, fetchFavorite]);
+
+  async function toggleFavorite() {
+    if (favBusy) return;
+    setFavBusy(true);
+    const next = !isFav;
+    setIsFav(next); // оптимистично
+    try {
+      const res = next
+        ? await fetch("/api/favorites", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ supervisorId: id }),
+          })
+        : await fetch(`/api/favorites/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setIsFav(!next); // откат
+    } finally {
+      setFavBusy(false);
+    }
+  }
 
   async function handlePropose() {
     if (!selectedProject) { setProposeErr("Выберите проект"); return; }
@@ -143,7 +177,20 @@ export default function SupervisorPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
           <div>
-            <h1 className={styles.name}>{profile.user.name}</h1>
+            <div className={styles.nameRow}>
+              <h1 className={styles.name}>{profile.user.name}</h1>
+              {isStudent && (
+                <button
+                  type="button"
+                  className={`${styles.favButton} ${isFav ? styles.favButtonActive : ""}`}
+                  onClick={toggleFavorite}
+                  disabled={favBusy}
+                  aria-label={isFav ? "Убрать из избранного" : "Добавить в избранное"}
+                >
+                  {isFav ? "♥ В избранном" : "♡ В избранное"}
+                </button>
+              )}
+            </div>
             <p className={styles.meta}>{profile.academicDegree} · {profile.position}</p>
             <p className={styles.meta}>{profile.workplace}</p>
             <span className={`${styles.recruitment} ${profile.recruitmentStatus === "OPEN" ? styles.open : styles.closed}`}>

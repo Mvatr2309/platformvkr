@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useDictionaries } from "@/lib/useDictionary";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./supervisors.module.css";
@@ -39,6 +40,49 @@ export default function SupervisorsPage() {
   const [projectType, setProjectType] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const { data: session } = useSession();
+  const isStudent = session?.user?.role === "STUDENT";
+  const [tab, setTab] = useState<"all" | "favorites">("all");
+  const [favoriteCards, setFavoriteCards] = useState<SupervisorCard[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  const fetchFavorites = useCallback(async () => {
+    if (!isStudent) return;
+    const res = await fetch("/api/favorites");
+    if (res.ok) {
+      const data: SupervisorCard[] = await res.json();
+      setFavoriteCards(data);
+      setFavoriteIds(new Set(data.map((s) => s.id)));
+    }
+  }, [isStudent]);
+
+  useEffect(() => { fetchFavorites(); }, [fetchFavorites]);
+
+  async function toggleFavorite(card: SupervisorCard) {
+    const isFav = favoriteIds.has(card.id);
+    // Оптимистичное обновление
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(card.id); else next.add(card.id);
+      return next;
+    });
+    setFavoriteCards((prev) =>
+      isFav ? prev.filter((s) => s.id !== card.id) : [card, ...prev.filter((s) => s.id !== card.id)]
+    );
+    try {
+      const res = isFav
+        ? await fetch(`/api/favorites/${card.id}`, { method: "DELETE" })
+        : await fetch("/api/favorites", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ supervisorId: card.id }),
+          });
+      if (!res.ok) throw new Error();
+    } catch {
+      fetchFavorites(); // откат к серверному состоянию при ошибке
+    }
+  }
+
   const fetchProfiles = useCallback(async () => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
@@ -69,18 +113,39 @@ export default function SupervisorsPage() {
 
   const hasFilters = search || direction || academicTitle || recruitment || projectType;
 
-  const { page, setPage, totalPages, paged } = usePagination(profiles, 12);
+  const displayed = tab === "favorites" ? favoriteCards : profiles;
+  const { page, setPage, totalPages, paged } = usePagination(displayed, 12);
 
   useEffect(() => {
     setPage(1);
-  }, [search, direction, academicTitle, recruitment, projectType]);
+  }, [search, direction, academicTitle, recruitment, projectType, tab]);
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <h1 className={styles.title}>Научные руководители</h1>
 
-        {/* Поиск и фильтры */}
+        {isStudent && (
+          <div className={styles.tabs}>
+            <button
+              type="button"
+              className={`${styles.tab} ${tab === "all" ? styles.tabActive : ""}`}
+              onClick={() => setTab("all")}
+            >
+              Все
+            </button>
+            <button
+              type="button"
+              className={`${styles.tab} ${tab === "favorites" ? styles.tabActive : ""}`}
+              onClick={() => setTab("favorites")}
+            >
+              Избранные НР{favoriteIds.size > 0 ? ` (${favoriteIds.size})` : ""}
+            </button>
+          </div>
+        )}
+
+        {/* Поиск и фильтры (только на вкладке «Все») */}
+        {tab === "all" && (
         <div className={styles.filters}>
           <input
             type="text"
@@ -136,19 +201,33 @@ export default function SupervisorsPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Результаты */}
-        {loading ? (
+        {loading && tab === "all" ? (
           <p className={styles.empty}>Загрузка...</p>
-        ) : profiles.length === 0 ? (
+        ) : displayed.length === 0 ? (
           <p className={styles.empty}>
-            {hasFilters ? "Ничего не найдено. Попробуйте изменить фильтры." : "Пока нет подтверждённых руководителей."}
+            {tab === "favorites"
+              ? "В избранном пока пусто. Нажимайте ♥ на карточке, чтобы сохранить понравившихся руководителей."
+              : hasFilters ? "Ничего не найдено. Попробуйте изменить фильтры." : "Пока нет подтверждённых руководителей."}
           </p>
         ) : (
           <>
           <div className={styles.grid}>
             {paged.map((p, idx) => (
               <a key={p.id} href={`/supervisors/${p.id}`} className={styles.card} {...(idx === 0 ? { "data-onboarding": "supervisor-card" } : {})}>
+                {isStudent && (
+                  <button
+                    type="button"
+                    className={`${styles.favBtn} ${favoriteIds.has(p.id) ? styles.favBtnActive : ""}`}
+                    aria-label={favoriteIds.has(p.id) ? "Убрать из избранного" : "Добавить в избранное"}
+                    title={favoriteIds.has(p.id) ? "Убрать из избранного" : "Добавить в избранное"}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(p); }}
+                  >
+                    {favoriteIds.has(p.id) ? "♥" : "♡"}
+                  </button>
+                )}
                 <div className={styles.cardTop}>
                   {p.photoUrl ? (
                     <img src={p.photoUrl} alt="" className={styles.avatar} />
