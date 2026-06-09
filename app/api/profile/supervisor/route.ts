@@ -96,8 +96,8 @@ export async function PUT(request: NextRequest) {
       proposedTopics: data.proposedTopics || null,
       directions: data.directions || [],
       projectTypes: data.projectTypes || [],
-      maxSlots: Math.min(3, Math.max(1, data.maxProjects || 3)),
-      maxProjects: Math.min(3, Math.max(1, data.maxProjects || 3)),
+      maxSlots: Math.min(4, Math.max(1, data.maxProjects || 3)),
+      maxProjects: Math.min(4, Math.max(1, data.maxProjects || 3)),
       contact: data.contact || "",
     };
 
