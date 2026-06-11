@@ -43,7 +43,7 @@ export async function PUT(
     data: {
       projectId: id,
       action: action === "approve"
-        ? "Проект одобрен модератором и открыт"
+        ? `Проект одобрен модератором и открыт${comment ? `: ${comment}` : ""}`
         : `Проект отклонён модератором${comment ? `: ${comment}` : ""}`,
       actorEmail: guard.session.user.email,
     },
@@ -56,7 +56,7 @@ export async function PUT(
       type: "PROJECT_STATUS",
       title: action === "approve" ? "Проект одобрен" : "Проект отклонён",
       message: action === "approve"
-        ? `Проект «${project.title}» одобрен и открыт для заявок.`
+        ? `Проект «${project.title}» одобрен и открыт для заявок.${comment ? ` Комментарий модератора: ${comment}` : ""}`
         : `Проект «${project.title}» отклонён.${comment ? ` Комментарий: ${comment}` : ""} Отредактируйте и отправьте повторно.`,
       link: `/projects/${id}`,
     }).catch(() => {});
@@ -70,7 +70,7 @@ export async function PUT(
       type: "PROJECT_STATUS",
       title: action === "approve" ? "Проект одобрен" : "Проект отклонён",
       message: action === "approve"
-        ? `Проект «${project.title}» одобрен и открыт для заявок.`
+        ? `Проект «${project.title}» одобрен и открыт для заявок.${comment ? ` Комментарий модератора: ${comment}` : ""}`
         : `Проект «${project.title}» отклонён.${comment ? ` Комментарий: ${comment}` : ""} Отредактируйте и отправьте повторно.`,
       link: `/projects/${id}`,
     }).catch(() => {});
@@ -90,6 +90,7 @@ export async function PUT(
     ? `<div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
         <h2 style="color: #003092;">Проект одобрен</h2>
         <p>Проект «<strong>${project.title}</strong>» одобрен модератором и открыт для заявок.</p>
+        ${comment ? `<p><strong>Комментарий модератора:</strong> ${comment}</p>` : ""}
         <p><a href="${platformUrl}/projects/${id}" style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">Открыть проект</a></p>
       </div>`
     : `<div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">

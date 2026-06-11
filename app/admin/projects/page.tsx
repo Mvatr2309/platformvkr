@@ -88,7 +88,7 @@ export default function ProjectModerationPage() {
               <div style={{ marginTop: "12px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                 <input
                   type="text"
-                  placeholder="Комментарий (при отклонении)"
+                  placeholder="Комментарий модератора (необязательно)"
                   value={comment[p.id] || ""}
                   onChange={(e) => setComment({ ...comment, [p.id]: e.target.value })}
                   style={{
