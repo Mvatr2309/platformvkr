@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
+import { requireAuth, isGuardError } from "@/lib/api-guard";
 
 function revalidateProject(id: string) {
   revalidatePath("/projects");
@@ -16,6 +17,11 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // C1: маршрут отдаёт email и контакты участников — закрываем от анонимного доступа.
+  // Каталог /projects и так требует авторизации; здесь дублируем проверку на уровне API.
+  const guard = await requireAuth();
+  if (isGuardError(guard)) return guard;
+
   const { id } = await params;
 
   const project = await prisma.project.findUnique({

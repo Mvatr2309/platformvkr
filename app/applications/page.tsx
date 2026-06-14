@@ -648,7 +648,7 @@ export default function ApplicationsPage() {
                 ))}
               </div>
             )}
-            <span className={styles.contact}>Контакт: {app.supervisor.contact}</span>
+            <span className={styles.contactRevealed}>Контакт: <strong>{app.supervisor.contact}</strong></span>
           </div>
         )}
 
