@@ -278,12 +278,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "У научного руководителя нет свободных слотов" }, { status: 400 });
       }
 
-      // Дубликат
+      // Дубликат / ограничение БД @@unique([projectId, studentId]):
+      // у студента может быть только одна заявка на проект (любого типа, любому НР).
+      // Проверяем заранее, чтобы вернуть понятное сообщение вместо 500 от нарушения constraint.
       const existing = await prisma.application.findFirst({
-        where: { projectId, supervisorId: targetSupervisorId, type: "SUPERVISION_REQUEST", studentId: student.id },
+        where: { projectId, studentId: student.id },
+        select: {
+          id: true,
+          type: true,
+          supervisorId: true,
+          supervisor: { select: { user: { select: { name: true } } } },
+        },
       });
       if (existing) {
-        return NextResponse.json({ error: "Вы уже отправили этот проект данному руководителю" }, { status: 409 });
+        if (existing.type === "SUPERVISION_REQUEST" && existing.supervisorId === targetSupervisorId) {
+          return NextResponse.json({ error: "Вы уже отправили этот проект данному руководителю" }, { status: 409 });
+        }
+        if (existing.type === "SUPERVISION_REQUEST") {
+          const who = existing.supervisor?.user.name ?? "другому руководителю";
+          return NextResponse.json(
+            { error: `Этот проект уже предложен другому руководителю (${who}). Отзовите предыдущее предложение в разделе «Мои предложения», прежде чем отправлять новое.` },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json(
+          { error: "По этому проекту у вас уже есть активная заявка. Отзовите её, прежде чем предлагать проект руководителю." },
+          { status: 409 }
+        );
       }
 
       const application = await prisma.application.create({
@@ -572,7 +593,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(application, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("Application POST error:", err);
     return NextResponse.json(
       { error: "Ошибка подачи заявки" },
       { status: 500 }
