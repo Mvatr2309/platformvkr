@@ -44,4 +44,23 @@
 
 **Проверка:** `npx tsc --noEmit` — ошибок в файле нет.
 
-**Коммит:** (не закоммичено — ожидает деплоя)
+**Коммит:** 723e81e (задеплоено)
+
+## Запись #4 — Разрешить предлагать проект нескольким научным руководителям
+
+**Запрос:** Студент должен иметь возможность предложить один проект сразу нескольким НР (раньше из-за `@@unique([projectId, studentId])` — только одному за раз).
+
+**Реализация:**
+1. (схема) `Application.@@unique([projectId, studentId])` → `@@unique([projectId, studentId, supervisorId])`. Миграция `20260615120000_allow_multiple_supervision_requests` (DROP старого индекса + CREATE нового).
+2. (код, POST /api/applications) ветка SUPERVISION_REQUEST: проверка дубликата теперь по тройке (проект+студент+конкретный НР); добавлен лимит `MAX_SUPERVISION_REQUESTS_PER_PROJECT = 3` активных предложений на проект.
+3. (код) STUDENT-ветка: `findUnique({ projectId_studentId })` заменён на `findFirst({ projectId, studentId, type: "STUDENT" })` (составной ключ удалён сменой constraint).
+4. Авто-отзыв прочих предложений при выборе одного НР уже был реализован ранее (`student_accept`, updateMany → DECLINED). UI «Мои предложения» уже поддерживал список. Изменений не потребовали.
+
+**Файлы:**
+- `prisma/schema.prisma` — изменён `@@unique` на Application.
+- `prisma/migrations/20260615120000_allow_multiple_supervision_requests/migration.sql` — новая миграция.
+- `app/api/applications/route.ts` — проверка дубликата/лимит SUPERVISION_REQUEST; STUDENT findFirst.
+
+**Проверка:** `npx tsc --noEmit` — ошибок нет.
+
+**Коммит:** (ожидает деплоя с применением миграции)

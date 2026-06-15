@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 
 const MAX_ACTIVE_APPLICATIONS = 5; // 05.04
+const MAX_SUPERVISION_REQUESTS_PER_PROJECT = 3; // сколько НР можно предлагать один проект одновременно
 
 // GET /api/applications — мои заявки (студент), заявки на мои проекты (НР/автор), модерация (админ)
 // ?as=author — заявки на проекты где я автор (для студентов-авторов)
@@ -278,31 +279,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "У научного руководителя нет свободных слотов" }, { status: 400 });
       }
 
-      // Дубликат / ограничение БД @@unique([projectId, studentId]):
-      // у студента может быть только одна заявка на проект (любого типа, любому НР).
-      // Проверяем заранее, чтобы вернуть понятное сообщение вместо 500 от нарушения constraint.
-      const existing = await prisma.application.findFirst({
-        where: { projectId, studentId: student.id },
-        select: {
-          id: true,
-          type: true,
-          supervisorId: true,
-          supervisor: { select: { user: { select: { name: true } } } },
+      // Дубликат: тот же проект тому же НР (ограничение БД @@unique([projectId, studentId, supervisorId])).
+      const duplicate = await prisma.application.findFirst({
+        where: { projectId, studentId: student.id, supervisorId: targetSupervisorId, type: "SUPERVISION_REQUEST" },
+      });
+      if (duplicate) {
+        return NextResponse.json({ error: "Вы уже отправили этот проект данному руководителю" }, { status: 409 });
+      }
+
+      // Лимит: скольким НР можно предлагать проект одновременно (активные предложения).
+      const activeCount = await prisma.application.count({
+        where: {
+          projectId,
+          studentId: student.id,
+          type: "SUPERVISION_REQUEST",
+          status: { in: ["PENDING", "INTERESTED", "AWAITING_STUDENT"] },
         },
       });
-      if (existing) {
-        if (existing.type === "SUPERVISION_REQUEST" && existing.supervisorId === targetSupervisorId) {
-          return NextResponse.json({ error: "Вы уже отправили этот проект данному руководителю" }, { status: 409 });
-        }
-        if (existing.type === "SUPERVISION_REQUEST") {
-          const who = existing.supervisor?.user.name ?? "другому руководителю";
-          return NextResponse.json(
-            { error: `Этот проект уже предложен другому руководителю (${who}). Отзовите предыдущее предложение в разделе «Мои предложения», прежде чем отправлять новое.` },
-            { status: 409 }
-          );
-        }
+      if (activeCount >= MAX_SUPERVISION_REQUESTS_PER_PROJECT) {
         return NextResponse.json(
-          { error: "По этому проекту у вас уже есть активная заявка. Отзовите её, прежде чем предлагать проект руководителю." },
+          { error: `Можно предложить проект не более чем ${MAX_SUPERVISION_REQUESTS_PER_PROJECT} руководителям одновременно. Отзовите одно из предложений в разделе «Мои предложения».` },
           { status: 409 }
         );
       }
@@ -472,9 +468,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Проверка дубликата
-    const existing = await prisma.application.findUnique({
-      where: { projectId_studentId: { projectId, studentId: student.id } },
+    // Проверка дубликата (один отклик студента на проект)
+    const existing = await prisma.application.findFirst({
+      where: { projectId, studentId: student.id, type: "STUDENT" },
     });
 
     if (existing) {

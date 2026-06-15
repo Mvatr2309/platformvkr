@@ -321,7 +321,10 @@ model Application {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  @@unique([projectId, studentId])
+  // Студент может предложить один проект нескольким НР (разные supervisorId).
+  // Уникальность по тройке не даёт дубль одному и тому же НР; STUDENT-заявки
+  // (один отклик на проект) дополнительно защищены проверкой в коде.
+  @@unique([projectId, studentId, supervisorId])
   @@index([projectId])
   @@index([studentId])
   @@index([supervisorId])
