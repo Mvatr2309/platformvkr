@@ -309,14 +309,27 @@ export default function ApplicationsPage() {
                       <p className={styles.motivation}>{app.motivation}</p>
                       {app.comment && <p className={styles.comment}>Комментарий: {app.comment}</p>}
 
-                      {app.status === "AWAITING_STUDENT" && (
+                      {app.status === "AWAITING_STUDENT" && (() => {
+                        const otherActive = myProposals.filter(
+                          (p) =>
+                            p.project.id === app.project.id &&
+                            p.id !== app.id &&
+                            ["PENDING", "INTERESTED", "AWAITING_STUDENT"].includes(p.status)
+                        ).length;
+                        return (
                         <div className={styles.actionBlock}>
                           <p className={styles.interestedHint}>
-                            Руководитель готов взять проект. Закрепить его за проектом? После подтверждения остальные ваши предложения по этому проекту будут автоматически отозваны.
+                            Руководитель готов взять проект. Закрепить его за проектом?
+                            {otherActive > 0 && ` После подтверждения остальные ваши предложения по этому проекту (${otherActive}) будут автоматически отозваны.`}
                           </p>
                           <div className={styles.actionButtons}>
                             <button
-                              onClick={() => { if (confirm(`Закрепить ${app.supervisor?.user.name} руководителем проекта «${app.project.title}»?`)) handleAction(app.id, "student_accept"); }}
+                              onClick={() => {
+                                const msg = otherActive > 0
+                                  ? `Закрепить ${app.supervisor?.user.name} руководителем проекта «${app.project.title}»?\n\nВаши остальные предложения по этому проекту (${otherActive}) будут автоматически отозваны.`
+                                  : `Закрепить ${app.supervisor?.user.name} руководителем проекта «${app.project.title}»?`;
+                                if (confirm(msg)) handleAction(app.id, "student_accept");
+                              }}
                               className={styles.acceptButton}
                             >
                               Принять руководителя
@@ -329,7 +342,8 @@ export default function ApplicationsPage() {
                             </button>
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
 
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <span className={styles.date}>{new Date(app.createdAt).toLocaleDateString("ru-RU")}</span>
