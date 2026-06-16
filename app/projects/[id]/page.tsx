@@ -772,7 +772,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               <div className={styles.memberCards}>
                 {project.members.map((m) => {
                   const isManual = !m.student;
-                  const memberName = isManual ? m.manualName || "—" : m.student!.user.name;
+                  // Имя: для внешних — введённое автором; для студентов из системы — имя из профиля,
+                  // а если профиль ещё не заполнен (имя пустое) — запасной вариант: ФИО от автора или почта.
+                  const memberName = isManual
+                    ? (m.manualName || m.manualEmail || "—")
+                    : (m.student!.user.name?.trim() || m.manualName || m.student!.user.email || "—");
                   const isSelf = !isManual && m.student!.userId === userId;
 
                   const canRemove = isManual

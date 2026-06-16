@@ -93,6 +93,8 @@ export async function POST(
           studentId: linkedStudent.id,
           role: role || null,
           inSystem: true,
+          // сохраняем введённое автором ФИО как запасное имя — покажется, пока студент не заполнит профиль
+          manualName: name || null,
         }
       : {
           projectId: id,
