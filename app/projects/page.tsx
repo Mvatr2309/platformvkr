@@ -163,12 +163,10 @@ export default function ProjectsPage() {
                     <span className={styles.openRoles}>Ищет студента</span>
                   )}
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}
-                  {p.projectType !== "CLASSIC_DISSERTATION" ? (
+                  {p.projectType !== "CLASSIC_DISSERTATION" && (
                     <span className={styles.stats}>
-                      {p._count.members} участн. · {p._count.applications} заявок
+                      {p._count.members} участн.{role !== "STUDENT" && ` · ${p._count.applications} заявок`}
                     </span>
-                  ) : (
-                    <span className={styles.stats}>1 на 1 с научным руководителем</span>
                   )}
                 </div>
               </a>

@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
   const supervisorId = searchParams.get("supervisorId") || "";
   const my = searchParams.get("my"); // "true" — только свои проекты
 
+  const session = await auth();
+  const viewerRole = session?.user?.role;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
 
@@ -27,7 +30,6 @@ export async function GET(request: NextRequest) {
 
   // Свои проекты
   if (my === "true") {
-    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
     }
@@ -76,6 +78,10 @@ export async function GET(request: NextRequest) {
     const openRoles = p.requiredRoles.filter((r) => !takenRoles.has(r));
     const { members: _members, ...rest } = p;
     void _members;
+    // Студентам не показываем число заявок на проект
+    if (viewerRole === "STUDENT") {
+      return { ...rest, _count: { ...rest._count, applications: 0 }, openRoles };
+    }
     return { ...rest, openRoles };
   });
 
