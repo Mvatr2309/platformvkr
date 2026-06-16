@@ -17,7 +17,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const { name, email, direction, role, allowExternal } = await request.json();
+  const { name, email, direction, role } = await request.json();
 
   if (!name || !email) {
     return NextResponse.json({ error: "ФИО и e-mail обязательны" }, { status: 400 });
@@ -75,35 +75,26 @@ export async function POST(
     select: { id: true, userId: true },
   });
 
-  // Студента с такой почтой нет в системе — предупреждаем автора (если он не подтвердил внешнее добавление)
-  if (!linkedStudent && !allowExternal) {
+  // В команду можно добавлять только зарегистрированных студентов.
+  // Доступы выдаются админами вручную, поэтому «внешних» участников быть не должно.
+  if (!linkedStudent) {
     return NextResponse.json(
       {
-        notInSystem: true,
-        error: "Студента с такой почтой нет в системе. Он будет добавлен как внешний участник и не увидит проект, пока не зарегистрируется на эту почту.",
+        error: "Студента с такой почтой нет в системе. Добавить можно только зарегистрированного студента — проверьте почту или дождитесь, пока ему откроют доступ.",
       },
-      { status: 409 }
+      { status: 400 }
     );
   }
 
   const member = await prisma.projectMember.create({
-    data: linkedStudent
-      ? {
-          projectId: id,
-          studentId: linkedStudent.id,
-          role: role || null,
-          inSystem: true,
-          // сохраняем введённое автором ФИО как запасное имя — покажется, пока студент не заполнит профиль
-          manualName: name || null,
-        }
-      : {
-          projectId: id,
-          manualName: name,
-          manualEmail: email,
-          manualDirection: direction || null,
-          role: role || null,
-          inSystem: false,
-        },
+    data: {
+      projectId: id,
+      studentId: linkedStudent.id,
+      role: role || null,
+      inSystem: true,
+      // сохраняем введённое автором ФИО как запасное имя — покажется, пока студент не заполнил профиль
+      manualName: name || null,
+    },
   });
 
   await prisma.activity.create({

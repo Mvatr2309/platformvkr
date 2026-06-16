@@ -357,7 +357,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       setManualError(`В команде может быть максимум ${MAX_TEAM_MEMBERS} участника.`);
       return;
     }
-    await submitManualMember(false);
+    await submitManualMember();
   }
 
   // Поиск существующих студентов по имени/почте (с дебаунсом) для автоподбора
@@ -381,14 +381,14 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     setManualError("");
   }
 
-  async function submitManualMember(allowExternal: boolean) {
+  async function submitManualMember() {
     setAddingManual(true);
     setManualError("");
     try {
       const res = await fetch(`/api/projects/${id}/manual-members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...manualForm, allowExternal }),
+        body: JSON.stringify(manualForm),
       });
       if (res.ok) {
         setManualForm({ name: "", email: "", direction: "", role: "" });
@@ -398,13 +398,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         return;
       }
       const data = await res.json();
-      // Студента нет в системе — спрашиваем подтверждение на внешнее добавление
-      if (data.notInSystem) {
-        if (confirm(`${data.error}\n\nДобавить всё равно?`)) {
-          await submitManualMember(true);
-        }
-        return;
-      }
       setManualError(data.error || "Ошибка");
     } catch { setManualError("Ошибка сети"); }
     finally { setAddingManual(false); }
