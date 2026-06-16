@@ -344,8 +344,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }
 
   async function handleAddManualMember() {
-    if (!manualForm.name || !manualForm.email || !manualForm.role) {
-      setManualError("ФИО, e-mail и роль обязательны");
+    if (!manualForm.name || !manualForm.email) {
+      setManualError("ФИО и e-mail обязательны");
       return;
     }
     setAddingManual(true);
@@ -430,6 +430,16 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 {canDelete && !editing && (
                   <button onClick={handleDelete} className={styles.deleteBtn} disabled={deleting}>
                     {deleting ? "Удаление..." : "Удалить"}
+                  </button>
+                )}
+                {!canDelete && !editing && (isAuthor || isSupervisorOwner) && !isAdmin && otherMembers.length > 0 && (
+                  <button
+                    className={styles.deleteBtn}
+                    disabled
+                    title="Сначала удалите участников команды, затем проект можно будет удалить"
+                    style={{ opacity: 0.5, cursor: "not-allowed" }}
+                  >
+                    Удалить
                   </button>
                 )}
               </div>
@@ -657,7 +667,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     onChange={(e) => setManualForm({ ...manualForm, role: e.target.value })}
                     className={styles.editInput}
                   >
-                    <option value="">Выберите роль</option>
+                    <option value="">Роль (необязательно)</option>
                     {openRoles.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}

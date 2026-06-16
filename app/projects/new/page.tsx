@@ -142,6 +142,34 @@ export default function NewProjectPage() {
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+    // Авто-добавление введённой, но не «добавленной» ссылки, чтобы не потерять её при сабмите
+    const finalFiles = [...files];
+    if (linkUrl.trim()) {
+      const url = linkUrl.trim();
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        setLinkError("Ссылка должна начинаться с http:// или https://");
+        setError("Проверьте введённую ссылку");
+        return;
+      }
+      if (!finalFiles.some((f) => f.url === url)) {
+        finalFiles.push({ name: linkTitle.trim() || url, url, fileType: "LINK" });
+      }
+    }
+
+    // Авто-добавление введённого, но не «добавленного» участника
+    const finalMembers = [...members];
+    if (memberForm.name.trim() && memberForm.email.trim()) {
+      const email = memberForm.email.trim();
+      if (!finalMembers.some((m) => m.email.toLowerCase() === email.toLowerCase())) {
+        finalMembers.push({ ...memberForm, email });
+      }
+    } else if (memberForm.name.trim() || memberForm.email.trim()) {
+      setMemberError("Заполните ФИО и e-mail участника или очистите поля перед сохранением");
+      setError("Завершите добавление участника команды");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setMessage("");
@@ -151,7 +179,8 @@ export default function NewProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, description, projectType, direction, requiredRoles, authorRole, contact, submit, files, members,
+          title, description, projectType, direction, requiredRoles, authorRole, contact, submit,
+          files: finalFiles, members: finalMembers,
         }),
       });
       const data = await res.json();
