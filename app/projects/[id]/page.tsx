@@ -347,8 +347,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }
 
   async function handleAddManualMember() {
-    if (!manualForm.name || !manualForm.email) {
-      setManualError("ФИО и e-mail обязательны");
+    if (!manualForm.name || !manualForm.email || !manualForm.role) {
+      setManualError("ФИО, e-mail и роль обязательны");
       return;
     }
     if ((project?.members.length ?? 0) >= MAX_TEAM_MEMBERS) {
@@ -395,6 +395,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   // Незакрытые роли: требуемые минус уже занятые
   const filledRoles = project.members.map((m) => m.role).filter(Boolean);
   const openRoles = project.requiredRoles.filter((r) => !filledRoles.includes(r));
+  // Роли для выбора при добавлении тиммейта: полный список (не пустеет по мере заполнения).
+  // Берём требуемые роли проекта, а если они не заданы — глобальный справочник ролей.
+  const roleOptions = project.requiredRoles.length > 0 ? project.requiredRoles : ROLES;
   const isResearch = project.projectType === "CLASSIC_DISSERTATION";
   const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
   const teamFull = !isResearch && project.members.length >= MAX_TEAM_MEMBERS;
@@ -691,8 +694,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     onChange={(e) => setManualForm({ ...manualForm, role: e.target.value })}
                     className={styles.editInput}
                   >
-                    <option value="">Роль (необязательно)</option>
-                    {openRoles.map((r) => (
+                    <option value="">Выберите роль *</option>
+                    {roleOptions.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
