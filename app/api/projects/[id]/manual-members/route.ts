@@ -17,7 +17,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const { name, email, direction, role } = await request.json();
+  const { name, email, direction, role, allowExternal } = await request.json();
 
   if (!name || !email) {
     return NextResponse.json({ error: "ФИО и e-mail обязательны" }, { status: 400 });
@@ -71,9 +71,20 @@ export async function POST(
   // Если студент с такой почтой уже зарегистрирован — привязываем участие к его аккаунту,
   // чтобы он видел проект в «Мои проекты», а не числился «не в системе».
   const linkedStudent = await prisma.studentProfile.findFirst({
-    where: { user: { email, role: "STUDENT" } },
+    where: { user: { email: { equals: email, mode: "insensitive" }, role: "STUDENT" } },
     select: { id: true, userId: true },
   });
+
+  // Студента с такой почтой нет в системе — предупреждаем автора (если он не подтвердил внешнее добавление)
+  if (!linkedStudent && !allowExternal) {
+    return NextResponse.json(
+      {
+        notInSystem: true,
+        error: "Студента с такой почтой нет в системе. Он будет добавлен как внешний участник и не увидит проект, пока не зарегистрируется на эту почту.",
+      },
+      { status: 409 }
+    );
+  }
 
   const member = await prisma.projectMember.create({
     data: linkedStudent
