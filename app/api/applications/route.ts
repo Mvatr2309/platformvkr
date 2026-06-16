@@ -516,7 +516,7 @@ export async function POST(request: NextRequest) {
     const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
     if (isStartup && project._count.members >= 3) {
       return NextResponse.json(
-        { error: "Команда проекта уже укомплектована (максимум 3 участника: автор и ещё 2)" },
+        { error: "Команда проекта уже укомплектована (максимум 3 участника)" },
         { status: 400 }
       );
     }

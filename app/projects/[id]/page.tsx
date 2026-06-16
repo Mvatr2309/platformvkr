@@ -352,7 +352,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       return;
     }
     if ((project?.members.length ?? 0) >= MAX_TEAM_MEMBERS) {
-      setManualError(`В команде может быть максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2).`);
+      setManualError(`В команде может быть максимум ${MAX_TEAM_MEMBERS} участника.`);
       return;
     }
     setAddingManual(true);
@@ -639,7 +639,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   <button
                     className={styles.editBtn}
                     disabled
-                    title={`Команда укомплектована: максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2)`}
+                    title={`Команда укомплектована: максимум ${MAX_TEAM_MEMBERS} участника`}
                     style={{ fontSize: 14, padding: "4px 12px", opacity: 0.5, cursor: "not-allowed" }}
                   >
                     + Добавить
@@ -658,7 +658,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             </div>
             {teamFull && (isAuthor || isAdmin || isSupervisorOwner) && (
               <p className={styles.muted} style={{ fontSize: 13, marginTop: 4 }}>
-                Команда укомплектована: в проекте может быть максимум {MAX_TEAM_MEMBERS} участника — автор и ещё 2 тиммейта (научный руководитель не считается).
+                Команда укомплектована: в проекте может быть максимум {MAX_TEAM_MEMBERS} участника.
               </p>
             )}
 

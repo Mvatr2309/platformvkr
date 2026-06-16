@@ -47,7 +47,7 @@ export async function POST(
   // Лимит размера команды: автор + 2 тиммейта = 3 участника (НР не в счёт)
   if (project._count.members >= MAX_TEAM_MEMBERS) {
     return NextResponse.json(
-      { error: `В команде может быть максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2). Больше добавить нельзя.` },
+      { error: `В команде может быть максимум ${MAX_TEAM_MEMBERS} участника. Больше добавить нельзя.` },
       { status: 400 }
     );
   }
