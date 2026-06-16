@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Максимальный размер команды: автор + 2 тиммейта = 3 участника (научный руководитель не считается).
+export const MAX_TEAM_MEMBERS = 3;
+
 // POST /api/projects/[id]/manual-members — добавить участника вручную
 export async function POST(
   request: NextRequest,
@@ -25,6 +28,7 @@ export async function POST(
     select: {
       supervisor: { select: { userId: true } },
       members: { where: { isCreator: true }, select: { student: { select: { userId: true } } } },
+      _count: { select: { members: true } },
     },
   });
 
@@ -38,6 +42,14 @@ export async function POST(
 
   if (!isAdmin && !isAuthor && !isSupervisor) {
     return NextResponse.json({ error: "Нет прав" }, { status: 403 });
+  }
+
+  // Лимит размера команды: автор + 2 тиммейта = 3 участника (НР не в счёт)
+  if (project._count.members >= MAX_TEAM_MEMBERS) {
+    return NextResponse.json(
+      { error: `В команде может быть максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2). Больше добавить нельзя.` },
+      { status: 400 }
+    );
   }
 
   // Проверяем дубликат по email в этом проекте

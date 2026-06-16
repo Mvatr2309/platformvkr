@@ -514,9 +514,9 @@ export async function POST(request: NextRequest) {
 
     // Проверка лимита команды для стартапов
     const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
-    if (isStartup && project._count.members >= 4) {
+    if (isStartup && project._count.members >= 3) {
       return NextResponse.json(
-        { error: "Команда проекта уже укомплектована (максимум 4 участника)" },
+        { error: "Команда проекта уже укомплектована (максимум 3 участника: автор и ещё 2)" },
         { status: 400 }
       );
     }

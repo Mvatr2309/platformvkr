@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react";
 import { useDictionary } from "@/lib/useDictionary";
 import styles from "./project.module.css";
 
+// Максимальный размер команды: автор + 2 тиммейта = 3 участника (НР не считается)
+const MAX_TEAM_MEMBERS = 3;
+
 const TYPE_LABELS: Record<string, string> = {
   CLASSIC_DISSERTATION: "Исследование",
   STARTUP: "Стартап",
@@ -348,6 +351,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       setManualError("ФИО и e-mail обязательны");
       return;
     }
+    if ((project?.members.length ?? 0) >= MAX_TEAM_MEMBERS) {
+      setManualError(`В команде может быть максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2).`);
+      return;
+    }
     setAddingManual(true);
     setManualError("");
     try {
@@ -390,6 +397,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const openRoles = project.requiredRoles.filter((r) => !filledRoles.includes(r));
   const isResearch = project.projectType === "CLASSIC_DISSERTATION";
   const isStartup = ["STARTUP", "CORPORATE_STARTUP"].includes(project.projectType);
+  const teamFull = !isResearch && project.members.length >= MAX_TEAM_MEMBERS;
   // Исследование, созданное НР (есть руководитель, нет студента) — студент может откликнуться
   const researchOpenForStudent = isResearch && !!project.supervisor && project.members.length === 0;
 
@@ -624,16 +632,32 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 className={styles.sectionTitle}>{isResearch ? "Студент" : `Участники команды (${project.members.length})`}</h2>
               {(isAuthor || isAdmin || isSupervisorOwner) && (
-                <button
-                  onClick={() => setShowAddManual(!showAddManual)}
-                  className={styles.editBtn}
-                  style={{ fontSize: 14, padding: "4px 12px" }}
-                  {...(!showAddManual ? { "data-onboarding": "add-team" } : {})}
-                >
-                  {showAddManual ? "Отмена" : "+ Добавить"}
-                </button>
+                teamFull ? (
+                  <button
+                    className={styles.editBtn}
+                    disabled
+                    title={`Команда укомплектована: максимум ${MAX_TEAM_MEMBERS} участника (автор и ещё 2)`}
+                    style={{ fontSize: 14, padding: "4px 12px", opacity: 0.5, cursor: "not-allowed" }}
+                  >
+                    + Добавить
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowAddManual(!showAddManual)}
+                    className={styles.editBtn}
+                    style={{ fontSize: 14, padding: "4px 12px" }}
+                    {...(!showAddManual ? { "data-onboarding": "add-team" } : {})}
+                  >
+                    {showAddManual ? "Отмена" : "+ Добавить"}
+                  </button>
+                )
               )}
             </div>
+            {teamFull && (isAuthor || isAdmin || isSupervisorOwner) && (
+              <p className={styles.muted} style={{ fontSize: 13, marginTop: 4 }}>
+                Команда укомплектована: в проекте может быть максимум {MAX_TEAM_MEMBERS} участника — автор и ещё 2 тиммейта (научный руководитель не считается).
+              </p>
+            )}
 
             {showAddManual && (
               <div className={styles.memberCard} style={{ marginBottom: 12 }}>

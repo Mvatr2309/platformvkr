@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 
-const STARTUP_TEAM_LIMIT = 4; // Максимум участников для стартапов (без НР)
+const STARTUP_TEAM_LIMIT = 3; // Максимум участников команды: автор + 2 тиммейта (без НР)
 
 // PUT /api/applications/[id] — принять или отклонить заявку
 // Автор проекта, НР или админ принимает → студент сразу в команде
