@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useSession } from "next-auth/react";
 import { useDictionary } from "@/lib/useDictionary";
 import styles from "./project.module.css";
@@ -100,6 +100,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [manualForm, setManualForm] = useState({ name: "", email: "", direction: "", role: "" });
   const [addingManual, setAddingManual] = useState(false);
   const [manualError, setManualError] = useState("");
+  const [studentSuggestions, setStudentSuggestions] = useState<{ name: string; email: string; direction: string }[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -358,6 +360,27 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     await submitManualMember(false);
   }
 
+  // Поиск существующих студентов по имени/почте (с дебаунсом) для автоподбора
+  function searchStudents(q: string) {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (q.trim().length < 2) {
+      setStudentSuggestions([]);
+      return;
+    }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/students/search?q=${encodeURIComponent(q.trim())}`);
+        if (res.ok) setStudentSuggestions(await res.json());
+      } catch { /* ignore */ }
+    }, 250);
+  }
+
+  function pickStudent(s: { name: string; email: string; direction: string }) {
+    setManualForm((prev) => ({ ...prev, name: s.name, email: s.email, direction: s.direction || "" }));
+    setStudentSuggestions([]);
+    setManualError("");
+  }
+
   async function submitManualMember(allowExternal: boolean) {
     setAddingManual(true);
     setManualError("");
@@ -369,6 +392,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       });
       if (res.ok) {
         setManualForm({ name: "", email: "", direction: "", role: "" });
+        setStudentSuggestions([]);
         setShowAddManual(false);
         fetchProject();
         return;
@@ -676,20 +700,39 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             {showAddManual && (
               <div className={styles.memberCard} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <p className={styles.muted} style={{ fontSize: 12, margin: 0 }}>
+                    Начните вводить имя или почту — подскажем студентов из системы.
+                  </p>
                   <input
                     type="text"
                     placeholder="ФИО *"
                     value={manualForm.name}
-                    onChange={(e) => setManualForm({ ...manualForm, name: e.target.value })}
+                    onChange={(e) => { setManualForm({ ...manualForm, name: e.target.value }); searchStudents(e.target.value); }}
                     className={styles.editInput}
                   />
                   <input
                     type="email"
                     placeholder="E-mail *"
                     value={manualForm.email}
-                    onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                    onChange={(e) => { setManualForm({ ...manualForm, email: e.target.value }); searchStudents(e.target.value); }}
                     className={styles.editInput}
                   />
+                  {studentSuggestions.length > 0 && (
+                    <div style={{ border: "1px solid #ccc", background: "#fff", maxHeight: 200, overflowY: "auto" }}>
+                      {studentSuggestions.map((s) => (
+                        <button
+                          key={s.email}
+                          type="button"
+                          onClick={() => pickStudent(s)}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", borderBottom: "1px solid #eee", cursor: "pointer", fontSize: 14 }}
+                        >
+                          <strong>{s.name}</strong>
+                          <span style={{ color: "#003092" }}> · {s.email}</span>
+                          {s.direction && <span style={{ color: "#777" }}> · {s.direction}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <select
                     value={manualForm.direction}
                     onChange={(e) => setManualForm({ ...manualForm, direction: e.target.value })}
