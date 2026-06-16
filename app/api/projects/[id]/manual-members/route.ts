@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 // Максимальный размер команды: автор + 2 тиммейта = 3 участника (научный руководитель не считается).
 export const MAX_TEAM_MEMBERS = 3;
@@ -67,24 +68,50 @@ export async function POST(
     return NextResponse.json({ error: "Участник с таким e-mail уже в проекте" }, { status: 409 });
   }
 
+  // Если студент с такой почтой уже зарегистрирован — привязываем участие к его аккаунту,
+  // чтобы он видел проект в «Мои проекты», а не числился «не в системе».
+  const linkedStudent = await prisma.studentProfile.findFirst({
+    where: { user: { email, role: "STUDENT" } },
+    select: { id: true, userId: true },
+  });
+
   const member = await prisma.projectMember.create({
-    data: {
-      projectId: id,
-      manualName: name,
-      manualEmail: email,
-      manualDirection: direction || null,
-      role: role || null,
-      inSystem: false,
-    },
+    data: linkedStudent
+      ? {
+          projectId: id,
+          studentId: linkedStudent.id,
+          role: role || null,
+          inSystem: true,
+        }
+      : {
+          projectId: id,
+          manualName: name,
+          manualEmail: email,
+          manualDirection: direction || null,
+          role: role || null,
+          inSystem: false,
+        },
   });
 
   await prisma.activity.create({
     data: {
       projectId: id,
-      action: `Участник ${name} добавлен в команду вручную`,
+      action: `Участник ${name} добавлен в команду`,
       actorEmail: session.user.email,
     },
   });
+
+  // Уведомляем добавленного студента, если он в системе
+  if (linkedStudent) {
+    const proj = await prisma.project.findUnique({ where: { id }, select: { title: true } });
+    notify({
+      userId: linkedStudent.userId,
+      type: "PROJECT_STATUS",
+      title: "Вас добавили в проект",
+      message: `Вас добавили в команду проекта «${proj?.title ?? ""}»`,
+      link: `/projects/${id}`,
+    }).catch(() => {});
+  }
 
   return NextResponse.json(member, { status: 201 });
 }
