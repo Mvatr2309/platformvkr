@@ -204,6 +204,11 @@ export default function InvitationsPage() {
           <p style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
             Можно вставить список одним блоком — разделители: запятая, точка с запятой, пробел, перенос строки. Дубли и невалидные адреса будут отсеяны автоматически.
           </p>
+          {role === "STUDENT" && (
+            <p style={{ fontSize: 12, color: "#E8375A", marginTop: 4 }}>
+              Студентов можно приглашать только с корпоративной почтой @phystech.edu — остальные адреса будут отклонены.
+            </p>
+          )}
         </div>
         <div className={styles.formRow}>
           <div className={styles.field}>

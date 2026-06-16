@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { requireAdmin, isGuardError } from "@/lib/api-guard";
+import { isStudentEmailAllowed, STUDENT_EMAIL_DOMAIN } from "@/lib/student-email";
 
 function generatePassword(length = 10) {
   return crypto.randomBytes(length).toString("base64url").slice(0, length);
@@ -55,6 +56,10 @@ export async function POST(request: NextRequest) {
     seen.add(normalized);
     if (!EMAIL_RE.test(normalized)) {
       invalids.push({ email: original, status: "invalid", reason: "невалидный e-mail" });
+      continue;
+    }
+    if (userRole === "STUDENT" && !isStudentEmailAllowed(normalized)) {
+      invalids.push({ email: original, status: "invalid", reason: `только @${STUDENT_EMAIL_DOMAIN}` });
       continue;
     }
     queue.push({ original, email: normalized });

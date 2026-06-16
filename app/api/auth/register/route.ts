@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
+import { isStudentEmailAllowed, STUDENT_EMAIL_ERROR } from "@/lib/student-email";
 
 function generateCode(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -31,6 +32,11 @@ export async function POST(request: NextRequest) {
         { error: "Недопустимая роль" },
         { status: 400 }
       );
+    }
+
+    // Студенты регистрируются только с корпоративной почты @phystech.edu
+    if (role === "STUDENT" && !isStudentEmailAllowed(email)) {
+      return NextResponse.json({ error: STUDENT_EMAIL_ERROR }, { status: 400 });
     }
 
     // Если есть токен приглашения — проверяем его (FR-01, 01.01)

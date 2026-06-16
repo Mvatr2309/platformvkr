@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { requireAdmin, isGuardError } from "@/lib/api-guard";
+import { isStudentEmailAllowed, STUDENT_EMAIL_ERROR } from "@/lib/student-email";
 
 // Генерация случайного пароля
 function generatePassword(length = 10) {
@@ -114,6 +115,11 @@ export async function POST(request: NextRequest) {
     }
 
     const userRole = role === "STUDENT" ? "STUDENT" : "SUPERVISOR";
+
+    // Студентов приглашаем только с корпоративной почтой @phystech.edu
+    if (userRole === "STUDENT" && !isStudentEmailAllowed(email)) {
+      return NextResponse.json({ error: STUDENT_EMAIL_ERROR }, { status: 400 });
+    }
 
     // Проверяем, не зарегистрирован ли уже пользователь с таким email
     const existingUser = await prisma.user.findUnique({ where: { email } });

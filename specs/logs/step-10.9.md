@@ -218,4 +218,24 @@
 
 **Проверка:** `npx tsc --noEmit` — ошибок нет.
 
+**Коммит:** f19728b (задеплоено)
+
+## Запись #14 — Удаление внешних участников + обязательный домен @phystech.edu для студентов
+
+**Запрос:** удалить всех внешних участников; почты студентов должны быть @phystech.edu, с предупреждением и запретом.
+
+**Данные:** удалён 21 внешний участник (studentId IS NULL, manualEmail), авторов среди них не было. Осталось 0.
+
+**Реализация (домен только для STUDENT; НР — любая почта):**
+- Хелпер `lib/student-email.ts`: `STUDENT_EMAIL_DOMAIN="phystech.edu"`, `isStudentEmailAllowed()`, `STUDENT_EMAIL_ERROR`.
+- `register`: при role===STUDENT и не-@phystech.edu → 400.
+- `admin/invitations` (одиночное): при STUDENT и не-@phystech.edu → 400.
+- `admin/invitations/bulk`: не-@phystech.edu адреса студентов помечаются invalid («только @phystech.edu»).
+- UI админ-приглашений: подсказка про @phystech.edu при выборе роли «Студент».
+- Откатил давний незакоммиченный стрей-дифф в `admin/invitations/route.ts` (requireAdmin сохранён).
+
+**Файлы:** `lib/student-email.ts` (новый), `app/api/auth/register/route.ts`, `app/api/admin/invitations/route.ts`, `app/api/admin/invitations/bulk/route.ts`, `app/admin/invitations/page.tsx`. Плюс правка данных.
+
+**Проверка:** `npx tsc --noEmit` — ошибок нет.
+
 **Коммит:** (ожидает деплоя)
