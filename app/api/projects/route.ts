@@ -200,6 +200,11 @@ export async function POST(request: NextRequest) {
     // Добавляем ручных участников команды (02.01)
     if (data.members && Array.isArray(data.members)) {
       const seenEmails = new Set<string>();
+      // Исключаем самого автора: он уже добавлен выше как создатель.
+      // Иначе, если автор вписал себя в список тиммейтов, он задвоится (становится «4-м участником»).
+      if (session.user.email) {
+        seenEmails.add(session.user.email.toLowerCase());
+      }
       for (const m of data.members) {
         if (!m?.name || !m?.email) continue;
         const email = String(m.email).toLowerCase();
