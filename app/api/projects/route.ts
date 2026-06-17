@@ -146,6 +146,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Готовим список тиммейтов: дедуп по почте, исключаем самого автора
+    // (он добавляется отдельно как создатель — иначе задвоится), привязываем
+    // к аккаунтам зарегистрированных студентов. Внешних участников быть не должно (#13).
+    const teammates: { name: string; email: string; direction: string | null; role: string | null; studentId: string }[] = [];
+    if (data.members && Array.isArray(data.members)) {
+      const seen = new Set<string>();
+      if (session.user.email) seen.add(session.user.email.toLowerCase());
+
+      const notFound: string[] = [];
+      for (const m of data.members) {
+        if (!m?.name || !m?.email) continue;
+        const email = String(m.email).toLowerCase();
+        if (seen.has(email)) continue;
+        seen.add(email);
+
+        const linkedStudent = await prisma.studentProfile.findFirst({
+          where: { user: { email: { equals: email, mode: "insensitive" }, role: "STUDENT" } },
+          select: { id: true },
+        });
+        if (!linkedStudent) {
+          notFound.push(m.email);
+          continue;
+        }
+        teammates.push({
+          name: m.name,
+          email: m.email,
+          direction: m.direction || null,
+          role: m.role || null,
+          studentId: linkedStudent.id,
+        });
+      }
+
+      if (notFound.length > 0) {
+        return NextResponse.json(
+          {
+            error: `В команду можно добавлять только зарегистрированных студентов. Не найдены в системе: ${notFound.join(", ")}. Проверьте почту или дождитесь, пока им откроют доступ.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const status = data.submit ? "PENDING" : "DRAFT";
 
     const project = await prisma.project.create({
@@ -197,30 +239,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Добавляем ручных участников команды (02.01)
-    if (data.members && Array.isArray(data.members)) {
-      const seenEmails = new Set<string>();
-      // Исключаем самого автора: он уже добавлен выше как создатель.
-      // Иначе, если автор вписал себя в список тиммейтов, он задвоится (становится «4-м участником»).
-      if (session.user.email) {
-        seenEmails.add(session.user.email.toLowerCase());
-      }
-      for (const m of data.members) {
-        if (!m?.name || !m?.email) continue;
-        const email = String(m.email).toLowerCase();
-        if (seenEmails.has(email)) continue;
-        seenEmails.add(email);
-        await prisma.projectMember.create({
-          data: {
-            projectId: project.id,
-            manualName: m.name,
-            manualEmail: m.email,
-            manualDirection: m.direction || null,
-            role: m.role || null,
-            inSystem: false,
-          },
-        });
-      }
+    // Добавляем участников команды (02.01): все привязаны к аккаунтам студентов,
+    // manualName сохраняем как запасное имя (покажется, пока студент не заполнил профиль).
+    for (const t of teammates) {
+      await prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          studentId: t.studentId,
+          manualName: t.name,
+          manualDirection: t.direction,
+          role: t.role,
+          inSystem: true,
+        },
+      });
     }
 
     revalidatePath("/projects");
