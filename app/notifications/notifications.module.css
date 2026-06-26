@@ -71,3 +71,17 @@
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
+
+.copyBtn {
+  margin-top: 10px;
+  background: var(--color-coral);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.copyBtn:hover { background: var(--color-coral-dark); }

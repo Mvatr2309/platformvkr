@@ -25,10 +25,22 @@ function timeAgo(dateStr: string) {
   return `${days} дн назад`;
 }
 
+/** Достаёт контакт из текста контактных уведомлений (для кнопки «Скопировать»). */
+function extractContact(message: string): string | null {
+  // НР получает контакт студента: «Контакт студента Имя: <контакт>. Договоритесь…»
+  const m1 = message.match(/Контакт студента[^:]*:\s*(.+?)\.\s*Договоритесь/);
+  if (m1) return m1[1].trim();
+  // Студент получает контакт НР: «…Свяжитесь для встречи! Контакт: <контакт>»
+  const m2 = message.match(/Контакт:\s*(.+?)\s*$/);
+  if (m2) return m2[1].trim();
+  return null;
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const { page, setPage, totalPages, paged } = usePagination(notifications, 20);
 
   const fetchNotifications = useCallback(async () => {
@@ -73,6 +85,16 @@ export default function NotificationsPage() {
     setUnreadCount(0);
   }
 
+  async function copyContact(id: string, contact: string) {
+    try {
+      await navigator.clipboard.writeText(contact);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 2000);
+    } catch {
+      /* буфер обмена недоступен — пользователь может выделить текст вручную */
+    }
+  }
+
   async function handleClick(notif: Notification) {
     // Пользователь выделяет текст (копирует контакт) — не уводим со страницы
     if (window.getSelection()?.toString()) return;
@@ -111,7 +133,9 @@ export default function NotificationsPage() {
         ) : (
           <>
           <div className={styles.list}>
-            {paged.map((n) => (
+            {paged.map((n) => {
+              const contact = extractContact(n.message);
+              return (
               <div
                 key={n.id}
                 className={`${styles.item} ${!n.read ? styles.itemUnread : ""}`}
@@ -123,8 +147,18 @@ export default function NotificationsPage() {
                   <span className={styles.itemTime}>{timeAgo(n.createdAt)}</span>
                 </div>
                 <div className={styles.itemMessage}>{n.message}</div>
+                {contact && (
+                  <button
+                    type="button"
+                    className={styles.copyBtn}
+                    onClick={(e) => { e.stopPropagation(); copyContact(n.id, contact); }}
+                  >
+                    {copiedId === n.id ? "Контакт скопирован ✓" : "Скопировать контакт"}
+                  </button>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
           </>
