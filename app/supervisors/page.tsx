@@ -12,6 +12,8 @@ const PROJECT_TYPES = [
   { value: "CORPORATE_STARTUP", label: "Корпоративные стартапы" },
 ];
 
+const FILTERS_STORAGE_KEY = "supervisors-filters";
+
 interface SupervisorCard {
   id: string;
   workplace: string;
@@ -39,6 +41,40 @@ export default function SupervisorsPage() {
   const [recruitment, setRecruitment] = useState("");
   const [projectType, setProjectType] = useState("");
   const [loading, setLoading] = useState(true);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+
+  // Восстанавливаем сохранённые фильтры при заходе на страницу
+  // (в т.ч. при возврате из профиля руководителя и в новых сессиях)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f.search) setSearch(f.search);
+        if (f.direction) setDirection(f.direction);
+        if (f.academicTitle) setAcademicTitle(f.academicTitle);
+        if (f.recruitment) setRecruitment(f.recruitment);
+        if (f.projectType) setProjectType(f.projectType);
+      }
+    } catch {
+      /* недоступный/повреждённый localStorage — стартуем с пустыми фильтрами */
+    }
+    setFiltersLoaded(true);
+  }, []);
+
+  // Сохраняем фильтры при каждом изменении (только после первичной загрузки,
+  // чтобы пустые значения по умолчанию не затёрли сохранённые)
+  useEffect(() => {
+    if (!filtersLoaded) return;
+    try {
+      localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({ search, direction, academicTitle, recruitment, projectType }),
+      );
+    } catch {
+      /* запись недоступна — игнорируем */
+    }
+  }, [filtersLoaded, search, direction, academicTitle, recruitment, projectType]);
 
   const { data: session } = useSession();
   const isStudent = session?.user?.role === "STUDENT";
