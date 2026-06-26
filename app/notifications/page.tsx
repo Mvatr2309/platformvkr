@@ -74,6 +74,8 @@ export default function NotificationsPage() {
   }
 
   async function handleClick(notif: Notification) {
+    // Пользователь выделяет текст (копирует контакт) — не уводим со страницы
+    if (window.getSelection()?.toString()) return;
     if (!notif.read) {
       fetch("/api/notifications", {
         method: "PATCH",
