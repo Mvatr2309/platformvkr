@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
+import { sendMail } from "@/lib/mail";
 
 const MAX_ACTIVE_APPLICATIONS = 5; // 05.04
 const MAX_SUPERVISION_REQUESTS_PER_PROJECT = 3; // сколько НР можно предлагать один проект одновременно
@@ -267,7 +268,11 @@ export async function POST(request: NextRequest) {
       // НР существует и доступен
       const supervisor = await prisma.supervisorProfile.findUnique({
         where: { id: targetSupervisorId },
-        select: { id: true, userId: true, status: true, recruitmentStatus: true, maxProjects: true, _count: { select: { projects: true } } },
+        select: {
+          id: true, userId: true, status: true, recruitmentStatus: true, maxProjects: true,
+          _count: { select: { projects: true } },
+          user: { select: { name: true, email: true } },
+        },
       });
       if (!supervisor || supervisor.status !== "APPROVED") {
         return NextResponse.json({ error: "Научный руководитель недоступен" }, { status: 400 });
@@ -329,6 +334,26 @@ export async function POST(request: NextRequest) {
         message: `Студент ${session.user.name} предлагает вам руководство проектом «${project.title}»`,
         link: `/applications`,
       }).catch(() => {});
+
+      // E-mail НР о новом предложении проекта
+      if (supervisor.user?.email) {
+        const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
+        sendMail({
+          to: supervisor.user.email,
+          subject: `Вам предложили проект — ${project.title}`,
+          html: `
+            <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #003092;">Новое предложение проекта</h2>
+              <p style="color: #333;">Уважаемый(ая) <strong>${supervisor.user.name || "научный руководитель"}</strong>,</p>
+              <p style="color: #555;">Студент <strong>${session.user.name}</strong> предлагает вам руководство проектом «<strong>${project.title}</strong>».</p>
+              <p style="color: #555;">Перейдите на платформу, чтобы ознакомиться с проектом и ответить.</p>
+              <p><a href="${platformUrl}/applications"
+                 style="display: inline-block; background: #E8375A; color: #fff; padding: 14px 28px; text-decoration: none; font-weight: 600;">
+                Перейти к предложениям
+              </a></p>
+            </div>`,
+        }).catch((err) => console.error("Failed to send supervision-request email:", err.message));
+      }
 
       return NextResponse.json(application, { status: 201 });
     }
