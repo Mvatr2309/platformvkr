@@ -11,6 +11,14 @@
 .link:hover { text-decoration: underline; }
 
 .success { color: #2a7d2a; font-size: 14px; margin-bottom: var(--space-md); }
+.errorMsg {
+  color: #E8375A;
+  font-size: 14px;
+  margin-bottom: var(--space-md);
+  padding: 10px 14px;
+  background: #fdecef;
+  border-left: 3px solid #E8375A;
+}
 
 /* Список */
 .list { display: flex; flex-direction: column; gap: var(--space-md); }

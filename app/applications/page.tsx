@@ -98,6 +98,7 @@ export default function ApplicationsPage() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [tab, setTab] = useState<"my" | "author" | "proposals">("my");
   const [supTab, setSupTab] = useState<"incoming" | "proposals" | "my">("incoming");
 
@@ -127,26 +128,37 @@ export default function ApplicationsPage() {
   useEffect(() => { fetchApps(); }, [fetchApps]);
 
   async function handleAction(id: string, action: string) {
-    const res = await fetch(`/api/applications/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, comment }),
-    });
-    if (res.ok) {
-      const msgs: Record<string, string> = {
-        accept: "Заявка принята",
-        reject: "Заявка отклонена",
-        interested: "Вы отметили заинтересованность. Контакты раскрыты!",
-        confirm: "Готовность подтверждена. Ожидается подтверждение студента.",
-        decline: "Предложение отклонено",
-        withdraw: "Заявка отозвана",
-        student_accept: "Руководитель закреплён за проектом!",
-        student_decline: "Предложение руководителя отклонено",
-      };
-      setMessage(msgs[action] || "Готово");
-      setActionId(null);
-      setComment("");
-      fetchApps();
+    setError("");
+    try {
+      const res = await fetch(`/api/applications/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, comment }),
+      });
+      if (res.ok) {
+        const msgs: Record<string, string> = {
+          accept: "Заявка принята",
+          reject: "Заявка отклонена",
+          interested: "Вы отметили заинтересованность. Контакты раскрыты!",
+          confirm: "Готовность подтверждена. Ожидается подтверждение студента.",
+          decline: "Предложение отклонено",
+          withdraw: "Заявка отозвана",
+          student_accept: "Руководитель закреплён за проектом!",
+          student_decline: "Предложение руководителя отклонено",
+        };
+        setMessage(msgs[action] || "Готово");
+        setActionId(null);
+        setComment("");
+        fetchApps();
+      } else {
+        // Показываем причину отказа от сервера (напр. «нет свободных слотов»)
+        const data = await res.json().catch(() => null);
+        setMessage("");
+        setError(data?.error || "Не удалось выполнить действие. Попробуйте ещё раз.");
+      }
+    } catch {
+      setMessage("");
+      setError("Не удалось выполнить действие. Проверьте соединение и попробуйте ещё раз.");
     }
   }
 
@@ -197,6 +209,7 @@ export default function ApplicationsPage() {
           </div>
 
           {message && <p className={styles.success}>{message}</p>}
+          {error && <p className={styles.errorMsg}>{error}</p>}
 
           {/* Мои поданные заявки */}
           {tab === "my" && (
@@ -409,6 +422,7 @@ export default function ApplicationsPage() {
           </div>
 
           {message && <p className={styles.success}>{message}</p>}
+          {error && <p className={styles.errorMsg}>{error}</p>}
 
           {supTab === "incoming" && (
             <>

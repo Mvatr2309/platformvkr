@@ -415,9 +415,10 @@ export async function PUT(
       const supProjectCount = await prisma.project.count({
         where: { supervisorId: application.supervisor!.id },
       });
-      if (supProjectCount >= (supProfile?.maxProjects || 4)) {
+      const supMaxProjects = supProfile?.maxProjects || 4;
+      if (supProjectCount >= supMaxProjects) {
         return NextResponse.json(
-          { error: `Достигнут лимит проектов научного руководителя (${supProfile?.maxProjects || 4})` },
+          { error: `У научного руководителя нет свободных слотов: занято ${supProjectCount} из ${supMaxProjects} проектов. Назначить его руководителем нельзя — выберите другого или свяжитесь с ним.` },
           { status: 400 }
         );
       }
