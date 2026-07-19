@@ -145,7 +145,13 @@ export default function StudentsListPage() {
             {paged.map((s) => (
               <tr key={s.id}>
                 <td>{s.name || <span className={styles.muted}>Не указано</span>}</td>
-                <td>{s.email}</td>
+                <td>
+                  {s.inSystem ? (
+                    <a href={`/admin/students/${s.id}`} className={styles.link}>{s.email}</a>
+                  ) : (
+                    s.email
+                  )}
+                </td>
                 <td>{s.student?.direction || <span className={styles.muted}>—</span>}</td>
                 <td>{s.student?.course || <span className={styles.muted}>—</span>}</td>
                 <td>{s.student?.cohort || <span className={styles.muted}>—</span>}</td>

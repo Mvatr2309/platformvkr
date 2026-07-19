@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { name: true, email: true, role: true } },
+      user: { select: { id: true, name: true, email: true, role: true } },
     },
   });
 

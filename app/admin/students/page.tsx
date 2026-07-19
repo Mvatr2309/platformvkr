@@ -245,7 +245,15 @@ export default function StudentsPage() {
           {filtered.map((s) => (
             <tr key={s.id}>
               <td>{s.name}</td>
-              <td>{s.email}</td>
+              <td>
+                {s.inSystem ? (
+                  <a href={`/admin/students/${s.id}`} style={{ color: "#003092", fontWeight: 500, textDecoration: "none" }}>
+                    {s.email}
+                  </a>
+                ) : (
+                  s.email
+                )}
+              </td>
               <td>
                 <span style={{
                   display: "inline-block",

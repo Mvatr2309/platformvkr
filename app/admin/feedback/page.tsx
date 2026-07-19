@@ -30,7 +30,7 @@ interface FeedbackItem {
   response: string | null;
   respondedAt: string | null;
   createdAt: string;
-  user: { name: string; email: string; role: string };
+  user: { id: string; name: string; email: string; role: string };
 }
 
 interface ThreadMessage {
@@ -179,7 +179,17 @@ export default function FeedbackPage() {
                     </span>
                     <strong style={{ fontSize: 14 }}>{item.user.name || item.user.email}</strong>
                     <span style={{ fontSize: 12, color: "#888" }}>· {ROLE_LABELS[item.user.role] || item.user.role}</span>
-                    <span style={{ fontSize: 12, color: "#888" }}>· {item.user.email}</span>
+                    {item.user.role === "STUDENT" ? (
+                      <a
+                        href={`/admin/students/${item.user.id}`}
+                        style={{ fontSize: 12, color: "#003092", fontWeight: 500, textDecoration: "none" }}
+                        title="Открыть профиль студента"
+                      >
+                        · {item.user.email}
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: 12, color: "#888" }}>· {item.user.email}</span>
+                    )}
                   </div>
                   <span style={{ fontSize: 13, color: "#888" }}>
                     {new Date(item.createdAt).toLocaleDateString("ru-RU")}
