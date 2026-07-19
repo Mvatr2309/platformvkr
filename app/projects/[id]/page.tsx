@@ -307,6 +307,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const isAuthor = project?.members.some((m) => m.isCreator && m.student?.userId === userId);
   const canEdit = isAdmin || isAuthor || isSupervisorOwner;
   const canManage = isAdmin || isAuthor || isSupervisorOwner || isMember;
+  // Скачивание файлов: админ, любой НР, студент — только участник проекта
+  const canDownloadFiles = isAdmin || userRole === "SUPERVISOR" || isMember;
   const otherMembers = project?.members.filter((m) => !m.isCreator) || [];
   const canDelete = isAdmin || ((isAuthor || isSupervisorOwner) && otherMembers.length === 0);
 
@@ -936,9 +938,18 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                           Открыть
                         </a>
                       ) : f.filepath ? (
-                        <a href={f.filepath} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>
-                          Скачать
-                        </a>
+                        canDownloadFiles ? (
+                          <a href={`/api/projects/${id}/files/${f.id}/download`} className={styles.fileLink}>
+                            Скачать
+                          </a>
+                        ) : (
+                          <span
+                            className={styles.muted}
+                            title="Файлы проекта доступны участникам команды, научным руководителям и администраторам"
+                          >
+                            Доступно участникам
+                          </span>
+                        )
                       ) : null}
                       {session?.user && (
                         <button

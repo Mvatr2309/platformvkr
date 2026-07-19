@@ -6,9 +6,22 @@ import { prisma } from "@/lib/prisma";
 import { requireProjectAccess, isGuardError } from "@/lib/api-guard";
 import { validateUpload, isInside } from "@/lib/upload-validation";
 
-const PUBLIC_ROOT = path.join(process.cwd(), "public");
-const UPLOAD_DIR = path.join(PUBLIC_ROOT, "uploads", "projects");
+// Приватное хранилище вне public/ — файлы раздаются только через download-роут с проверкой прав
+const UPLOAD_DIR = path.join(process.cwd(), "uploads", "projects");
+// Файлы, загруженные до переноса хранилища из public/
+const LEGACY_DIR = path.join(process.cwd(), "public", "uploads", "projects");
 const PROJECT_QUOTA = 100 * 1024 * 1024;
+
+// Кандидаты на физическое расположение файла по сохранённому в БД пути
+function storedFileCandidates(filepath: string): string[] {
+  const rel = filepath.replace(/^\/uploads\/projects\//, "");
+  const candidates: string[] = [];
+  const inPrivate = path.join(UPLOAD_DIR, rel);
+  if (isInside(UPLOAD_DIR, inPrivate)) candidates.push(inPrivate);
+  const inLegacy = path.join(LEGACY_DIR, rel);
+  if (isInside(LEGACY_DIR, inLegacy)) candidates.push(inLegacy);
+  return candidates;
+}
 
 // GET /api/projects/[id]/files — список файлов проекта (только участники + НР + админ)
 export async function GET(
@@ -86,12 +99,14 @@ export async function POST(
     let used = 0;
     for (const f of existing) {
       if (!f.filepath) continue;
-      const abs = path.join(PUBLIC_ROOT, f.filepath);
-      try {
-        const s = await stat(abs);
-        used += s.size;
-      } catch {
-        /* файл мог быть удалён */
+      for (const abs of storedFileCandidates(f.filepath)) {
+        try {
+          const s = await stat(abs);
+          used += s.size;
+          break;
+        } catch {
+          /* файл мог быть удалён или лежит в другом расположении */
+        }
       }
     }
     if (used + validation.value.size > PROJECT_QUOTA) {
@@ -157,8 +172,7 @@ export async function DELETE(
   }
 
   if (file.fileType === "FILE" && file.filepath) {
-    const abs = path.join(PUBLIC_ROOT, file.filepath);
-    if (isInside(UPLOAD_DIR, abs)) {
+    for (const abs of storedFileCandidates(file.filepath)) {
       await unlink(abs).catch(() => undefined);
     }
   }

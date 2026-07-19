@@ -449,3 +449,22 @@
 **Проверка:** `npx tsc --noEmit` — ошибок нет.
 
 **Коммит:** (ожидает деплоя)
+
+## Запись #28 — Файлы проектов: скачивание только участникам, НР и админу
+
+**Запрос:** файлы проектов должны скачивать только участники команды проекта, научные руководители (все) и администратор; студенты не из проекта — не могут.
+
+**Контекст:** файлы лежали в `public/uploads/projects/` и раздавались статикой — скачать мог кто угодно по прямому URL даже без авторизации. Права проверялись только на списке файлов в API, не на самих файлах.
+
+**Реализация:**
+- `app/api/projects/[id]/files/[fileId]/download/route.ts` (новый): единственный путь скачивания. `requireAuth`; ADMIN и SUPERVISOR (любой) — доступ, STUDENT — только участник проекта (по `ProjectMember`), иначе 403. Отдаёт файл с оригинальным именем (`Content-Disposition: attachment`), ищет в приватной папке с fallback на legacy `public/`.
+- `app/api/projects/[id]/files/route.ts`: загрузка — в приватную `uploads/projects/` (вне public), квота и удаление резолвят оба расположения (`storedFileCandidates`). Формат `filepath` в БД не менялся.
+- `app/projects/[id]/page.tsx`: «Скачать» → новый роут; флаг `canDownloadFiles = isAdmin || SUPERVISOR || isMember`; без прав — надпись «Доступно участникам» с тултипом. Внешние ссылки (LINK) не тронуты.
+- `.gitignore`: `/uploads/`.
+- Миграция на проде: `mv public/uploads/projects/* uploads/projects/` + проверка, что nginx не раздаёт `/uploads` статикой.
+
+**Файлы:** `app/api/projects/[id]/files/[fileId]/download/route.ts`, `app/api/projects/[id]/files/route.ts`, `app/projects/[id]/page.tsx`, `.gitignore`.
+
+**Проверка:** `npx tsc --noEmit` — ошибок нет; после деплоя — прямой URL мёртв, роут без сессии отдаёт 401.
+
+**Коммит:** (ожидает деплоя)
