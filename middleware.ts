@@ -11,6 +11,7 @@ const protectedPaths = [
   "/profile",
   "/my-projects",
   "/notifications",
+  "/nir",
 ];
 
 // Маршруты, доступные только админам

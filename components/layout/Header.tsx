@@ -135,6 +135,7 @@ export default function Header() {
           {role === "STUDENT" && (
             <>
               <span className={styles.divider} />
+              <a href="/nir" className={navClass("/nir")}>НИР</a>
               <a href="/applications" className={navClass("/applications")}>Мои заявки</a>
               <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
             </>
@@ -231,6 +232,7 @@ export default function Header() {
 
             {role === "STUDENT" && (
               <>
+                <a href="/nir" className={navClass("/nir")}>НИР</a>
                 <a href="/applications" className={navClass("/applications")}>Мои заявки</a>
                 <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
               </>
