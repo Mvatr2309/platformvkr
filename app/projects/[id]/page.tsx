@@ -102,6 +102,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [manualError, setManualError] = useState("");
   const [studentSuggestions, setStudentSuggestions] = useState<{ name: string; email: string; direction: string }[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [modComment, setModComment] = useState("");
+  const [modActing, setModActing] = useState(false);
+  const [modMessage, setModMessage] = useState("");
+  const [modError, setModError] = useState("");
 
   const fetchProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${id}`);
@@ -143,6 +147,32 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     fetchActivities();
     checkMyApplication();
   }, [fetchProject, fetchActivities, checkMyApplication]);
+
+  // Модерация проекта прямо со страницы (админ, статус PENDING)
+  async function handleModeration(action: "approve" | "reject") {
+    setModActing(true);
+    setModError("");
+    try {
+      const res = await fetch(`/api/admin/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, comment: modComment.trim() }),
+      });
+      if (res.ok) {
+        setModMessage(action === "approve" ? "Проект одобрен и открыт для заявок" : "Проект отклонён и возвращён в черновики");
+        setModComment("");
+        fetchProject();
+        fetchActivities();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setModError(data.error || "Не удалось выполнить действие");
+      }
+    } catch {
+      setModError("Ошибка сети — попробуйте ещё раз");
+    } finally {
+      setModActing(false);
+    }
+  }
 
   // Подтянуть массив projectTypes собственного профиля НР, чтобы проверить соответствие при подаче заявки на руководство
   useEffect(() => {
@@ -492,6 +522,72 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             {project.direction && <span className={styles.dirBadge}>{project.direction}</span>}
           </div>
         </div>
+
+        {/* Панель модерации — админ видит у проекта в статусе «На модерации» */}
+        {isAdmin && project.status === "PENDING" && (
+          <div style={{
+            background: "var(--color-surface)",
+            border: "2px solid var(--color-deep-blue)",
+            padding: "16px",
+            marginBottom: "24px",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--color-deep-blue)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>
+              Модерация проекта
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                type="text"
+                placeholder="Комментарий модератора (необязательно)"
+                value={modComment}
+                onChange={(e) => setModComment(e.target.value)}
+                disabled={modActing}
+                style={{
+                  flex: 1, minWidth: "200px", padding: "6px 8px", fontSize: "13px",
+                  border: "1px solid var(--color-border)", fontFamily: "inherit",
+                  background: "var(--color-surface)",
+                }}
+              />
+              <button
+                onClick={() => handleModeration("approve")}
+                disabled={modActing}
+                style={{
+                  background: "var(--color-deep-blue)", color: "#fff", border: "none",
+                  padding: "6px 16px", fontSize: "13px", fontWeight: 600,
+                  fontFamily: "inherit", cursor: "pointer",
+                }}
+              >
+                {modActing ? "..." : "Одобрить"}
+              </button>
+              <button
+                onClick={() => handleModeration("reject")}
+                disabled={modActing}
+                style={{
+                  background: "transparent", color: "var(--color-coral)",
+                  border: "2px solid var(--color-coral)", padding: "4px 16px",
+                  fontSize: "13px", fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                }}
+              >
+                Отклонить
+              </button>
+            </div>
+            {modError && (
+              <p style={{ marginTop: 8, fontSize: 13, color: "var(--color-coral)" }}>{modError}</p>
+            )}
+          </div>
+        )}
+        {isAdmin && modMessage && (
+          <div style={{
+            background: "rgba(46,125,50,0.08)",
+            border: "1px solid #2a7d2a",
+            color: "#2a7d2a",
+            padding: "10px 16px",
+            fontSize: 14,
+            fontWeight: 600,
+            marginBottom: "24px",
+          }}>
+            {modMessage}
+          </div>
+        )}
 
         <div className={styles.grid}>
           {/* Описание */}
