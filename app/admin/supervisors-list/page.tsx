@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
@@ -46,7 +47,9 @@ function SupervisorsListInner() {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sortAsc, setSortAsc] = useState(true);
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "name" | "email" | "workplace" | "position" | "degree" | "contact" | "slots" | "profile"
+  >("name");
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/supervisors-list");
@@ -73,13 +76,27 @@ function SupervisorsListInner() {
       );
     }
 
+    const sortVal = (s: Supervisor): SortValue => {
+      switch (sortField) {
+        case "email": return s.email;
+        case "workplace": return s.supervisor?.workplace;
+        case "position": return s.supervisor?.position;
+        case "degree": return s.supervisor?.academicDegree;
+        case "contact": return s.supervisor?.contact;
+        case "slots": return s.supervisor?.maxProjects;
+        case "profile": return s.profileCompleted ? 0 : 1;
+        default: return s.name;
+      }
+    };
+
     list = [...list].sort((a, b) => {
-      const cmp = (a.name || "").localeCompare(b.name || "", "ru");
-      return sortAsc ? cmp : -cmp;
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return (a.name || "").localeCompare(b.name || "", "ru");
     });
 
     return list;
-  }, [supervisors, search, sortAsc, projectTypeFilter, directionFilter]);
+  }, [supervisors, search, sortField, sortAsc, projectTypeFilter, directionFilter]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
@@ -131,16 +148,14 @@ function SupervisorsListInner() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => setSortAsc(!sortAsc)}>
-                ФИО {sortAsc ? "↑" : "↓"}
-              </th>
-              <th>Email</th>
-              <th>Место работы</th>
-              <th>Должность</th>
-              <th>Степень</th>
-              <th>Контакт</th>
-              <th>Слоты</th>
-              <th>Профиль</th>
+              <th onClick={() => toggleSort("name")}>ФИО{arrow("name")}</th>
+              <th onClick={() => toggleSort("email")}>Email{arrow("email")}</th>
+              <th onClick={() => toggleSort("workplace")}>Место работы{arrow("workplace")}</th>
+              <th onClick={() => toggleSort("position")}>Должность{arrow("position")}</th>
+              <th onClick={() => toggleSort("degree")}>Степень{arrow("degree")}</th>
+              <th onClick={() => toggleSort("contact")}>Контакт{arrow("contact")}</th>
+              <th onClick={() => toggleSort("slots")}>Слоты{arrow("slots")}</th>
+              <th onClick={() => toggleSort("profile")}>Профиль{arrow("profile")}</th>
             </tr>
           </thead>
           <tbody>

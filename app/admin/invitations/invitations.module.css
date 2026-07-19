@@ -108,6 +108,13 @@
   letter-spacing: 0.5px;
   color: var(--color-text-muted);
   border-bottom: 2px solid var(--color-border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.table th:hover {
+  color: var(--color-deep-blue);
 }
 
 .table td {

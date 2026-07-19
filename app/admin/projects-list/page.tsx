@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
@@ -23,12 +24,23 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: "Завершён",
 };
 
+// Порядок статусов при сортировке — по жизненному циклу проекта
+const STATUS_ORDER: Record<string, number> = {
+  DRAFT: 0,
+  PENDING: 1,
+  OPEN: 2,
+  ACTIVE: 3,
+  COMPLETED: 4,
+};
+
 export default function ProjectsListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [sortAsc, setSortAsc] = useState(true);
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "title" | "status" | "direction" | "supervisor" | "members" | "applications" | "date"
+  >("title");
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/projects-list");
@@ -53,13 +65,26 @@ export default function ProjectsListPage() {
       list = list.filter((p) => p.status === statusFilter);
     }
 
+    const sortVal = (p: Project): SortValue => {
+      switch (sortField) {
+        case "status": return STATUS_ORDER[p.status] ?? 99;
+        case "direction": return p.direction;
+        case "supervisor": return p.supervisor?.user?.name;
+        case "members": return p._count.members;
+        case "applications": return p._count.applications;
+        case "date": return new Date(p.createdAt).getTime();
+        default: return p.title;
+      }
+    };
+
     list = [...list].sort((a, b) => {
-      const cmp = a.title.localeCompare(b.title, "ru");
-      return sortAsc ? cmp : -cmp;
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return a.title.localeCompare(b.title, "ru");
     });
 
     return list;
-  }, [projects, search, statusFilter, sortAsc]);
+  }, [projects, search, statusFilter, sortField, sortAsc]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
@@ -96,15 +121,13 @@ export default function ProjectsListPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => setSortAsc(!sortAsc)}>
-                Название {sortAsc ? "↑" : "↓"}
-              </th>
-              <th>Статус</th>
-              <th>Магистратура</th>
-              <th>Руководитель</th>
-              <th>Команда</th>
-              <th>Заявки</th>
-              <th>Дата</th>
+              <th onClick={() => toggleSort("title")}>Название{arrow("title")}</th>
+              <th onClick={() => toggleSort("status")}>Статус{arrow("status")}</th>
+              <th onClick={() => toggleSort("direction")}>Магистратура{arrow("direction")}</th>
+              <th onClick={() => toggleSort("supervisor")}>Руководитель{arrow("supervisor")}</th>
+              <th onClick={() => toggleSort("members")}>Команда{arrow("members")}</th>
+              <th onClick={() => toggleSort("applications")}>Заявки{arrow("applications")}</th>
+              <th onClick={() => toggleSort("date")}>Дата{arrow("date")}</th>
             </tr>
           </thead>
           <tbody>

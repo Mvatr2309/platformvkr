@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
@@ -25,8 +26,23 @@ export default function WorkloadPage() {
   const [items, setItems] = useState<WorkloadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"load_desc" | "load_asc" | "name_asc" | "name_desc">("load_desc");
+  const { sortField, sortAsc, setSortField, setSortAsc, toggleSort, arrow } = useTableSort<
+    "name" | "workplace" | "contact" | "load" | "status"
+  >("load", false);
   const [statusFilter, setStatusFilter] = useState<"" | "free" | "full" | "overloaded" | "closed">("");
+
+  // Значение селекта сортировки, синхронизированное с кликами по заголовкам
+  const sortSelectValue =
+    sortField === "load" ? (sortAsc ? "load_asc" : "load_desc")
+    : sortField === "name" ? (sortAsc ? "name_asc" : "name_desc")
+    : "";
+
+  function handleSortSelect(value: string) {
+    if (value === "load_desc") { setSortField("load"); setSortAsc(false); }
+    else if (value === "load_asc") { setSortField("load"); setSortAsc(true); }
+    else if (value === "name_asc") { setSortField("name"); setSortAsc(true); }
+    else if (value === "name_desc") { setSortField("name"); setSortAsc(false); }
+  }
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/workload");
@@ -55,18 +71,29 @@ export default function WorkloadPage() {
     } else if (statusFilter === "closed") {
       list = list.filter((s) => s.recruitmentStatus === "CLOSED");
     }
+    const sortVal = (s: WorkloadItem): SortValue => {
+      switch (sortField) {
+        case "workplace": return s.workplace;
+        case "contact": return s.contact;
+        // Загрузка/Прогресс — по доле занятых слотов
+        case "load": return s.maxSlots > 0 ? s._count.projects / s.maxSlots : s._count.projects > 0 ? 999 : 0;
+        // Принимает → Слоты заняты → Закрыто вручную
+        case "status": return s.effectiveStatus === "OPEN" ? 0 : s.closureReason === "full" ? 1 : 2;
+        default: return s.user.name;
+      }
+    };
+
     list = [...list].sort((a, b) => {
-      if (sort === "load_desc") return b._count.projects - a._count.projects;
-      if (sort === "load_asc") return a._count.projects - b._count.projects;
-      const cmp = (a.user.name || "").localeCompare(b.user.name || "", "ru");
-      return sort === "name_asc" ? cmp : -cmp;
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return (a.user.name || "").localeCompare(b.user.name || "", "ru");
     });
     return list;
-  }, [items, search, sort, statusFilter]);
+  }, [items, search, sortField, sortAsc, statusFilter]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
-  useEffect(() => { setPage(1); }, [search, sort, statusFilter, setPage]);
+  useEffect(() => { setPage(1); }, [search, sortField, sortAsc, statusFilter, setPage]);
 
   if (loading) return <p>Загрузка...</p>;
 
@@ -98,10 +125,11 @@ export default function WorkloadPage() {
           className={styles.searchInput}
         />
         <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as typeof sort)}
+          value={sortSelectValue}
+          onChange={(e) => handleSortSelect(e.target.value)}
           style={{ padding: "8px 12px", border: "1px solid #ddd", fontSize: 14, fontFamily: "inherit" }}
         >
+          {sortSelectValue === "" && <option value="" disabled>По колонке таблицы</option>}
           <option value="load_desc">По убыванию загрузки</option>
           <option value="load_asc">По возрастанию загрузки</option>
           <option value="name_asc">По имени (А→Я)</option>
@@ -125,12 +153,12 @@ export default function WorkloadPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>ФИО</th>
-              <th>Место работы</th>
-              <th>Контакт</th>
-              <th style={{ width: 90 }}>Загрузка</th>
-              <th style={{ width: 220 }}>Прогресс</th>
-              <th style={{ width: 110 }}>Статус набора</th>
+              <th onClick={() => toggleSort("name")}>ФИО{arrow("name")}</th>
+              <th onClick={() => toggleSort("workplace")}>Место работы{arrow("workplace")}</th>
+              <th onClick={() => toggleSort("contact")}>Контакт{arrow("contact")}</th>
+              <th style={{ width: 90 }} onClick={() => toggleSort("load")}>Загрузка{arrow("load")}</th>
+              <th style={{ width: 220 }} onClick={() => toggleSort("load")}>Прогресс{arrow("load")}</th>
+              <th style={{ width: 110 }} onClick={() => toggleSort("status")}>Статус набора{arrow("status")}</th>
             </tr>
           </thead>
           <tbody>

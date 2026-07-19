@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import listStyles from "../list.module.css";
 import styles from "./accounts.module.css";
 
@@ -112,6 +113,28 @@ export default function AccountsPage() {
   const canConfirm =
     !!target && !isAdminTarget && confirmText.trim().toLowerCase() === target.email.toLowerCase();
 
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "name" | "email" | "role" | "profile" | "createdAt"
+  >();
+
+  const sorted = useMemo(() => {
+    if (!sortField) return results;
+    const sortVal = (a: Account): SortValue => {
+      switch (sortField) {
+        case "email": return a.email;
+        case "role": return ROLE_LABELS[a.role];
+        case "profile": return a.profileCompleted ? 0 : 1;
+        case "createdAt": return new Date(a.createdAt).getTime();
+        default: return a.name;
+      }
+    };
+    return [...results].sort((a, b) => {
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return (a.name || "").localeCompare(b.name || "", "ru");
+    });
+  }, [results, sortField, sortAsc]);
+
   return (
     <div>
       <h1 className={listStyles.title}>Удаление аккаунтов</h1>
@@ -152,11 +175,11 @@ export default function AccountsPage() {
         <table className={listStyles.table}>
           <thead>
             <tr>
-              <th>ФИО</th>
-              <th>Email</th>
-              <th>Роль</th>
-              <th>Профиль</th>
-              <th>Регистрация</th>
+              <th onClick={() => toggleSort("name")}>ФИО{arrow("name")}</th>
+              <th onClick={() => toggleSort("email")}>Email{arrow("email")}</th>
+              <th onClick={() => toggleSort("role")}>Роль{arrow("role")}</th>
+              <th onClick={() => toggleSort("profile")}>Профиль{arrow("profile")}</th>
+              <th onClick={() => toggleSort("createdAt")}>Регистрация{arrow("createdAt")}</th>
               <th></th>
             </tr>
           </thead>
@@ -170,7 +193,7 @@ export default function AccountsPage() {
             {!loading && !searched && (
               <tr><td colSpan={6} className={listStyles.empty}>Введите запрос и нажмите «Найти»</td></tr>
             )}
-            {!loading && results.map((a) => (
+            {!loading && sorted.map((a) => (
               <tr key={a.id}>
                 <td>{a.name || <span className={listStyles.muted}>Не указано</span>}</td>
                 <td>{a.email}</td>

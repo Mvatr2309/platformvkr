@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDictionary } from "@/lib/useDictionary";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "./invitations.module.css";
 
@@ -78,10 +79,29 @@ export default function InvitationsPage() {
     return list;
   }, [emailsText]);
 
-  const filteredInvitations = useMemo(() =>
-    invitations.filter((inv) => roleFilter === "ALL" || inv.role === roleFilter),
-    [invitations, roleFilter]
-  );
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "email" | "role" | "status" | "date"
+  >();
+
+  const filteredInvitations = useMemo(() => {
+    const list = invitations.filter((inv) => roleFilter === "ALL" || inv.role === roleFilter);
+    if (!sortField) return list;
+    // Порядок статусов: Отправлено → Создан → Истекло
+    const STATUS_ORDER: Record<string, number> = { SENT: 0, ACCEPTED: 1, EXPIRED: 2 };
+    const sortVal = (inv: Invitation): SortValue => {
+      switch (sortField) {
+        case "role": return inv.role === "STUDENT" ? "Студент" : inv.role === "SUPERVISOR" ? "Науч. рук." : null;
+        case "status": return STATUS_ORDER[inv.status] ?? 99;
+        case "date": return new Date(inv.createdAt).getTime();
+        default: return inv.email;
+      }
+    };
+    return [...list].sort((a, b) => {
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return a.email.localeCompare(b.email, "ru");
+    });
+  }, [invitations, roleFilter, sortField, sortAsc]);
 
   const { page, setPage, totalPages, paged } = usePagination(filteredInvitations, 20);
 
@@ -313,10 +333,10 @@ export default function InvitationsPage() {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>E-mail</th>
-            <th>Роль</th>
-            <th>Статус</th>
-            <th>Дата</th>
+            <th onClick={() => toggleSort("email")}>E-mail{arrow("email")}</th>
+            <th onClick={() => toggleSort("role")}>Роль{arrow("role")}</th>
+            <th onClick={() => toggleSort("status")}>Статус{arrow("status")}</th>
+            <th onClick={() => toggleSort("date")}>Дата{arrow("date")}</th>
             <th></th>
           </tr>
         </thead>

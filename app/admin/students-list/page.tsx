@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDictionaries } from "@/lib/useDictionary";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
 
@@ -31,8 +32,10 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState("");
   const [directionFilter, setDirectionFilter] = useState("");
   const [cohortFilter, setCohortFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "in_system" | "not_in_system">("");
-  const [sortAsc, setSortAsc] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"" | "in_system" | "profile_incomplete" | "not_in_system">("");
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "name" | "email" | "direction" | "course" | "cohort" | "contact" | "status"
+  >("name");
 
   const fetchStudents = useCallback(async () => {
     const res = await fetch("/api/admin/students-list");
@@ -61,24 +64,40 @@ export default function StudentsListPage() {
     }
 
     if (statusFilter === "in_system") {
-      list = list.filter((s) => s.inSystem);
+      list = list.filter((s) => s.inSystem && s.profileCompleted);
+    } else if (statusFilter === "profile_incomplete") {
+      list = list.filter((s) => s.inSystem && !s.profileCompleted);
     } else if (statusFilter === "not_in_system") {
       list = list.filter((s) => !s.inSystem);
     }
 
+    const sortVal = (s: Student): SortValue => {
+      switch (sortField) {
+        case "email": return s.email;
+        case "direction": return s.student?.direction;
+        case "course": return s.student?.course;
+        case "cohort": return s.student?.cohort;
+        case "contact": return s.student?.contact;
+        case "status": return !s.inSystem ? 2 : s.profileCompleted ? 0 : 1;
+        default: return s.name;
+      }
+    };
+
     list = [...list].sort((a, b) => {
-      const cmp = (a.name || "").localeCompare(b.name || "", "ru");
-      return sortAsc ? cmp : -cmp;
+      const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+      if (cmp !== 0) return cmp;
+      return (a.name || "").localeCompare(b.name || "", "ru");
     });
 
     return list;
-  }, [students, search, directionFilter, cohortFilter, statusFilter, sortAsc]);
+  }, [students, search, directionFilter, cohortFilter, statusFilter, sortField, sortAsc]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
   useEffect(() => { setPage(1); }, [search, directionFilter, cohortFilter, statusFilter, setPage]);
 
-  const inSystemCount = students.filter((s) => s.inSystem).length;
+  const inSystemCount = students.filter((s) => s.inSystem && s.profileCompleted).length;
+  const profileIncompleteCount = students.filter((s) => s.inSystem && !s.profileCompleted).length;
   const notInSystemCount = students.filter((s) => !s.inSystem).length;
 
   if (loading) return <p>Загрузка...</p>;
@@ -113,11 +132,12 @@ export default function StudentsListPage() {
         </select>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as "" | "in_system" | "not_in_system")}
+          onChange={(e) => setStatusFilter(e.target.value as "" | "in_system" | "profile_incomplete" | "not_in_system")}
           className={styles.filterSelect}
         >
           <option value="">Все статусы ({students.length})</option>
           <option value="in_system">В системе ({inSystemCount})</option>
+          <option value="profile_incomplete">Профиль не заполнен ({profileIncompleteCount})</option>
           <option value="not_in_system">Не в системе ({notInSystemCount})</option>
         </select>
         <span className={styles.count}>Найдено: {filtered.length}</span>
@@ -127,15 +147,13 @@ export default function StudentsListPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th onClick={() => setSortAsc(!sortAsc)}>
-                ФИО {sortAsc ? "↑" : "↓"}
-              </th>
-              <th>Email</th>
-              <th>Магистратура</th>
-              <th>Курс</th>
-              <th>Когорта</th>
-              <th>Контакт</th>
-              <th>Статус ЛК</th>
+              <th onClick={() => toggleSort("name")}>ФИО{arrow("name")}</th>
+              <th onClick={() => toggleSort("email")}>Email{arrow("email")}</th>
+              <th onClick={() => toggleSort("direction")}>Магистратура{arrow("direction")}</th>
+              <th onClick={() => toggleSort("course")}>Курс{arrow("course")}</th>
+              <th onClick={() => toggleSort("cohort")}>Когорта{arrow("cohort")}</th>
+              <th onClick={() => toggleSort("contact")}>Контакт{arrow("contact")}</th>
+              <th onClick={() => toggleSort("status")}>Статус ЛК{arrow("status")}</th>
             </tr>
           </thead>
           <tbody>

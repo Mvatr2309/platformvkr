@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import styles from "../invitations/invitations.module.css";
 
 interface Student {
@@ -35,6 +36,9 @@ function downloadCredentials(accounts: CreatedAccount[]) {
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
+  const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
+    "name" | "email" | "status" | "role" | "date"
+  >();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -127,11 +131,29 @@ export default function StudentsPage() {
     }
   }
 
-  const filtered = students.filter((s) => {
+  const filteredBase = students.filter((s) => {
     if (filter === "in_system") return s.inSystem;
     if (filter === "not_in_system") return !s.inSystem;
     return true;
   });
+
+  const sortVal = (s: Student): SortValue => {
+    switch (sortField) {
+      case "email": return s.email;
+      case "status": return s.inSystem ? 0 : 1;
+      case "role": return s.projectRoles[0]?.role;
+      case "date": return new Date(s.createdAt).getTime();
+      default: return s.name;
+    }
+  };
+
+  const filtered = sortField
+    ? [...filteredBase].sort((a, b) => {
+        const cmp = compareValues(sortVal(a), sortVal(b), sortAsc);
+        if (cmp !== 0) return cmp;
+        return (a.name || "").localeCompare(b.name || "", "ru");
+      })
+    : filteredBase;
 
   const inSystemCount = students.filter((s) => s.inSystem).length;
   const notInSystemCount = students.filter((s) => !s.inSystem).length;
@@ -226,11 +248,11 @@ export default function StudentsPage() {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>ФИО</th>
-            <th>E-mail</th>
-            <th>Статус ЛК</th>
-            <th>Роль в проекте</th>
-            <th>Дата</th>
+            <th onClick={() => toggleSort("name")}>ФИО{arrow("name")}</th>
+            <th onClick={() => toggleSort("email")}>E-mail{arrow("email")}</th>
+            <th onClick={() => toggleSort("status")}>Статус ЛК{arrow("status")}</th>
+            <th onClick={() => toggleSort("role")}>Роль в проекте{arrow("role")}</th>
+            <th onClick={() => toggleSort("date")}>Дата{arrow("date")}</th>
             <th></th>
           </tr>
         </thead>
