@@ -180,6 +180,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
                   <span className={styles.navHintIcon}>?<span className={styles.navHintTooltip}>Ваш профиль, проекты и поданные заявки</span></span>
                 </div>
                 <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
+                <a href="/nir" className={navClass("/nir")}>НИР</a>
                 <a href="/my-projects" className={navClass("/my-projects")}>Мои проекты</a>
                 <a href="/applications" className={navClass("/applications")}>
                   Заявки
