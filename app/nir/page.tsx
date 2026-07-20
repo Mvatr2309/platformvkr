@@ -12,13 +12,13 @@ export default function NirPage() {
       <div className={styles.tiles}>
         <a href="/nir/3" className={styles.tile}>
           <span className={styles.tileNumber}>3</span>
-          <span className={styles.tileLabel}>НИР 3</span>
-          <span className={styles.tileHint}>Сдача файлов</span>
+          <span className={styles.tileLabel}>семестр</span>
+          <span className={styles.tileHint}>Сдача отчета</span>
         </a>
         <a href="/nir/4" className={styles.tile}>
           <span className={styles.tileNumber}>4</span>
-          <span className={styles.tileLabel}>НИР 4</span>
-          <span className={styles.tileHint}>Сдача файлов</span>
+          <span className={styles.tileLabel}>семестр</span>
+          <span className={styles.tileHint}>Сдача отчета</span>
         </a>
       </div>
     </div>
