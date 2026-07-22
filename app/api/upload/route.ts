@@ -4,7 +4,10 @@ import path from "path";
 import { requireAuth, isGuardError } from "@/lib/api-guard";
 import { validateUpload, isInside, type UploadKind } from "@/lib/upload-validation";
 
+// Публичные загрузки (фото, резюме) — раздаются статикой
 const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
+// Файлы проектов — приватное хранилище, раздача только через download-роут с проверкой прав
+const PROJECT_UPLOAD_DIR = path.join(process.cwd(), "uploads", "projects");
 
 // Whitelist допустимых значений параметра `type` и какие правила применяем
 const TYPE_TO_KIND: Record<string, UploadKind> = {
@@ -40,15 +43,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    await mkdir(UPLOAD_ROOT, { recursive: true });
+    const isProject = type === "project";
+    const targetDir = isProject ? PROJECT_UPLOAD_DIR : UPLOAD_ROOT;
+
+    await mkdir(targetDir, { recursive: true });
     const filename = `${session.user.id}-${type}-${validation.value.safeFilename}`;
-    const abs = path.join(UPLOAD_ROOT, filename);
-    if (!isInside(UPLOAD_ROOT, abs)) {
+    const abs = path.join(targetDir, filename);
+    if (!isInside(targetDir, abs)) {
       return NextResponse.json({ error: "Недопустимый путь файла" }, { status: 400 });
     }
     await writeFile(abs, validation.value.buffer);
 
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({
+      url: isProject ? `/uploads/projects/${filename}` : `/uploads/${filename}`,
+    });
   } catch {
     return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
   }
