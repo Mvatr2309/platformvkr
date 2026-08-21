@@ -530,3 +530,24 @@
 **Проверка:** `npx tsc --noEmit` — ошибок нет; после деплоя: в БД 0 ненормализованных путей, старый прямой URL — 404, download-роут без сессии — 401.
 
 **Коммит:** (ожидает деплоя)
+
+## Запись #33 — База знаний: типы материалов, видимость по ролям, визуальный редактор, закрытые файлы
+
+**Запрос:** админ добавляет материалы двух форматов — свёрстанная статья или просто файл для скачивания (с задаваемым названием файла); видимость каждого материала настраивается отдельно для студентов и отдельно для НР.
+
+**Реализация:**
+- `prisma/schema.prisma` + миграция `20260821120000_knowledge_visibility_and_file_materials`: enum `MaterialType` (ARTICLE/FILE), у `Article` — `type`, `visibleToStudents`, `visibleToSupervisors` (default true — старые статьи видны всем), `content` стал default "".
+- `lib/knowledge.ts`: помощники видимости (`knowledgeVisibilityWhere`, `isArticleVisible`).
+- `app/api/knowledge/route.ts`: GET теперь требует авторизацию (раньше — нет) и фильтрует по роли; POST принимает тип и флаги видимости, для FILE контент не обязателен.
+- `app/api/knowledge/[id]/route.ts`: GET скрывает статью от роли без доступа (404); PUT принимает флаги видимости.
+- `app/api/knowledge/[id]/files/route.ts`: файлы пишутся в приватную `uploads/knowledge/` (вместо `public/`); поле `title` из формы — отображаемое имя файла (расширение сохраняется).
+- Новый `app/api/knowledge/[id]/files/[fileId]/download/route.ts`: скачивание с проверкой авторизации и видимости статьи по роли, fallback на легаси-папку (зеркально файлам проектов).
+- `components/RichTextEditor.tsx` + css: WYSIWYG на TipTap (Ж/К, H2/H3, списки, ссылки, undo/redo); хранит HTML — совместим со старыми статьями. Зависимости: @tiptap/react, @tiptap/pm, @tiptap/starter-kit.
+- `app/knowledge/page.tsx`: форма создания — выбор формата (статья/файл), редактор, файл + его название, чекбоксы видимости; карточка материала-файла скачивается сразу из списка (админ переходит на страницу управления), бейджи видимости для админа.
+- `app/knowledge/[id]/page.tsx`: редактор в форме правки, чекбоксы видимости, загрузка файла с названием, скачивание через защищённый роут.
+
+**Файлы:** см. выше + `app/knowledge/knowledge.module.css`, `package.json`.
+
+**Проверка:** `npx tsc --noEmit` — чисто; `next build` локально: компиляция и генерация 67 страниц ✓ (финальный шаг standalone-копирования виснет из-за iCloud-синка Desktop — проблема окружения, не кода; продовая сборка на сервере).
+
+**Деплой:** git pull + npm install + SQL миграции вручную через psql + `mv public/uploads/knowledge/* uploads/knowledge/` + npm run build + pm2 restart vkr.

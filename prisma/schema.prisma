@@ -372,11 +372,19 @@ enum ArticleCategory {
   INSTRUCTION   // Инструкции
 }
 
+enum MaterialType {
+  ARTICLE   // Статья (свёрстанный текст)
+  FILE      // Просто файл для скачивания
+}
+
 model Article {
   id          String          @id @default(cuid())
   title       String
-  content     String          // Содержимое (HTML из WYSIWYG)
+  content     String          @default("") // Содержимое (HTML из WYSIWYG); пусто для FILE
   category    ArticleCategory
+  type        MaterialType    @default(ARTICLE)
+  visibleToStudents    Boolean @default(true) // Видно студентам
+  visibleToSupervisors Boolean @default(true) // Видно научным руководителям
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   files       ArticleFile[]   // Прикреплённые шаблоны (07.04)

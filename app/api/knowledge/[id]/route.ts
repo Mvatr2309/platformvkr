@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireAdmin, isGuardError } from "@/lib/api-guard";
+import { isArticleVisible } from "@/lib/knowledge";
 
-// GET /api/knowledge/[id] — детали статьи (только авторизованные)
+// GET /api/knowledge/[id] — детали статьи (только авторизованные, с учётом видимости по роли)
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -20,7 +21,7 @@ export async function GET(
     },
   });
 
-  if (!article) {
+  if (!article || !isArticleVisible(guard.session.user.role, article)) {
     return NextResponse.json({ error: "Статья не найдена" }, { status: 404 });
   }
 
@@ -45,14 +46,17 @@ export async function PUT(
     return NextResponse.json({ error: "Статья не найдена" }, { status: 404 });
   }
 
-  const { title, content, category } = await request.json();
+  const { title, content, category, visibleToStudents, visibleToSupervisors } =
+    await request.json();
 
   const article = await prisma.article.update({
     where: { id },
     data: {
       ...(title && { title }),
-      ...(content && { content }),
+      ...(typeof content === "string" && { content }),
       ...(category && { category }),
+      ...(typeof visibleToStudents === "boolean" && { visibleToStudents }),
+      ...(typeof visibleToSupervisors === "boolean" && { visibleToSupervisors }),
     },
   });
 

@@ -1,0 +1,85 @@
+.editor {
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+}
+
+.editor:focus-within {
+  border-color: var(--color-deep-blue);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg);
+}
+
+.toolBtn {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.toolBtnActive {
+  background: var(--color-deep-blue);
+  color: #fff;
+}
+
+.toolBtnActive:hover {
+  background: var(--color-royal-blue);
+  color: #fff;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border-light);
+  margin: 0 4px;
+}
+
+.content :global(.tiptap) {
+  min-height: 300px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.content :global(.tiptap p) {
+  margin: 0 0 0.75em;
+}
+
+.content :global(.tiptap h2) {
+  font-size: 20px;
+  margin: 1em 0 0.5em;
+  color: var(--color-deep-blue);
+}
+
+.content :global(.tiptap h3) {
+  font-size: 16px;
+  margin: 1em 0 0.5em;
+  color: var(--color-deep-blue);
+}
+
+.content :global(.tiptap ul),
+.content :global(.tiptap ol) {
+  padding-left: 1.5em;
+  margin: 0 0 0.75em;
+}
+
+.content :global(.tiptap a) {
+  color: var(--color-royal-blue);
+  text-decoration: underline;
+}
