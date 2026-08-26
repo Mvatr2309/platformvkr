@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../projects/projects.module.css";
 
@@ -32,6 +33,8 @@ interface ProjectCard {
 }
 
 export default function MyProjectsPage() {
+  const { data: session } = useSession();
+  const isSupervisor = session?.user?.role === "SUPERVISOR";
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [loading, setLoading] = useState(true);
   const { page, setPage, totalPages, paged } = usePagination(projects, 20);
@@ -48,7 +51,9 @@ export default function MyProjectsPage() {
       <div className={styles.container}>
         <div className={styles.headerRow}>
           <h1 className={styles.title}>Мои проекты</h1>
-          <a href="/projects/new" className={styles.createButton} data-onboarding="create-project">Создать проект</a>
+          {!isSupervisor && (
+            <a href="/projects/new" className={styles.createButton} data-onboarding="create-project">Создать проект</a>
+          )}
         </div>
 
         {loading ? (

@@ -202,6 +202,27 @@ export default function NewProjectPage() {
     }
   }
 
+  // НР не создают проекты — свои темы публикуют в профиле («Предлагаемые темы»)
+  if (session?.user?.role === "SUPERVISOR") {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.container}>
+          <h1 className={styles.title}>Новый проект</h1>
+          <p className={styles.error}>
+            Научные руководители не создают проекты. Предложите тему студентам в профиле в разделе «Предлагаемые темы».
+          </p>
+          <button
+            onClick={() => router.push("/profile")}
+            className={styles.saveButton}
+            style={{ marginTop: 16 }}
+          >
+            Перейти в профиль
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (checkingLimit) {
     return (
       <div className={styles.wrapper}>

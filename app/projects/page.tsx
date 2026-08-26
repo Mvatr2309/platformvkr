@@ -82,7 +82,9 @@ export default function ProjectsPage() {
       <div className={styles.container}>
         <div className={styles.headerRow}>
           <h1 className={styles.title}>Проекты</h1>
-          <a href="/projects/new" className={styles.createButton}>Создать проект</a>
+          {role !== "SUPERVISOR" && (
+            <a href="/projects/new" className={styles.createButton}>Создать проект</a>
+          )}
         </div>
 
         <div className={styles.filters}>

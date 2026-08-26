@@ -89,10 +89,18 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/projects — создание проекта (02.01)
+// НР не создают проекты — свои темы они публикуют в профиле («Предлагаемые темы»)
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
+  if (session.user.role === "SUPERVISOR") {
+    return NextResponse.json(
+      { error: "Научные руководители не создают проекты. Предложите тему в профиле в разделе «Предлагаемые темы»." },
+      { status: 403 }
+    );
   }
 
   try {
