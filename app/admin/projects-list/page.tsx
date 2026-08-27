@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../list.module.css";
@@ -33,11 +34,28 @@ const STATUS_ORDER: Record<string, number> = {
   COMPLETED: 4,
 };
 
+// Плашки спец-фильтров с дашборда (?filter=...)
+const SPECIAL_FILTER_LABELS: Record<string, string> = {
+  no_supervisor: "Проекты без НР",
+  no_members: "Проекты без участников",
+};
+
 export default function ProjectsListPage() {
+  return (
+    <Suspense fallback={<p>Загрузка...</p>}>
+      <ProjectsList />
+    </Suspense>
+  );
+}
+
+function ProjectsList() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const specialFilter = searchParams.get("filter") || "";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const { sortField, sortAsc, toggleSort, arrow } = useTableSort<
     "title" | "status" | "direction" | "supervisor" | "members" | "applications" | "date"
   >("title");
@@ -65,6 +83,13 @@ export default function ProjectsListPage() {
       list = list.filter((p) => p.status === statusFilter);
     }
 
+    // Спец-фильтры с дашборда — условия зеркалят формулы цифр в /api/admin/dashboard
+    if (specialFilter === "no_supervisor") {
+      list = list.filter((p) => !p.supervisor && p.status !== "DRAFT");
+    } else if (specialFilter === "no_members") {
+      list = list.filter((p) => p._count.members === 0 && p.status !== "DRAFT");
+    }
+
     const sortVal = (p: Project): SortValue => {
       switch (sortField) {
         case "status": return STATUS_ORDER[p.status] ?? 99;
@@ -84,17 +109,30 @@ export default function ProjectsListPage() {
     });
 
     return list;
-  }, [projects, search, statusFilter, sortField, sortAsc]);
+  }, [projects, search, statusFilter, specialFilter, sortField, sortAsc]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, setPage]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, specialFilter, setPage]);
 
   if (loading) return <p>Загрузка...</p>;
 
   return (
     <div>
       <h1 className={styles.title}>Список проектов</h1>
+
+      {SPECIAL_FILTER_LABELS[specialFilter] && (
+        <div className={styles.activeFilter}>
+          Фильтр: {SPECIAL_FILTER_LABELS[specialFilter]}
+          <button
+            onClick={() => router.replace("/admin/projects-list")}
+            className={styles.activeFilterReset}
+            title="Сбросить фильтр"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className={styles.controls}>
         <input

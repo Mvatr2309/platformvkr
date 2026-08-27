@@ -126,3 +126,31 @@
   margin-left: 4px;
   font-size: 10px;
 }
+
+/* Плашка активного спец-фильтра (переход с дашборда) */
+.activeFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  background: var(--color-border);
+  padding: 6px 12px;
+  margin-bottom: var(--space-md);
+}
+
+.activeFilterReset {
+  border: none;
+  background: transparent;
+  color: var(--color-coral);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.activeFilterReset:hover {
+  color: var(--color-coral-dark);
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Pagination, { usePagination } from "@/components/Pagination";
 import styles from "../invitations/invitations.module.css";
 
@@ -47,10 +48,20 @@ function formatDateTime(iso: string) {
 }
 
 export default function FeedbackPage() {
+  return (
+    <Suspense fallback={<p>Загрузка...</p>}>
+      <FeedbackList />
+    </Suspense>
+  );
+}
+
+function FeedbackList() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  // Статус можно передать с дашборда (?status=NEW — «Новых обращений»)
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [openId, setOpenId] = useState<string | null>(null);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);

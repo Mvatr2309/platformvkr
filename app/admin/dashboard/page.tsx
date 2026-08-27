@@ -137,31 +137,31 @@ export default function AdminDashboardPage() {
               </Link>
             )}
             {stats.pendingModeration > 0 && (
-              <Link href="/admin/supervisors-list" className={styles.statAlert}>
+              <Link href="/admin/moderation" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.pendingModeration}</div>
                 <div className={styles.statLabel}>Профилей НР на модерации</div>
               </Link>
             )}
             {stats.unassignedProjects > 0 && (
-              <Link href="/admin/projects-list" className={styles.statAlert}>
+              <Link href="/admin/projects-list?filter=no_supervisor" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.unassignedProjects}</div>
                 <div className={styles.statLabel}>Проектов без НР</div>
               </Link>
             )}
             {stats.studentsWithoutProject > 0 && (
-              <Link href="/admin/students-list" className={styles.statAlert}>
+              <Link href="/admin/students-list?filter=no_project" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.studentsWithoutProject}</div>
                 <div className={styles.statLabel}>Студентов без проекта</div>
               </Link>
             )}
             {stats.emptyProjects > 0 && (
-              <Link href="/admin/projects-list" className={styles.statAlert}>
+              <Link href="/admin/projects-list?filter=no_members" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.emptyProjects}</div>
                 <div className={styles.statLabel}>Проектов без участников</div>
               </Link>
             )}
             {stats.newFeedback > 0 && (
-              <Link href="/admin/feedback" className={styles.statAlert}>
+              <Link href="/admin/feedback?status=NEW" className={styles.statAlert}>
                 <div className={styles.statValue}>{stats.newFeedback}</div>
                 <div className={styles.statLabel}>Новых обращений</div>
               </Link>
@@ -170,25 +170,25 @@ export default function AdminDashboardPage() {
         </>
       )}
 
-      {/* Проекты */}
+      {/* Проекты — каждая плитка ведёт на список с соответствующим фильтром */}
       <h2 className={styles.sectionTitle}>Проекты</h2>
       <div className={styles.statsRow}>
-        <div className={styles.statCard}>
+        <Link href="/admin/projects-list" className={styles.statCard}>
           <div className={styles.statValue}>{stats.totalProjects}</div>
           <div className={styles.statLabel}>Всего</div>
-        </div>
-        <div className={styles.statCard}>
+        </Link>
+        <Link href="/admin/projects-list?status=OPEN" className={styles.statCard}>
           <div className={styles.statValue}>{stats.statusCounts["OPEN"] || 0}</div>
           <div className={styles.statLabel}>Открытых</div>
-        </div>
-        <div className={styles.statCard}>
+        </Link>
+        <Link href="/admin/projects-list?status=ACTIVE" className={styles.statCard}>
           <div className={styles.statValue}>{stats.statusCounts["ACTIVE"] || 0}</div>
           <div className={styles.statLabel}>Активных</div>
-        </div>
-        <div className={styles.statCard}>
+        </Link>
+        <Link href="/admin/projects-list?status=COMPLETED" className={styles.statCard}>
           <div className={styles.statValue}>{stats.statusCounts["COMPLETED"] || 0}</div>
           <div className={styles.statLabel}>Завершённых</div>
-        </div>
+        </Link>
       </div>
 
       {/* Два столбца: типы проектов + студенты по направлениям */}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useDictionaries } from "@/lib/useDictionary";
 import { useTableSort, compareValues, type SortValue } from "@/lib/useTableSort";
 import Pagination, { usePagination } from "@/components/Pagination";
@@ -24,6 +25,18 @@ interface Student {
 }
 
 export default function StudentsListPage() {
+  return (
+    <Suspense fallback={<p>Загрузка...</p>}>
+      <StudentsList />
+    </Suspense>
+  );
+}
+
+function StudentsList() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  // Спец-фильтр с дашборда: студенты, не состоящие ни в одном проекте
+  const noProjectFilter = searchParams.get("filter") === "no_project";
   const dicts = useDictionaries("directions", "cohorts");
   const DIRECTIONS = dicts.directions || [];
   const COHORTS = dicts.cohorts || [];
@@ -71,6 +84,11 @@ export default function StudentsListPage() {
       list = list.filter((s) => !s.inSystem);
     }
 
+    // Зеркалит формулу «Студентов без проекта» дашборда: есть профиль, нет участия в проектах
+    if (noProjectFilter) {
+      list = list.filter((s) => s.student && !s.projectInfo);
+    }
+
     const sortVal = (s: Student): SortValue => {
       switch (sortField) {
         case "email": return s.email;
@@ -90,11 +108,11 @@ export default function StudentsListPage() {
     });
 
     return list;
-  }, [students, search, directionFilter, cohortFilter, statusFilter, sortField, sortAsc]);
+  }, [students, search, directionFilter, cohortFilter, statusFilter, noProjectFilter, sortField, sortAsc]);
 
   const { page, setPage, totalPages, paged } = usePagination(filtered, 20);
 
-  useEffect(() => { setPage(1); }, [search, directionFilter, cohortFilter, statusFilter, setPage]);
+  useEffect(() => { setPage(1); }, [search, directionFilter, cohortFilter, statusFilter, noProjectFilter, setPage]);
 
   const inSystemCount = students.filter((s) => s.inSystem && s.profileCompleted).length;
   const profileIncompleteCount = students.filter((s) => s.inSystem && !s.profileCompleted).length;
@@ -105,6 +123,19 @@ export default function StudentsListPage() {
   return (
     <div>
       <h1 className={styles.title}>Список студентов</h1>
+
+      {noProjectFilter && (
+        <div className={styles.activeFilter}>
+          Фильтр: Студенты без проекта
+          <button
+            onClick={() => router.replace("/admin/students-list")}
+            className={styles.activeFilterReset}
+            title="Сбросить фильтр"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className={styles.controls}>
         <input

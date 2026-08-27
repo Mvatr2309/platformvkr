@@ -567,3 +567,18 @@
 **Файлы:** `app/api/projects/route.ts`, `app/projects/page.tsx`, `app/my-projects/page.tsx`, `app/projects/new/page.tsx` + миграция данных на сервере.
 
 **Проверка:** `npx tsc --noEmit` — чисто; после деплоя: POST /api/projects под НР → 403, кнопок создания у НР нет, в БД 0 проектов НР без создателя, темы в профилях на месте.
+
+## Запись #35 — Дашборд админа: клик по цифре ведёт на соответствующий отфильтрованный список
+
+**Запрос:** плитки «Требует внимания» и «Проекты» вели на общие списки; клик по значению должен открывать именно тот список, по которому посчитана цифра.
+
+**Реализация:**
+- `app/admin/dashboard/page.tsx`: «Профилей НР на модерации» → /admin/moderation; «Проектов без НР» → /admin/projects-list?filter=no_supervisor; «Проектов без участников» → ?filter=no_members; «Студентов без проекта» → /admin/students-list?filter=no_project; «Новых обращений» → /admin/feedback?status=NEW; плитки «Проекты» (Всего/Открытых/Активных/Завершённых) стали ссылками на projects-list с ?status=. «Проектов на модерации» уже вёл верно (/admin/projects) — не тронут.
+- `app/admin/projects-list/page.tsx`: чтение ?status= и ?filter= из URL (useSearchParams + Suspense по образцу supervisors-list); спец-фильтры no_supervisor/no_members зеркалят формулы дашборда (не-DRAFT); плашка «Фильтр: … ✕» со сбросом.
+- `app/admin/students-list/page.tsx`: ?filter=no_project — студенты с профилем без участия в проектах; плашка со сбросом.
+- `app/admin/feedback/page.tsx`: начальный statusFilter из ?status= (селект статуса уже был).
+- `app/admin/list.module.css`, `dashboard.module.css`: стили плашки фильтра и hover кликабельных плиток.
+
+**Файлы:** см. выше.
+
+**Проверка:** `npx tsc --noEmit` — чисто; после деплоя переходы с дашборда открывают списки с применённым фильтром и плашкой.
