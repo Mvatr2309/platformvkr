@@ -552,11 +552,15 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           </div>
           <div className={styles.badges}>
             <span className={styles.typeBadge}>{TYPE_LABELS[project.projectType]}</span>
-            <span className={`${styles.statusBadge} ${styles[`status_${project.status}`]}`} data-onboarding="project-status">
-              {STATUS_LABELS[project.status]}
-            </span>
-            {project.recruitmentClosed && (
-              <span className={styles.recruitmentClosedBadge}>Набор закрыт</span>
+            {/* При закрытом наборе вместо «Открыт» показываем один бейдж «Набор закрыт» */}
+            {project.status === "OPEN" && project.recruitmentClosed ? (
+              <span className={styles.recruitmentClosedBadge} data-onboarding="project-status">
+                Набор закрыт
+              </span>
+            ) : (
+              <span className={`${styles.statusBadge} ${styles[`status_${project.status}`]}`} data-onboarding="project-status">
+                {STATUS_LABELS[project.status]}
+              </span>
             )}
             {project.direction && <span className={styles.dirBadge}>{project.direction}</span>}
           </div>
