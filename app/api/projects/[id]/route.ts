@@ -223,6 +223,35 @@ export async function PUT(
       return NextResponse.json({ ok: true });
     }
 
+    // Закрытие/возобновление набора — только автор проекта или админ
+    if (typeof data.recruitmentClosed === "boolean") {
+      if (session.user.role !== "ADMIN") {
+        const creator = await prisma.projectMember.findFirst({
+          where: { projectId: id, isCreator: true, student: { userId: session.user.id } },
+          select: { id: true },
+        });
+        if (!creator) {
+          return NextResponse.json(
+            { error: "Закрывать набор может только автор проекта" },
+            { status: 403 }
+          );
+        }
+      }
+      const updated = await prisma.project.update({
+        where: { id },
+        data: { recruitmentClosed: data.recruitmentClosed },
+      });
+      await prisma.activity.create({
+        data: {
+          projectId: id,
+          action: data.recruitmentClosed ? "Набор в проект закрыт" : "Набор в проект возобновлён",
+          actorEmail: session.user.email,
+        },
+      });
+      revalidateProject(id);
+      return NextResponse.json(updated);
+    }
+
     const status = data.submit ? "PENDING" : (data.status || project.status);
 
     const updated = await prisma.project.update({

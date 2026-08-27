@@ -75,7 +75,10 @@ export async function GET(request: NextRequest) {
     const takenRoles = new Set(
       p.members.map((m) => m.role).filter((r): r is string => Boolean(r))
     );
-    const openRoles = p.requiredRoles.filter((r) => !takenRoles.has(r));
+    // При закрытом наборе открытых ролей нет — бейджи и фильтр «только с ролями» отрабатывают сами
+    const openRoles = p.recruitmentClosed
+      ? []
+      : p.requiredRoles.filter((r) => !takenRoles.has(r));
     const { members: _members, ...rest } = p;
     void _members;
     // Студентам не показываем число заявок на проект

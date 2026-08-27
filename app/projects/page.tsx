@@ -27,6 +27,7 @@ interface ProjectCard {
   direction: string | null;
   requiredRoles: string[];
   openRoles: string[];
+  recruitmentClosed: boolean;
   updatedAt: string;
   supervisor: { id: string; user: { name: string } } | null;
   _count: { members: number; applications: number };
@@ -156,12 +157,15 @@ export default function ProjectsPage() {
                       ? <span className={styles.supervisor}>Науч. рук.: {p.supervisor.user.name}</span>
                       : <span className={styles.needsSupervisor}>Ищет научного руководителя</span>
                   )}
-                  {showOpenRolesBadge && p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
+                  {showOpenRolesBadge && p.recruitmentClosed && (
+                    <span className={styles.teamComplete}>Набор закрыт</span>
+                  )}
+                  {showOpenRolesBadge && !p.recruitmentClosed && p.projectType !== "CLASSIC_DISSERTATION" && p.requiredRoles.length > 0 && (
                     p.openRoles.length > 0
                       ? <span className={styles.openRoles}>Открытые роли: {p.openRoles.join(", ")}</span>
                       : <span className={styles.teamComplete}>Команда укомплектована</span>
                   )}
-                  {showOpenRolesBadge && p.projectType === "CLASSIC_DISSERTATION" && p.supervisor && p._count.members === 0 && (
+                  {showOpenRolesBadge && !p.recruitmentClosed && p.projectType === "CLASSIC_DISSERTATION" && p.supervisor && p._count.members === 0 && (
                     <span className={styles.openRoles}>Ищет студента</span>
                   )}
                   {p.direction && <span className={styles.dirBadge}>{p.direction}</span>}

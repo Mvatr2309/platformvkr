@@ -508,12 +508,20 @@ export async function POST(request: NextRequest) {
     // Определяем НР проекта
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { supervisorId: true, status: true, projectType: true, _count: { select: { members: true } } },
+      select: { supervisorId: true, status: true, projectType: true, recruitmentClosed: true, _count: { select: { members: true } } },
     });
 
     if (!project || project.status !== "OPEN") {
       return NextResponse.json(
         { error: "Проект не найден или не принимает заявки" },
+        { status: 400 }
+      );
+    }
+
+    // Автор закрыл набор — заявки студентов не принимаются
+    if (project.recruitmentClosed) {
+      return NextResponse.json(
+        { error: "Набор в проект закрыт" },
         { status: 400 }
       );
     }

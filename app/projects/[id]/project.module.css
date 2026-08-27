@@ -18,6 +18,7 @@
 .status_OPEN { background: #E8F5E9; color: #2a7d2a; }
 .status_ACTIVE { background: #EEF2FF; color: var(--color-deep-blue); }
 .status_COMPLETED { background: #F5F5F5; color: var(--color-text-secondary); }
+.recruitmentClosedBadge { font-size: 12px; font-weight: 600; padding: 4px 10px; background: #FDECEF; color: var(--color-coral-dark); }
 
 /* Сетка */
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-xl); }

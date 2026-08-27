@@ -32,6 +32,7 @@ interface Project {
   requiredRoles: string[];
   contact: string;
   assignmentStatus: string;
+  recruitmentClosed: boolean;
   createdAt: string;
   supervisor: {
     id: string;
@@ -104,6 +105,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [modComment, setModComment] = useState("");
   const [modActing, setModActing] = useState(false);
+  const [togglingRecruitment, setTogglingRecruitment] = useState(false);
   const [modMessage, setModMessage] = useState("");
   const [modError, setModError] = useState("");
 
@@ -263,6 +265,26 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       }
     } catch { alert("Ошибка сети"); }
     finally { setRemovingMemberId(null); }
+  }
+
+  // Автор (или админ) закрывает/возобновляет набор в проект
+  async function handleToggleRecruitment() {
+    if (!project) return;
+    setTogglingRecruitment(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recruitmentClosed: !project.recruitmentClosed }),
+      });
+      if (res.ok) {
+        fetchProject();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Не удалось изменить набор");
+      }
+    } catch { alert("Ошибка сети"); }
+    finally { setTogglingRecruitment(false); }
   }
 
   async function handleApply() {
@@ -490,6 +512,18 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                     {submitting ? "Отправка..." : "Отправить на модерацию"}
                   </button>
                 )}
+                {!editing && project.status === "OPEN" && (isAuthor || isAdmin) && (
+                  <button
+                    onClick={handleToggleRecruitment}
+                    className={styles.editBtn}
+                    disabled={togglingRecruitment}
+                    title={project.recruitmentClosed ? "Снова принимать заявки студентов" : "Перестать принимать заявки студентов"}
+                  >
+                    {togglingRecruitment
+                      ? "Сохранение..."
+                      : project.recruitmentClosed ? "Возобновить набор" : "Закрыть набор"}
+                  </button>
+                )}
                 {!editing && (
                   <button
                     onClick={() => { setEditing(true); setEditData({ title: project.title, description: project.description, contact: project.contact, requiredRoles: project.requiredRoles || [] }); }}
@@ -521,6 +555,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <span className={`${styles.statusBadge} ${styles[`status_${project.status}`]}`} data-onboarding="project-status">
               {STATUS_LABELS[project.status]}
             </span>
+            {project.recruitmentClosed && (
+              <span className={styles.recruitmentClosedBadge}>Набор закрыт</span>
+            )}
             {project.direction && <span className={styles.dirBadge}>{project.direction}</span>}
           </div>
         </div>
@@ -1089,6 +1126,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   {myApplication.status === "REJECTED" && "Заявка отклонена"}
                   {myApplication.status === "APPROVED_BY_AUTHOR" && "Заявка одобрена автором, ожидает подтверждения"}
                 </p>
+              </>
+            ) : project.recruitmentClosed ? (
+              <>
+                <h2 className={styles.sectionTitle}>{isResearch ? "Откликнуться на исследование" : "Подать заявку"}</h2>
+                <p className={styles.text}>Автор закрыл набор в проект — заявки временно не принимаются.</p>
               </>
             ) : applyMsg ? (
               <p className={styles.applySuccess}>{applyMsg}</p>

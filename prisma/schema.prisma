@@ -206,6 +206,7 @@ model Project {
   requiredRoles   String[]        // Требуемые роли (мультиселект)
   contact         String          // Контакт для связи
   assignmentStatus AssignmentStatus @default(NONE) // 04.03: статус назначения НР
+  recruitmentClosed Boolean       @default(false) // Автор закрыл набор участников
 
   supervisorId    String?
   supervisor      SupervisorProfile? @relation(fields: [supervisorId], references: [id])
