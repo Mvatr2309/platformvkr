@@ -376,6 +376,7 @@ enum ArticleCategory {
 enum MaterialType {
   ARTICLE   // Статья (свёрстанный текст)
   FILE      // Просто файл для скачивания
+  BOOK      // Книга: многосоставный материал (главы и страницы — дочерние Article)
 }
 
 model Article {
@@ -386,9 +387,16 @@ model Article {
   type        MaterialType    @default(ARTICLE)
   visibleToStudents    Boolean @default(true) // Видно студентам
   visibleToSupervisors Boolean @default(true) // Видно научным руководителям
+  // Дерево книги: книга → главы → страницы. У корневых материалов parentId = null.
+  parentId    String?
+  parent      Article?        @relation("ArticleTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Article[]       @relation("ArticleTree")
+  sortOrder   Int             @default(0) // Порядок внутри родителя
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   files       ArticleFile[]   // Прикреплённые шаблоны (07.04)
+
+  @@index([parentId])
 }
 
 model ArticleFile {

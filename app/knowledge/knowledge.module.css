@@ -506,3 +506,217 @@
   .toolbar { flex-direction: column; }
   .tabs { overflow-x: auto; }
 }
+
+/* ==== Книга: макет с оглавлением ==== */
+.bookLayout {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: flex-start;
+}
+
+.tocAside {
+  width: 260px;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--space-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: var(--space-md);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.bookContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 5px 8px;
+  line-height: 1.35;
+}
+
+.toc a:hover {
+  color: var(--color-deep-blue);
+  background: var(--color-bg);
+}
+
+.tocRoot {
+  font-weight: 700;
+  font-size: 14px !important;
+  color: var(--color-text-primary) !important;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px !important;
+}
+
+.tocChapter {
+  font-weight: 600;
+  color: var(--color-text-primary) !important;
+  margin-top: 4px;
+}
+
+.tocPage {
+  padding-left: 22px !important;
+}
+
+.tocActive {
+  background: var(--color-border) !important;
+  color: var(--color-deep-blue) !important;
+}
+
+.tocToggle {
+  display: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  background: var(--color-border);
+  border: none;
+  padding: 8px 14px;
+  margin-bottom: var(--space-md);
+  cursor: pointer;
+}
+
+/* Навигация «предыдущая/следующая» */
+.bookNav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+}
+
+.bookNavLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-deep-blue);
+  text-decoration: none;
+  max-width: 45%;
+}
+
+.bookNavLink:hover {
+  color: var(--color-royal-blue);
+  text-decoration: underline;
+}
+
+/* Панель структуры книги (админ) */
+.structPanel {
+  margin-top: var(--space-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: var(--space-md);
+}
+
+.structChapter {
+  margin-bottom: 4px;
+}
+
+.structRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-bg);
+}
+
+.structPageRow {
+  padding-left: 28px;
+}
+
+.structLink {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  flex: 1;
+}
+
+.structLink:hover {
+  color: var(--color-deep-blue);
+  text-decoration: underline;
+}
+
+.structActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.structActions button {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.structActions button:hover:not(:disabled) {
+  border-color: var(--color-deep-blue);
+  color: var(--color-deep-blue);
+}
+
+.structActions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.structDelete:hover:not(:disabled) {
+  border-color: var(--color-coral) !important;
+  color: var(--color-coral) !important;
+}
+
+.structAddRow {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.structAddRow input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border-light);
+  background: transparent;
+  outline: none;
+}
+
+.structAddRow input:focus {
+  border-bottom-color: var(--color-deep-blue);
+}
+
+.structAddRow button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-deep-blue);
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.structAddRow button:hover:not(:disabled) {
+  background: var(--color-royal-blue);
+}
+
+@media (max-width: 900px) {
+  .bookLayout { flex-direction: column; }
+  .tocAside {
+    display: none;
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+  .tocAsideOpen { display: block; }
+  .tocToggle { display: inline-block; }
+}

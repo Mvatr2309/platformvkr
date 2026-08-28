@@ -11,11 +11,12 @@ interface ArticleItem {
   title: string;
   category: string;
   type: string;
+  parentId: string | null;
   visibleToStudents: boolean;
   visibleToSupervisors: boolean;
   createdAt: string;
   updatedAt: string;
-  _count: { files: number };
+  _count: { files: number; children: number };
   files: Array<{ id: string; filename: string }>;
 }
 
@@ -102,6 +103,12 @@ export default function KnowledgePage() {
 
       const article = await res.json();
 
+      // Книга: сразу переходим на её страницу — добавлять главы
+      if (form.type === "BOOK") {
+        window.location.href = `/knowledge/${article.id}`;
+        return;
+      }
+
       // Для материала-файла — сразу грузим сам файл; при неудаче откатываем материал
       if (form.type === "FILE" && createFile) {
         const fd = new FormData();
@@ -183,6 +190,15 @@ export default function KnowledgePage() {
                 />
                 Файл для скачивания
               </label>
+              <label className={styles.choiceLabel}>
+                <input
+                  type="radio"
+                  name="materialType"
+                  checked={form.type === "BOOK"}
+                  onChange={() => setForm({ ...form, type: "BOOK" })}
+                />
+                Книга (главы и страницы)
+              </label>
             </div>
           </div>
           <div className={styles.formGroup}>
@@ -204,9 +220,9 @@ export default function KnowledgePage() {
               ))}
             </select>
           </div>
-          {form.type === "ARTICLE" ? (
+          {form.type === "ARTICLE" || form.type === "BOOK" ? (
             <div className={styles.formGroup}>
-              <label>Содержимое</label>
+              <label>{form.type === "BOOK" ? "Описание книги (титульная страница, необязательно)" : "Содержимое"}</label>
               <RichTextEditor
                 value={form.content}
                 onChange={(html) => setForm((f) => ({ ...f, content: html }))}
@@ -299,6 +315,8 @@ export default function KnowledgePage() {
                   <div className={styles.cardTitle}>{a.title}</div>
                   <div className={styles.cardMeta}>
                     {new Date(a.updatedAt).toLocaleDateString("ru-RU")}
+                    {a.type === "BOOK" && ` · книга · глав: ${a._count.children}`}
+                    {a.parentId && " · страница книги"}
                     {isFile
                       ? " · файл для скачивания"
                       : a._count.files > 0 && ` · ${a._count.files} файл(ов)`}
