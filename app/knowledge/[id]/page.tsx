@@ -446,7 +446,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
           <aside className={`${styles.tocAside} ${showToc ? styles.tocAsideOpen : ""}`}>
             {toc}
           </aside>
-          <div className={styles.bookContent}>{content}</div>
+          <div className={`${styles.bookContent} ${styles.contentCard}`}>{content}</div>
         </div>
       </div>
     );
@@ -455,7 +455,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
   return (
     <div className={styles.page}>
       <a href="/knowledge" className={styles.backLink}>← База знаний</a>
-      {content}
+      <div className={styles.contentCard}>{content}</div>
     </div>
   );
 }
