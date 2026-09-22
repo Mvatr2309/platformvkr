@@ -775,3 +775,18 @@
 **Спека:** в разделе 5.2 обязательный минимум дополнен резюме, добавлено пояснение про серверную и клиентскую валидацию; требование 08.08 уточнено.
 
 **Файлы:** `app/api/expert/join/route.ts`, `app/api/expert/profile/route.ts`, `app/api/expert/admin/access/route.ts`, `app/api/expert/admin/experts/route.ts`, `app/api/admin/invitations/route.ts`, `app/expert/ExpertProfileForm.tsx`, `app/expert/JoinButton.tsx`, `app/expert/expert-form.module.css`, `app/expert/expert.module.css`, `app/expert/page.tsx`, `app/expert/join/page.tsx`, `app/expert/profile/page.tsx`, `app/expert/admin/CohortAccessPanel.tsx`, `app/expert/admin/ExpertInviteForm.tsx`, `app/expert/admin/access/page.tsx`, `app/expert/admin/invitations/page.tsx`, `components/layout/AppSidebar.tsx`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #42.1 — Проект вынесен с Рабочего стола из-под iCloud
+
+**Запрос:** сборка и git периодически падали по таймауту; решили перенести проект в несинхронизируемую папку.
+
+**Причина:** Рабочий стол синхронизировался с iCloud Drive, macOS выгружала файлы в облако (флаг `dataless`). Чтение упиралось в `ETIMEDOUT`: `npx tsc` считал 8 минут, `next build` падал обвалом воркеров, `git add` падал с `mmap failed`. Выгружено было 22 745 файлов `node_modules` и 1888 файлов репозитория, в основном объекты `.git`.
+
+**Что сделано:**
+- Все выгруженные файлы материализованы перед переносом — иначе за пределами синхронизируемого каталога они стали бы нечитаемыми навсегда.
+- Папка «Платформа для НР и студентов» (884 МБ) перенесена из `~/Desktop/mipt работа/` в `~/dev/`. Актуальный путь репозитория: `~/dev/Платформа для НР и студентов/vkr-platform`.
+- Промежуточный обходной путь (симлинк `node_modules` в `~/.cache`) больше не нужен: `mv` разрешил ссылку и вернул зависимости внутрь проекта, пустой каталог обхода удалён.
+
+**Проверка после переноса:** `git` работает, история на месте, дерево чистое; Docker подхватил тот же контейнер `vkr-platform-db-1` и тот же том `vkr-platform_pgdata` (имя папки проекта не менялось, поэтому проект compose тот же), данные целы; `prisma generate`, `npx tsc --noEmit` и `npm run build` — чисто, сборка 3.8 секунды; все три сценарных набора прогнаны с нового пути — 18 + 35 + 23 = 76 проверок, все зелёные. Выгруженных файлов в проекте: 0.
+
+**Файлы:** изменений в коде нет, перенос файловый.
