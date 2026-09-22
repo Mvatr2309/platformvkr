@@ -108,9 +108,12 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             { href: "/expert/admin/invitations", label: "Внешние эксперты" },
           ]
         : role === "STUDENT"
-          ? [{ href: "/expert/catalog", label: "Каталог экспертов" }]
+          ? [
+              { href: "/expert/catalog", label: "Каталог экспертов" },
+              { href: "/expert/my-requests", label: "Мои запросы" },
+            ]
           : [
-              { href: "/expert", label: "Экспертная труба" },
+              { href: "/expert/inbox", label: "Входящие запросы" },
               { href: "/expert/profile", label: "Карточка эксперта" },
             ];
     return (

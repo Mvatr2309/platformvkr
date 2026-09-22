@@ -222,6 +222,7 @@ model Project {
   files           ProjectFile[]    // Файлы и материалы (03.04)
   events          Event[]          // Привязанные события (06.03)
   activities      Activity[]       // Лента активности (03.06)
+  expertRequests  ExpertRequest[]  // FR-08: запросы на консультацию по этому проекту
 
   @@index([supervisorId])
   @@index([status])
@@ -567,9 +568,13 @@ model ExpertRequest {
   expert            ExpertProfile  @relation(fields: [expertId], references: [id], onDelete: Cascade)
 
   // Анкета (08.12)
-  topic             String   // Что хочу обсудить
-  expectedResult    String   // Какой результат жду от встречи
-  ownProgress       String   // Что уже сделал сам
+  topic             String   // Что хочу обсудить (от 500 символов)
+  expectedResult    String   // Какой результат жду от встречи (от 80 символов)
+  ownProgress       String   // Что уже сделал сам, чтобы разобраться (от 500 символов)
+  problemArea       String?  // Где возникли проблемы — необязательно
+  materialsUrl      String?  // Ссылка на папку с материалами — необязательно
+  projectId         String?  // Проект студента на платформе — необязательно
+  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   // Снимок профиля на момент отправки: курс и программа со временем меняются,
   // а модератор и эксперт должны видеть то, что было при отправке

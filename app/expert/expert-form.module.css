@@ -249,3 +249,44 @@
     padding: var(--space-lg);
   }
 }
+
+/* --- Анкета запроса (08.12) --- */
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-md);
+  font-size: 14px;
+  color: var(--color-royal-blue);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-coral);
+}
+
+.recipient {
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  background: #EEF2FB;
+  border: 1px solid var(--color-border);
+  font-size: 15px;
+  color: var(--color-text-primary);
+}
+
+.counterShort {
+  color: var(--color-coral);
+  font-weight: 600;
+}
+
+.counterOk {
+  color: #1E6B38;
+  font-weight: 600;
+}
+
+.readonlyValue {
+  padding: 11px 12px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: #F7F8FB;
+  border: 1px solid var(--color-border);
+}

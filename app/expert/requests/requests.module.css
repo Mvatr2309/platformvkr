@@ -1,0 +1,212 @@
+/* FR-08: списки запросов — студенту, эксперту и модератору */
+
+.wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--container-padding) var(--space-3xl);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-deep-blue);
+  margin: 0 0 var(--space-sm);
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl);
+  max-width: 640px;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+}
+
+.tabActive {
+  color: #fff;
+  background: var(--color-deep-blue);
+  border-color: var(--color-deep-blue);
+}
+
+.empty {
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.card {
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  align-items: flex-start;
+  margin-bottom: var(--space-sm);
+}
+
+.cardWho {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+}
+
+.cardMeta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeNew { background: #EEF2FB; color: var(--color-deep-blue); }
+.badgeWait { background: #FFF6E5; color: #6B4E12; }
+.badgeOk { background: #EAF7EE; color: #1E6B38; }
+.badgeNo { background: #FDECEF; color: #8E1F33; }
+.badgeMuted { background: #F0F1F5; color: var(--color-text-muted); }
+
+.block {
+  margin-top: var(--space-md);
+}
+
+.blockTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.blockText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: pre-line;
+}
+
+.contacts {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #EAF7EE;
+  border: 1px solid #B7E0C4;
+  font-size: 14px;
+  color: #1E6B38;
+}
+
+.reason {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #FDECEF;
+  border: 1px solid #F3B6C2;
+  font-size: 14px;
+  color: #8E1F33;
+}
+
+.link {
+  color: var(--color-royal-blue);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.acceptButton,
+.rejectButton {
+  padding: 11px 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.acceptButton {
+  color: #fff;
+  background: var(--color-coral);
+}
+
+.acceptButton:hover:not(:disabled) { background: var(--color-coral-dark); }
+
+.rejectButton {
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border-light);
+}
+
+.rejectButton:hover:not(:disabled) {
+  color: #8E1F33;
+  border-color: #F3B6C2;
+}
+
+.acceptButton:disabled,
+.rejectButton:disabled { opacity: 0.5; cursor: default; }
+
+.reasonInput {
+  width: 100%;
+  padding: 11px 12px;
+  margin-top: var(--space-sm);
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid var(--color-border-light);
+  resize: vertical;
+}
+
+.reasonInput:focus { outline: none; border-color: var(--color-deep-blue); }
+
+.error {
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+  background: #FDECEF;
+  border: 1px solid #F3B6C2;
+  font-size: 13px;
+  color: #8E1F33;
+}
+
+.toggle {
+  padding: 0;
+  margin-top: var(--space-sm);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-royal-blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.toggle:hover { color: var(--color-coral); }
