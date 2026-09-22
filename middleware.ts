@@ -12,13 +12,29 @@ const protectedPaths = [
   "/my-projects",
   "/notifications",
   "/nir",
+  // FR-08: экспертная труба и экран выбора пространства
+  "/spaces",
+  "/expert",
 ];
+
+// FR-08: что доступно внешнему эксперту (роль EXPERT).
+// «Платформа ВКР» ему закрыта, но экран выбора, труба и общая инфраструктура —
+// уведомления, обращения, выход — остаются (08.02).
+const expertAllowedPaths = ["/spaces", "/expert", "/notifications", "/inquiries"];
 
 // Маршруты, доступные только админам
 const adminPaths = ["/admin"];
 
 // Маршруты, доступные без заполненного профиля (но с авторизацией)
-const profileExemptPaths = ["/profile", "/api/profile", "/api/upload", "/api/auth"];
+const profileExemptPaths = [
+  "/profile",
+  "/api/profile",
+  "/api/upload",
+  "/api/auth",
+  // FR-08: у внешнего эксперта «профиль» — это карточка эксперта
+  "/expert/profile",
+  "/api/expert",
+];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -48,6 +64,20 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // FR-08: внешний эксперт в «Платформу ВКР» не ходит — уводим на экран выбора,
+  // где он видит замок на соответствующей плитке (08.02).
+  // Когорту студента здесь не проверяем: в middleware нет доступа к БД,
+  // этот гейт живёт в app/expert/layout.tsx.
+  if (user?.role === "EXPERT") {
+    const isPublicPath = ["/", "/login", "/register", "/verify-email"].includes(pathname);
+    const isExpertAllowed = expertAllowedPaths.some(
+      (path) => pathname === path || pathname.startsWith(path + "/")
+    );
+    if (!isPublicPath && !isExpertAllowed) {
+      return NextResponse.redirect(new URL("/spaces", req.url));
+    }
+  }
+
   // Проверка заполненности профиля (не для админов и не для exempt-путей)
   if (user && !user.profileCompleted && user.role !== "ADMIN") {
     // JWT может быть устаревшим — проверяем cookie-флаг (ставится API при сохранении профиля)
@@ -60,7 +90,12 @@ export default auth((req) => {
     const isPublic = ["/login", "/register", "/"].includes(pathname);
 
     if (isProtected && !isExempt && !isPublic) {
-      const profileUrl = user.role === "STUDENT" ? "/profile/student" : "/profile";
+      const profileUrl =
+        user.role === "STUDENT"
+          ? "/profile/student"
+          : user.role === "EXPERT"
+            ? "/expert/profile"
+            : "/profile";
       return NextResponse.redirect(new URL(profileUrl, req.url));
     }
   }

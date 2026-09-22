@@ -3,12 +3,14 @@
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
+import SpaceSwitcher from "./SpaceSwitcher";
 import styles from "./sidebar.module.css";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Админ",
   SUPERVISOR: "НР",
   STUDENT: "Студент",
+  EXPERT: "Эксперт",
 };
 
 export default function AppSidebar({ children }: { children: React.ReactNode }) {
@@ -73,7 +75,8 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   }, [user, fetchCounts]);
 
   // Don't show sidebar on landing, login, register pages
-  if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname === "/verify-email") {
+  // FR-08: экран выбора пространства показывается без сайдбара (08.01)
+  if (pathname === "/" || pathname === "/login" || pathname === "/register" || pathname === "/verify-email" || pathname === "/spaces") {
     return <>{children}</>;
   }
 
@@ -91,6 +94,67 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   // Not authenticated yet — just show content
   if (!user) {
     return <>{children}</>;
+  }
+
+  // FR-08: пространство «Экспертная труба» — свой сайдбар (08.03).
+  // Ветка стоит до админской: админ внутри трубы должен видеть её навигацию,
+  // а не список разделов платформы.
+  if (pathname.startsWith("/expert")) {
+    const expertItems =
+      role === "ADMIN"
+        ? [{ href: "/expert/admin/requests", label: "Модерация запросов" }]
+        : [
+            { href: "/expert", label: "Экспертная труба" },
+            { href: "/expert/profile", label: "Карточка эксперта" },
+          ];
+    return (
+      <div className={styles.layout}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>
+            <span className={styles.logo}>ВКР</span>
+            <span className={styles.badge}>{ROLE_LABELS[role || ""] || role}</span>
+          </div>
+          <SpaceSwitcher />
+          <nav className={styles.nav}>
+            <div className={styles.navGroup}>
+              {expertItems.map((item) => {
+                const isActive =
+                  pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
+            </div>
+            <div className={styles.navGroup}>
+              <a
+                href="/notifications"
+                className={`${styles.navLink} ${pathname === "/notifications" ? styles.navLinkActive : ""}`}
+              >
+                Уведомления
+                {unreadCount > 0 && (
+                  <span className={styles.bellBadge}>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </a>
+            </div>
+          </nav>
+          <div className={styles.sidebarFooter}>
+            <div className={styles.userName}>{user.name}</div>
+            <button onClick={() => signOut({ callbackUrl: "/" })} className={styles.logoutBtn}>
+              Выйти
+            </button>
+          </div>
+        </aside>
+        <main className={styles.main}>{children}</main>
+      </div>
+    );
   }
 
   // Admin on non-admin pages (e.g. /knowledge, /projects/[id]) — full admin sidebar
@@ -122,6 +186,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             <span className={styles.logo}>ВКР</span>
             <span className={styles.badge}>Админ</span>
           </div>
+          <SpaceSwitcher />
           <nav className={styles.nav}>
             {adminGroups.map((group, gi) => (
               <div key={gi} className={styles.navGroup}>
@@ -170,6 +235,8 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
           <span className={styles.logo}>ВКР</span>
           <span className={styles.badge}>{ROLE_LABELS[role || ""] || role}</span>
         </div>
+
+        <SpaceSwitcher />
 
         <nav className={styles.nav}>
           {role === "STUDENT" && (

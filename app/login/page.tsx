@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./login.module.css";
+import { postLoginUrl } from "@/lib/post-login";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,15 +36,12 @@ export default function LoginPage() {
     const role = session?.user?.role;
     const profileCompleted = session?.user?.profileCompleted;
 
-    if (role === "ADMIN") {
-      window.location.href = "/admin";
-    } else if (!profileCompleted) {
+    if (role !== "ADMIN" && !profileCompleted) {
       // Очищаем cookie от предыдущих сессий, чтобы profile gate работал корректно
       document.cookie = "profile_completed=; path=/; max-age=0";
-      window.location.href = role === "STUDENT" ? "/profile/student" : "/profile";
-    } else {
-      window.location.href = "/my-projects";
     }
+    // FR-08: после входа — экран выбора пространства (08.01)
+    window.location.href = postLoginUrl(role, profileCompleted);
   }
 
   return (

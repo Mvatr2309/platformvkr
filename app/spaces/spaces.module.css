@@ -1,0 +1,129 @@
+/* FR-08: экран выбора пространства (08.01) */
+
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--container-padding);
+}
+
+.inner {
+  width: 100%;
+  max-width: 880px;
+}
+
+.heading {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-deep-blue);
+  margin: 0 0 var(--space-sm);
+}
+
+.subheading {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-height: 200px;
+  padding: var(--space-xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tile:hover {
+  border-color: var(--color-deep-blue);
+  box-shadow: 0 2px 0 var(--color-deep-blue);
+}
+
+.tileInvite {
+  border-color: var(--color-border-light);
+}
+
+.tileLocked {
+  background: #EDEFF4;
+  border-color: var(--color-border-light);
+  cursor: default;
+}
+
+.tileLocked:hover {
+  border-color: var(--color-border-light);
+  box-shadow: none;
+}
+
+.tileHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tileTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  margin: 0;
+}
+
+.tileLocked .tileTitle {
+  color: var(--color-text-muted);
+}
+
+.lock {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+
+.tileText {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.tileLocked .tileText {
+  color: var(--color-text-muted);
+}
+
+.tileAction {
+  align-self: flex-start;
+  padding: 12px 24px;
+  background: var(--color-coral);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tile:hover .tileAction {
+  background: var(--color-coral-dark);
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .heading {
+    font-size: 26px;
+  }
+
+  .tile {
+    min-height: 0;
+    padding: var(--space-lg);
+  }
+}

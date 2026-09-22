@@ -1,0 +1,52 @@
+/* FR-08: пространство «Экспертная труба» — заглушки этапа 2 */
+
+.stubPage {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-2xl) var(--container-padding);
+  background: var(--color-bg);
+}
+
+.stubCard {
+  width: 100%;
+  max-width: 620px;
+  padding: var(--space-xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.stubTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  margin: 0 0 var(--space-md);
+}
+
+.stubText {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md);
+}
+
+.stubNote {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.stubLink {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--color-coral);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.stubLink:hover {
+  background: var(--color-coral-dark);
+}

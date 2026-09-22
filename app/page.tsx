@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./landing.module.css";
+import { postLoginUrl } from "@/lib/post-login";
 
 export default function Home() {
   const router = useRouter();
@@ -18,14 +19,11 @@ export default function Home() {
     if (status === "authenticated" && session?.user) {
       const role = session.user.role;
       const profileCompleted = session.user.profileCompleted;
-      if (role === "ADMIN") {
-        router.push("/admin");
-      } else if (!profileCompleted) {
+      if (role !== "ADMIN" && !profileCompleted) {
         document.cookie = "profile_completed=; path=/; max-age=0";
-        router.push(role === "STUDENT" ? "/profile/student" : "/profile");
-      } else {
-        router.push("/my-projects");
       }
+      // FR-08: после входа — экран выбора пространства (08.01)
+      router.push(postLoginUrl(role, profileCompleted));
     }
   }, [status, session, router]);
 
@@ -52,15 +50,11 @@ export default function Home() {
     const role = sess?.user?.role;
     const profileCompleted = sess?.user?.profileCompleted;
 
-    if (role === "ADMIN") {
-      window.location.href = "/admin";
-    } else if (!profileCompleted) {
+    if (role !== "ADMIN" && !profileCompleted) {
       // Очищаем cookie от предыдущих сессий, чтобы profile gate работал корректно
       document.cookie = "profile_completed=; path=/; max-age=0";
-      window.location.href = role === "STUDENT" ? "/profile/student" : "/profile";
-    } else {
-      window.location.href = "/my-projects";
     }
+    window.location.href = postLoginUrl(role, profileCompleted);
   }
 
   return (
