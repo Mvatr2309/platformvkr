@@ -837,3 +837,23 @@
 **Спека:** раздел 5.3 приведён к реальному составу анкеты, требование 08.12 расписано, раздел «Требует подтверждения» закрыт — открытых вопросов по FR-08 не осталось.
 
 **Файлы:** `prisma/schema.prisma`, `prisma/migrations/20260922140000_expert_request_form/migration.sql`, `lib/expert-requests.ts`, `app/api/expert/requests/route.ts`, `app/api/expert/requests/[id]/decision/route.ts`, `app/api/expert/admin/requests/route.ts`, `app/api/expert/admin/requests/[id]/moderate/route.ts`, `app/expert/requests/NewRequestForm.tsx`, `app/expert/requests/requests.module.css`, `app/expert/requests/new/page.tsx`, `app/expert/my-requests/`, `app/expert/inbox/`, `app/expert/admin/ModerationQueue.tsx`, `app/expert/admin/requests/page.tsx`, `app/expert/expert-form.module.css`, `components/layout/AppSidebar.tsx`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #45 — FR-08, этап 7: обратная связь, отложенные задачи, метрики
+
+**Запрос:** реализовать сбор обратной связи, джобу и метрики. Решения: форму встроить в карточку запроса (не отдельные страницы), эксперту оставить комментарий, джобу проверять сдвигом дат в базе.
+
+**Реализация:**
+- `app/api/expert/requests/[id]/feedback/route.ts` — приём обратной связи. Отвечать можно в статусе `AWAITING_FEEDBACK`, то есть когда система спросила. Сторона определяется по автору: студент-автор или эксперт, которому адресован запрос. Оценку 1–5 ставит только студент. Ответ студента закрывает запрос (`closedWithoutFeedback = false`), ответ эксперта — нет: для метрики нужен именно ответ студента.
+- `app/api/expert/jobs/feedback/route.ts` — три прохода за вызов по таймлайну спеки: через 7 дней после отправки контактов запрос обратной связи обеим сторонам с письмом и уведомлением; через 3 дня одно напоминание студенту; через 7 дней от запроса — тихое авто-закрытие с пометкой «без ответа», без уведомлений. Идемпотентность по отметкам времени: повторный запуск в тот же день ничего не дублирует, пропуск дня джоба догоняет. Защита — `CRON_SECRET` или админская сессия.
+- `app/api/expert/admin/metrics/route.ts` + `MetricsPanel.tsx` — конверсия запрос → встреча. Считается от числа обменов контактами, а не от всех запросов: отклонённые до встречи дойти не могли. Три категории: состоялась (подтвердила хотя бы одна сторона), не состоялась (есть ответы, все отрицательные), нет данных (ответов нет). Плюс средняя оценка студентов и разбивка по статусам.
+- `app/expert/requests/FeedbackForm.tsx` — встроенная форма, показывается в карточке запроса у студента и у эксперта. После ответа вместо формы — отметка о записанном ответе.
+- `AppSidebar.tsx` — пункт «Метрики» в админке трубы.
+
+**Строка для crontab прода (добавить при деплое, сейчас не вносилась):**
+`30 4 * * * curl -s -X POST "https://<домен>/api/expert/jobs/feedback?secret=$CRON_SECRET" >> /home/ubuntu/logs/expert-jobs.log 2>&1`
+
+**Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно. Шесть сценарных наборов, 163 проверки, все зелёные: 18 + 35 + 25 + 32 + 30 (обратная связь) + 23 (регресс платформы). Весь таймлайн джобы проверен сдвигом дат в базе: свежий запрос не трогается, через 8 дней запрашивается обратная связь, повторный запуск ничего не дублирует, напоминание уходит один раз, ответ эксперта запрос не закрывает, ответ студента закрывает с правильным флагом, без ответа запрос закрывается автоматически с пометкой «без ответа», в метрике он попадает в «нет данных». Джоба недоступна студенту и эксперту.
+
+**Спека:** URL-карта приведена к реализации — формы обратной связи встроены в карточку запроса, отдельных страниц `/feedback` нет; требование 08.16 расписано.
+
+**Файлы:** `app/api/expert/requests/[id]/feedback/route.ts`, `app/api/expert/jobs/feedback/route.ts`, `app/api/expert/admin/metrics/route.ts`, `app/api/expert/requests/route.ts`, `app/expert/requests/FeedbackForm.tsx`, `app/expert/requests/requests.module.css`, `app/expert/my-requests/MyRequests.tsx`, `app/expert/inbox/Inbox.tsx`, `app/expert/admin/MetricsPanel.tsx`, `app/expert/admin/metrics/page.tsx`, `components/layout/AppSidebar.tsx`, `specs/08-FR-08-expert-pipeline.md`.

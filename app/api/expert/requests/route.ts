@@ -29,6 +29,11 @@ const STUDENT_SELECT = {
   createdAt: true,
   contactsSentAt: true,
   closedAt: true,
+  closedWithoutFeedback: true,
+  feedbacks: {
+    where: { authorSide: "STUDENT" as const },
+    select: { metHappened: true, rating: true, comment: true },
+  },
   project: { select: { id: true, title: true } },
   expert: {
     select: {
@@ -108,6 +113,10 @@ export async function GET() {
       courseSnapshot: true,
       createdAt: true,
       contactsSentAt: true,
+      feedbacks: {
+        where: { authorSide: "EXPERT" as const },
+        select: { metHappened: true, comment: true },
+      },
       project: { select: { id: true, title: true } },
       student: {
         select: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import FeedbackForm from "../requests/FeedbackForm";
 import styles from "../requests/requests.module.css";
 
 // FR-08: исходящие запросы студента (08.13, 08.15).
@@ -18,6 +19,8 @@ type Req = {
   expertComment: string | null;
   createdAt: string;
   expertContact: string | null;
+  closedWithoutFeedback: boolean;
+  feedbacks: { metHappened: boolean; rating: number | null; comment: string | null }[];
   project: { id: string; title: string } | null;
   expert: {
     id: string;
@@ -42,12 +45,16 @@ export default function MyRequests() {
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     fetch("/api/expert/requests")
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setItems(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
   if (loading) return <div className={styles.wrapper}><p className={styles.empty}>Загружаем…</p></div>;
@@ -82,6 +89,28 @@ export default function MyRequests() {
                 </div>
                 <span className={`${styles.badge} ${styles[st.cls]}`}>{st.label}</span>
               </div>
+
+              {r.status === "AWAITING_FEEDBACK" && (
+                <FeedbackForm
+                  requestId={r.id}
+                  side="STUDENT"
+                  existing={r.feedbacks[0] ?? null}
+                  onDone={load}
+                />
+              )}
+
+              {r.status === "CLOSED" && r.closedWithoutFeedback && (
+                <div className={styles.reason}>
+                  Запрос закрыт автоматически — обратную связь вы не оставили.
+                </div>
+              )}
+
+              {r.status === "CLOSED" && r.feedbacks[0] && (
+                <div className={styles.feedbackDone}>
+                  Ваш ответ: встреча {r.feedbacks[0].metHappened ? "состоялась" : "не состоялась"}
+                  {r.feedbacks[0].rating ? `, оценка ${r.feedbacks[0].rating} из 5` : ""}.
+                </div>
+              )}
 
               {r.expertContact && (
                 <div className={styles.contacts}>

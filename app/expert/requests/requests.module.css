@@ -210,3 +210,75 @@
 }
 
 .toggle:hover { color: var(--color-coral); }
+
+/* --- Обратная связь и метрики (08.16, 08.19) --- */
+
+.feedbackBox {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #FFF6E5;
+  border: 1px solid #F0D9A8;
+}
+
+.feedbackTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6B4E12;
+  margin: 0 0 var(--space-sm);
+}
+
+.radioRow {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.stars {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.star {
+  width: 36px;
+  height: 36px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+}
+
+.starActive {
+  color: #fff;
+  background: var(--color-deep-blue);
+  border-color: var(--color-deep-blue);
+}
+
+.feedbackDone {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #EAF7EE;
+  border: 1px solid #B7E0C4;
+  font-size: 14px;
+  color: #1E6B38;
+}
+
+.metricBig {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--color-deep-blue);
+  margin: var(--space-xs) 0 var(--space-sm);
+}

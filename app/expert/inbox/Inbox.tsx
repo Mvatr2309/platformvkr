@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import FeedbackForm from "../requests/FeedbackForm";
 import styles from "../requests/requests.module.css";
 
 // FR-08: входящие запросы эксперта (08.14, 08.15).
@@ -19,6 +20,7 @@ type Req = {
   directionSnapshot: string;
   courseSnapshot: number;
   createdAt: string;
+  feedbacks: { metHappened: boolean; comment: string | null }[];
   project: { id: string; title: string } | null;
   student: { name: string; contact: string | null };
 };
@@ -142,6 +144,21 @@ export default function Inbox() {
         {r.expertComment && (
           <div className={styles.reason}>
             <strong>Ваша причина отказа:</strong> {r.expertComment}
+          </div>
+        )}
+
+        {r.status === "AWAITING_FEEDBACK" && (
+          <FeedbackForm
+            requestId={r.id}
+            side="EXPERT"
+            existing={r.feedbacks[0] ?? null}
+            onDone={load}
+          />
+        )}
+
+        {r.status === "CLOSED" && r.feedbacks[0] && (
+          <div className={styles.feedbackDone}>
+            Ваш ответ: встреча {r.feedbacks[0].metHappened ? "состоялась" : "не состоялась"}.
           </div>
         )}
 

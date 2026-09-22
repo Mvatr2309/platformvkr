@@ -106,6 +106,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             { href: "/expert/admin/requests", label: "Модерация запросов" },
             { href: "/expert/admin/access", label: "Доступ по потокам" },
             { href: "/expert/admin/invitations", label: "Внешние эксперты" },
+            { href: "/expert/admin/metrics", label: "Метрики" },
           ]
         : role === "STUDENT"
           ? [
