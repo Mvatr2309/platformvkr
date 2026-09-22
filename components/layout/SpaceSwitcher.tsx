@@ -18,6 +18,8 @@ type Access = { vkr: Space; expert: Space };
 export default function SpaceSwitcher() {
   const pathname = usePathname();
   const [access, setAccess] = useState<Access | null>(null);
+  // Непрочитанные в другом пространстве — чтобы разделение не приводило к пропускам (08.22)
+  const [otherUnread, setOtherUnread] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +38,30 @@ export default function SpaceSwitcher() {
 
   const inExpertSpace = pathname.startsWith("/expert");
 
+  useEffect(() => {
+    let cancelled = false;
+    const space = inExpertSpace ? "expert" : "vkr";
+    fetch(`/api/notifications?limit=1&space=${space}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setOtherUnread(data.otherUnreadCount ?? 0);
+      })
+      .catch(() => {
+        /* тихо: бейдж не критичен */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inExpertSpace, pathname]);
+
   function row(label: string, space: Space | undefined, isCurrent: boolean) {
+    const badge =
+      !isCurrent && otherUnread > 0 ? (
+        <span className={styles.unread} title="Непрочитанные уведомления">
+          {otherUnread > 99 ? "99+" : otherUnread}
+        </span>
+      ) : null;
+
     if (isCurrent) {
       return (
         <span className={`${styles.row} ${styles.rowCurrent}`} aria-current="true">
@@ -60,7 +85,11 @@ export default function SpaceSwitcher() {
     return (
       <a href={space.href ?? "/spaces"} className={styles.row}>
         {label}
-        {space.state === "INVITE" && <span className={styles.invite}>подключить</span>}
+        {space.state === "INVITE" ? (
+          <span className={styles.invite}>подключить</span>
+        ) : (
+          badge
+        )}
       </a>
     );
   }

@@ -23,10 +23,13 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const user = session?.user;
   const role = user?.role as string | undefined;
 
+  // FR-08: счётчик считает уведомления только текущего пространства (08.22)
+  const notifSpace = pathname.startsWith("/expert") ? "expert" : "vkr";
+
   const fetchCounts = useCallback(async () => {
     if (!user || !role) return;
     try {
-      const notifRes = await fetch("/api/notifications?limit=1");
+      const notifRes = await fetch(`/api/notifications?limit=1&space=${notifSpace}`);
       if (notifRes.ok) {
         const data = await notifRes.json();
         setUnreadCount(data.unreadCount ?? 0);
@@ -47,7 +50,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         }
       }
     } catch { /* ignore */ }
-  }, [user, role]);
+  }, [user, role, notifSpace]);
 
   // Onboarding check — once on mount + on navigation, no polling
   useEffect(() => {
@@ -143,8 +146,8 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             </div>
             <div className={styles.navGroup}>
               <a
-                href="/notifications"
-                className={`${styles.navLink} ${pathname === "/notifications" ? styles.navLinkActive : ""}`}
+                href="/expert/notifications"
+                className={`${styles.navLink} ${pathname === "/expert/notifications" ? styles.navLinkActive : ""}`}
               >
                 Уведомления
                 {unreadCount > 0 && (
