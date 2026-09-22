@@ -50,3 +50,22 @@
 .stubLink:hover {
   background: var(--color-coral-dark);
 }
+
+.stubError {
+  padding: var(--space-sm) var(--space-md);
+  margin: 0 0 var(--space-md);
+  background: #FDECEF;
+  border: 1px solid #F3B6C2;
+  font-size: 14px;
+  color: #8E1F33;
+}
+
+.stubBanner {
+  padding: var(--space-md);
+  margin: 0 0 var(--space-md);
+  background: #FFF6E5;
+  border: 1px solid #F0D9A8;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6B4E12;
+}

@@ -102,7 +102,11 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   if (pathname.startsWith("/expert")) {
     const expertItems =
       role === "ADMIN"
-        ? [{ href: "/expert/admin/requests", label: "Модерация запросов" }]
+        ? [
+            { href: "/expert/admin/requests", label: "Модерация запросов" },
+            { href: "/expert/admin/access", label: "Доступ по потокам" },
+            { href: "/expert/admin/invitations", label: "Внешние эксперты" },
+          ]
         : [
             { href: "/expert", label: "Экспертная труба" },
             { href: "/expert/profile", label: "Карточка эксперта" },

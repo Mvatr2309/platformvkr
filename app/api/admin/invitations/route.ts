@@ -114,7 +114,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRole = role === "STUDENT" ? "STUDENT" : "SUPERVISOR";
+    // FR-08: помимо студентов и научруков админ приглашает внешних экспертов (08.06).
+    // Кнопка для них живёт в админке экспертной трубы, логика создания аккаунта — общая.
+    const userRole =
+      role === "STUDENT" ? "STUDENT" : role === "EXPERT" ? "EXPERT" : "SUPERVISOR";
 
     // Студентов приглашаем только с корпоративной почтой @phystech.edu
     if (userRole === "STUDENT" && !isStudentEmailAllowed(email)) {
@@ -178,7 +181,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Отправляем письмо с данными для входа
-    const roleLabel = userRole === "SUPERVISOR" ? "научного руководителя" : "студента";
+    const roleLabel =
+      userRole === "SUPERVISOR"
+        ? "научного руководителя"
+        : userRole === "EXPERT"
+          ? "эксперта"
+          : "студента";
     const platformUrl = process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
 
     try {
@@ -194,7 +202,11 @@ export async function POST(request: NextRequest) {
               <p style="margin: 0 0 8px 0;"><strong>Логин:</strong> ${email}</p>
               <p style="margin: 0;"><strong>Пароль:</strong> ${password}</p>
             </div>
-            <p>После входа необходимо заполнить профиль — без этого доступ к платформе будет ограничен.</p>
+            <p>${
+              userRole === "EXPERT"
+                ? "После входа заполните карточку эксперта — без неё студенты не смогут вас найти."
+                : "После входа необходимо заполнить профиль — без этого доступ к платформе будет ограничен."
+            }</p>
             <p>
               <a href="${platformUrl}/login"
                  style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">

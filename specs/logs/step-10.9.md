@@ -744,3 +744,34 @@
 - Локальный `npm start` требует `AUTH_TRUST_HOST=true`, иначе NextAuth v5 отвечает `UntrustedHost`. На проде это настроено, в код ничего не вносилось.
 
 **Файлы:** `lib/expert-access.ts`, `lib/post-login.ts`, `app/spaces/page.tsx`, `app/spaces/spaces.module.css`, `app/api/expert/access/route.ts`, `app/expert/layout.tsx`, `app/expert/page.tsx`, `app/expert/join/page.tsx`, `app/expert/profile/page.tsx`, `app/expert/admin/requests/page.tsx`, `app/expert/expert.module.css`, `components/layout/SpaceSwitcher.tsx`, `components/layout/spaceswitcher.module.css`, `components/layout/AppSidebar.tsx`, `middleware.ts`, `app/page.tsx`, `app/login/page.tsx`.
+
+## Запись #42 — FR-08, этапы 3 и 4: роль эксперта, карточка, админка трубы
+
+**Запрос:** сделать этапы 3 и 4 вместе и протестировать. Резюме в карточке обязательное, фото — нет.
+
+**Реализация, этап 3:**
+- `app/api/expert/join/route.ts` — подключение роли эксперта научным руководителем. Роль = наличие `ExpertProfile`, поле `User.role` не трогается. Карточка предзаполняется из профиля НР: место работы, должность, звание, степень, резюме, фото, экспертиза, направления, типы проектов, контакт. Идемпотентно: повторный вызов возвращает `created: false`. Доступно только роли SUPERVISOR.
+- `app/api/expert/profile/route.ts` — GET и PUT карточки. Резюме обязательно (400 без него), остальной минимум даёт `cardCompleted`. Для роли EXPERT сохранение карточки ставит `profileCompleted` и cookie — иначе внешний эксперт вечно висел бы на профильном гейте.
+- `app/expert/ExpertProfileForm.tsx` + `expert-form.module.css` — форма карточки по образцу профиля НР: теги экспертизы, мультиселекты направлений и типов проектов, загрузка фото и резюме через существующий `/api/upload` либо ссылкой, тумблер скрытия карточки, баннеры «не заполнена» и «скрыта».
+- `app/expert/JoinButton.tsx` — кнопка подключения роли, после успеха `updateSession()` и переход на карточку.
+- `app/expert/page.tsx` — точка входа: баннеры состояния карточки, ссылка на неё; админа уводит в админку трубы.
+
+**Реализация, этап 4:**
+- `app/api/expert/admin/access/route.ts` — GET отдаёт потоки из справочника `cohorts` с флагом открытости и числом студентов, отдельно потоки вне справочника и счётчик студентов без потока; PUT открывает и закрывает поток.
+- `app/expert/admin/CohortAccessPanel.tsx` + `access/page.tsx` — галочки по потокам, сводка «открыто потоков, это N студентов», блок про студентов без потока.
+- `app/api/admin/invitations/route.ts` — снята бинарность роли: помимо STUDENT и SUPERVISOR принимается EXPERT. Подпись роли в письме и текст про заполнение карточки для эксперта. Логика создания аккаунта, генерации пароля и письма переиспользована целиком.
+- `app/expert/admin/ExpertInviteForm.tsx` + `invitations/page.tsx` + `app/api/expert/admin/experts/route.ts` — приглашение внешнего эксперта из админки трубы и список экспертов с состоянием карточки. Контакты экспертов в этом ответе не отдаются.
+- `components/layout/AppSidebar.tsx` — в админском сайдбаре трубы три пункта: модерация запросов, доступ по потокам, внешние эксперты.
+
+**Найдено и исправлено при тестировании:** приглашённый админом эксперт, у которого карточки ещё нет, определялся как не-эксперт (проверка шла по наличию записи `ExpertProfile`) и видел на странице трубы текст для студента. Теперь признак — роль EXPERT либо наличие карточки.
+
+**Проверка:** `npx tsc --noEmit` — чисто; `npm run build` — успешно. Три сценарных набора на собранном приложении, 76 проверок, все зелёные:
+- 18 — пространства и доступ (этап 2, регресс);
+- 35 — подключение роли, идемпотентность, предзаполнение из профиля НР, валидация карточки, отказ роли студенту и админу, доступ по потокам, сквозная проверка «админ закрыл поток → студент потерял доступ → вернул → доступ вернулся», приглашение внешнего эксперта с генерацией пароля;
+- 23 — регресс существующих страниц платформы и админки.
+
+Отдельно проверен сквозной путь приглашённого эксперта: письмо с паролем → вход → профильный гейт ведёт на карточку (даже с экрана выбора) → сохранение карточки закрывает гейт → на странице трубы «карточка заполнена и видна студентам».
+
+**Спека:** в разделе 5.2 обязательный минимум дополнен резюме, добавлено пояснение про серверную и клиентскую валидацию; требование 08.08 уточнено.
+
+**Файлы:** `app/api/expert/join/route.ts`, `app/api/expert/profile/route.ts`, `app/api/expert/admin/access/route.ts`, `app/api/expert/admin/experts/route.ts`, `app/api/admin/invitations/route.ts`, `app/expert/ExpertProfileForm.tsx`, `app/expert/JoinButton.tsx`, `app/expert/expert-form.module.css`, `app/expert/expert.module.css`, `app/expert/page.tsx`, `app/expert/join/page.tsx`, `app/expert/profile/page.tsx`, `app/expert/admin/CohortAccessPanel.tsx`, `app/expert/admin/ExpertInviteForm.tsx`, `app/expert/admin/access/page.tsx`, `app/expert/admin/invitations/page.tsx`, `components/layout/AppSidebar.tsx`, `specs/08-FR-08-expert-pipeline.md`.

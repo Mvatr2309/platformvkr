@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSpacesAccess } from "@/lib/expert-access";
+import JoinButton from "../JoinButton";
 import styles from "../expert.module.css";
 
 // FR-08: подключение роли эксперта научным руководителем (08.05).
-// Сама кнопка и POST /api/expert/join появятся на этапе 3.
 
 export default async function ExpertJoinPage() {
   const access = await getSpacesAccess();
@@ -19,9 +19,14 @@ export default async function ExpertJoinPage() {
         <p className={styles.stubText}>
           Вы сможете разместить карточку эксперта и принимать запросы студентов на
           консультации. Роль добавляется к вашей текущей — доступ к научному руководству
-          сохраняется.
+          сохраняется, списки запросов не смешиваются.
         </p>
-        <p className={styles.stubNote}>Кнопка подключения появится на следующем этапе.</p>
+        <p className={styles.stubText}>
+          Карточку предзаполним из вашего профиля научного руководителя: место работы,
+          должность, звание, степень, резюме, экспертизу и направления. Дальше она правится
+          отдельно и на профиль научрука не влияет.
+        </p>
+        <JoinButton />
       </div>
     </main>
   );
