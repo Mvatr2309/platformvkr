@@ -16,6 +16,7 @@ enum Role {
   ADMIN
   SUPERVISOR
   STUDENT
+  EXPERT      // Внешний эксперт (FR-08) — доступа к «Платформе ВКР» нет
 }
 
 enum ProfileStatus {
@@ -39,6 +40,7 @@ model User {
 
   supervisor    SupervisorProfile?
   student       StudentProfile?
+  expert        ExpertProfile?     // FR-08: наличие записи = роль эксперта
   invitations   Invitation[]       // Приглашения, отправленные админом
   feedbacks     Feedback[]
   feedbackMessages FeedbackMessage[]
@@ -126,6 +128,7 @@ model StudentProfile {
   projects      ProjectMember[]  // Участие в проектах
   applications  Application[]    // Поданные заявки
   favorites     FavoriteSupervisor[] // Избранные научные руководители
+  expertRequests ExpertRequest[] // FR-08: запросы на консультацию
 }
 
 // ============================================
@@ -440,6 +443,13 @@ enum NotificationType {
   PROJECT_STATUS         // Изменение статуса проекта
   DEADLINE_REMINDER      // Напоминание о дедлайне
   SYSTEM                 // Системное уведомление
+
+  // FR-08: Экспертная труба. Все значения EXPERT_* относятся к пространству трубы (08.22)
+  EXPERT_REQUEST_NEW        // Новый запрос — модератору
+  EXPERT_REQUEST_APPROVED   // Одобрен модератором — эксперту
+  EXPERT_REQUEST_REJECTED   // Отклонён модератором или экспертом — студенту
+  EXPERT_REQUEST_ACCEPTED   // Принят, контакты — студенту и эксперту
+  EXPERT_FEEDBACK_REQUEST   // Запрос обратной связи и напоминание
 }
 
 model Notification {
@@ -499,4 +509,126 @@ model FeedbackMessage {
   createdAt  DateTime @default(now())
 
   @@index([feedbackId, createdAt])
+}
+
+// ============================================
+// FR-08: Экспертная труба
+// Источник: specs/08-FR-08-expert-pipeline.md (раздел 5)
+// ============================================
+
+// Карточка эксперта. Наличие записи = роль эксперта (08.05).
+// Набор полей повторяет SupervisorProfile, кроме полей про руководство проектом
+// и модерацию: карточка эксперта не модерируется.
+model ExpertProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workplace       String   @default("")    // Место работы (она же компания)
+  position        String   @default("")    // Должность
+  academicTitle   String   @default("")    // Учёное звание — у внешнего эксперта может не быть
+  academicDegree  String   @default("")    // Учёная степень — у внешнего эксперта может не быть
+  resumeUrl       String?                  // Ссылка на резюме или путь к файлу
+  photoUrl        String?                  // Путь к фото
+  expertise       String[]                 // Доменная экспертиза (теги) — фильтр каталога (08.10)
+  helpTopics      String?                  // «С какими темами могу помочь» — опционально
+  directions      String[]                 // Направления студентов
+  projectTypes    String[]                 // Типы проектов
+  contact         String   @default("")    // Контакт — виден только после принятия запроса (08.11)
+
+  cardCompleted   Boolean  @default(false) // Обязательный минимум заполнен → карточка в каталоге
+  hiddenByOwner   Boolean  @default(false) // Эксперт скрыл карточку, например в отпуске (08.09)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  requests        ExpertRequest[]
+
+  @@index([cardCompleted, hiddenByOwner])
+}
+
+enum ExpertRequestStatus {
+  NEW                     // Новый — ждёт модератора
+  APPROVED_BY_MODERATOR   // Одобрен модератором — ждёт эксперта
+  REJECTED_BY_MODERATOR   // Отклонён модератором (терминальный)
+  REJECTED_BY_EXPERT      // Отклонён экспертом (терминальный)
+  CONTACTS_SENT           // Контакты отправлены
+  AWAITING_FEEDBACK       // Ожидает обратной связи
+  CLOSED                  // Закрыт
+}
+
+// Запрос студента на консультацию. Отдельно от Application: заявки на научное
+// руководство и экспертные запросы не смешиваются (08.18).
+model ExpertRequest {
+  id                String   @id @default(cuid())
+  studentId         String
+  student           StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  expertId          String
+  expert            ExpertProfile  @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  // Анкета (08.12)
+  topic             String   // Что хочу обсудить
+  expectedResult    String   // Какой результат жду от встречи
+  ownProgress       String   // Что уже сделал сам
+
+  // Снимок профиля на момент отправки: курс и программа со временем меняются,
+  // а модератор и эксперт должны видеть то, что было при отправке
+  directionSnapshot String
+  courseSnapshot    Int
+
+  status            ExpertRequestStatus @default(NEW)
+  moderatorComment  String?  // Причина отклонения — обязательна при REJECTED_BY_MODERATOR
+  expertComment     String?  // Причина отказа эксперта
+
+  moderatedById     String?
+  moderatedAt       DateTime?
+  acceptedAt        DateTime?
+  contactsSentAt    DateTime?  // Точка отсчёта 7 дней до сбора обратной связи
+  feedbackRequestedAt    DateTime?
+  feedbackReminderSentAt DateTime?
+  closedAt          DateTime?
+  closedWithoutFeedback  Boolean @default(false) // Закрыт джобой, а не студентом (08.20)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  feedbacks         ExpertRequestFeedback[]
+
+  @@index([status])
+  @@index([expertId, status])
+  @@index([studentId])
+  @@index([status, contactsSentAt])       // Для джобы сбора обратной связи
+  @@index([status, feedbackRequestedAt])  // Для джобы напоминания и авто-закрытия
+}
+
+enum FeedbackAuthorSide {
+  STUDENT
+  EXPERT
+}
+
+// Обратная связь по консультации (08.16). Имя намеренно не Feedback —
+// эта модель уже занята тикетами поддержки.
+model ExpertRequestFeedback {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     ExpertRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorSide  FeedbackAuthorSide
+
+  metHappened Boolean          // Состоялась ли встреча
+  rating      Int?             // 1–5, только от студента
+  comment     String?
+
+  createdAt   DateTime @default(now())
+
+  @@unique([requestId, authorSide])  // По одному ответу с каждой стороны
+  @@index([requestId])
+}
+
+// Какие потоки студентов видят экспертную трубу (08.07).
+// Значение cohort совпадает со значением справочника cohorts.
+model ExpertPipelineCohortAccess {
+  id        String   @id @default(cuid())
+  cohort    String   @unique
+  isOpen    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
 }

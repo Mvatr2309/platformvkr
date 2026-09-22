@@ -33,6 +33,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
+          // FR-08: наличие карточки эксперта = роль эксперта (08.05)
+          include: { expert: { select: { id: true } } },
         });
 
         if (!user) return null;
@@ -50,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           profileCompleted: user.profileCompleted,
+          isExpert: Boolean(user.expert),
         };
       },
     }),
@@ -60,16 +63,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.id = user.id;
         token.profileCompleted = user.profileCompleted;
+        token.isExpert = user.isExpert;
       }
       // При update сессии — перечитываем profileCompleted из БД
       if (trigger === "update") {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { profileCompleted: true, name: true },
+          select: {
+            profileCompleted: true,
+            name: true,
+            // FR-08: роль эксперта подключается на лету, без повторного входа (08.05)
+            expert: { select: { id: true } },
+          },
         });
         if (dbUser) {
           token.profileCompleted = dbUser.profileCompleted;
           token.name = dbUser.name;
+          token.isExpert = Boolean(dbUser.expert);
         }
       }
       return token;
@@ -79,6 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.id = token.id as string;
         session.user.profileCompleted = token.profileCompleted as boolean;
+        session.user.isExpert = Boolean(token.isExpert);
       }
       return session;
     },

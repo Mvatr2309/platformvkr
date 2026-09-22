@@ -2,6 +2,7 @@ export const UserRole = {
   ADMIN: "ADMIN",
   SUPERVISOR: "SUPERVISOR",
   STUDENT: "STUDENT",
+  EXPERT: "EXPERT",
 } as const;
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
