@@ -107,10 +107,12 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
             { href: "/expert/admin/access", label: "Доступ по потокам" },
             { href: "/expert/admin/invitations", label: "Внешние эксперты" },
           ]
-        : [
-            { href: "/expert", label: "Экспертная труба" },
-            { href: "/expert/profile", label: "Карточка эксперта" },
-          ];
+        : role === "STUDENT"
+          ? [{ href: "/expert/catalog", label: "Каталог экспертов" }]
+          : [
+              { href: "/expert", label: "Экспертная труба" },
+              { href: "/expert/profile", label: "Карточка эксперта" },
+            ];
     return (
       <div className={styles.layout}>
         <aside className={styles.sidebar}>

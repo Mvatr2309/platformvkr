@@ -18,6 +18,9 @@ export default async function ExpertHomePage() {
   // Админ работает в админке трубы
   if (access.role === UserRole.ADMIN) redirect("/expert/admin/requests");
 
+  // Студенту точка входа в трубу — каталог экспертов (08.10)
+  if (access.role === UserRole.STUDENT) redirect("/expert/catalog");
+
   const session = await auth();
   const card = session?.user?.id
     ? await prisma.expertProfile.findUnique({
