@@ -81,6 +81,11 @@ try {
   const catalog = (await student.json("/api/expert/catalog")).body;
   const inCatalog = JSON.stringify(catalog).includes(card.id);
   T.check("студент видит карточку в каталоге", inCatalog);
+  T.check("админ открывает каталог экспертов", (await admin.page("/expert/catalog")).status === 200);
+  const adminCard = visibleHtml((await admin.page(`/expert/catalog/${card.id}`)).html);
+  T.check("админ видит карточку эксперта без кнопки запроса", adminCard.includes("Так карточку видят студенты") && !adminCard.includes("Оставить запрос"));
+  const studentCard = visibleHtml((await student.page(`/expert/catalog/${card.id}`)).html);
+  T.check("у студента кнопка «Оставить запрос» на месте", studentCard.includes("Оставить запрос"));
   const expertsList = (await admin.json("/api/expert/admin/experts")).body;
   T.check("в «Эксперты в разделе» он помечен научником", expertsList.some((e) => e.email === SUPERVISOR && e.role === "SUPERVISOR"));
 

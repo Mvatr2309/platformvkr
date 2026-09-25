@@ -123,6 +123,8 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
       role === "ADMIN"
         ? [
             { href: "/expert/admin/requests", label: "Модерация запросов" },
+            // Каталог глазами студента: какие карточки опубликованы и как выглядят
+            { href: "/expert/catalog", label: "Каталог экспертов" },
             { href: "/expert/admin/access", label: "Доступ по потокам" },
             { href: "/expert/admin/invitations", label: "Внешние эксперты" },
             { href: "/expert/admin/metrics", label: "Метрики" },

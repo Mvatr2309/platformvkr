@@ -1,4 +1,6 @@
 import { redirect, notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { UserRole } from "@/types/roles";
 import { checkCatalogAccess, getCatalogCard } from "@/lib/expert-catalog";
 import styles from "../catalog.module.css";
 
@@ -24,6 +26,9 @@ export default async function ExpertCardPage({
   const { id } = await params;
   const card = await getCatalogCard(id);
   if (!card) notFound();
+
+  // Админ смотрит каталог глазами студента, но запросы не отправляет
+  const isAdmin = (await auth())?.user?.role === UserRole.ADMIN;
 
   return (
     <div className={styles.wrapper}>
@@ -102,13 +107,21 @@ export default async function ExpertCardPage({
         )}
 
         <div className={styles.detailActions}>
-          <a href={`/expert/requests/new?expertId=${card.id}`} className={styles.primaryButton}>
-            Оставить запрос
-          </a>
-          <p className={styles.detailNote}>
-            Контакты эксперта откроются после того, как запрос одобрит модератор
-            и примет сам эксперт.
-          </p>
+          {isAdmin ? (
+            <p className={styles.detailNote}>
+              Так карточку видят студенты. Запросы отправляют только студенты.
+            </p>
+          ) : (
+            <>
+              <a href={`/expert/requests/new?expertId=${card.id}`} className={styles.primaryButton}>
+                Оставить запрос
+              </a>
+              <p className={styles.detailNote}>
+                Контакты эксперта откроются после того, как запрос одобрит модератор
+                и примет сам эксперт.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
