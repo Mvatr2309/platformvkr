@@ -294,7 +294,7 @@
 /* A1: «Доступ по потокам» — две независимые галочки на поток */
 .accessRow {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 140px 140px 110px;
+  grid-template-columns: minmax(120px, 1fr) 160px 110px;
   align-items: center;
   gap: var(--space-sm);
   padding: 10px 0;
@@ -312,7 +312,7 @@
 
 @media (max-width: 560px) {
   .accessRow {
-    grid-template-columns: 1fr 72px 72px;
+    grid-template-columns: 1fr 110px;
   }
   .accessRow > :last-child {
     display: none;

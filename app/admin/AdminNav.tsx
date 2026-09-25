@@ -27,6 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/invitations", label: "Создание аккаунтов" },
       { href: "/admin/students-list", label: "Список студентов" },
       { href: "/admin/supervisors-list", label: "Научные руководители" },
+      { href: "/admin/cohort-access", label: "Доступ по потокам" },
       { href: "/admin/workload", label: "Нагрузка НР" },
       { href: "/admin/accounts", label: "Удаление аккаунтов" },
     ],

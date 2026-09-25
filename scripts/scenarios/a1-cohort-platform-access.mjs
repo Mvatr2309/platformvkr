@@ -124,6 +124,14 @@ async function expectPlatformOpen(client, label) {
 try {
   T.check("есть id научника, проекта для прямых ссылок", Boolean(supervisorId && projectId));
 
+  T.section("Админка «Доступ по потокам»: у каждого пространства своя страница");
+  T.check("платформа: /admin/cohort-access открывается админу", (await admin.page("/admin/cohort-access")).status === 200);
+  T.check("труба: /expert/admin/access открывается админу", (await admin.page("/expert/admin/access")).status === 200);
+  const stPage = await openStudent.page("/admin/cohort-access");
+  T.check("студента со страницы доступа платформы уводит", stPage.status === 307, `статус ${stPage.status}`);
+  const svPage = await supervisor.page("/admin/cohort-access");
+  T.check("научника со страницы доступа платформы уводит", svPage.status === 307, `статус ${svPage.status}`);
+
   T.section("Админка «Доступ по потокам»");
   const got = (await admin.json("/api/expert/admin/access")).body;
   T.check("GET отдаёт оба флага по каждому потоку", got.cohorts.every((r) => typeof r.isOpen === "boolean" && typeof r.platformOpen === "boolean"));
