@@ -355,3 +355,32 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* B1, B2: предупреждения в форме запроса, которые не должны теряться в тексте */
+.linkWarning {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: #FFF6E5;
+  border-left: 3px solid #E8A33D;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6B4300;
+}
+
+.submitNotice {
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  background: #EEF2FB;
+  border-left: 3px solid var(--color-royal-blue);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.submitNotice p {
+  margin: 0 0 var(--space-sm);
+}
+
+.submitNotice p:last-child {
+  margin-bottom: 0;
+}

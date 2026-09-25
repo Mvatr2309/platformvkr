@@ -33,7 +33,6 @@ export default async function EditRequestPage({
       topic: true,
       expectedResult: true,
       ownProgress: true,
-      problemArea: true,
       materialsUrl: true,
       projectId: true,
       moderatorComment: true,
@@ -92,7 +91,6 @@ export default async function EditRequestPage({
         topic: req.topic,
         expectedResult: req.expectedResult,
         ownProgress: req.ownProgress,
-        problemArea: req.problemArea,
         materialsUrl: req.materialsUrl,
         projectId: req.projectId,
       }}

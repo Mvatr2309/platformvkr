@@ -25,7 +25,6 @@ type Initial = {
   topic: string;
   expectedResult: string;
   ownProgress: string;
-  problemArea: string | null;
   materialsUrl: string | null;
   projectId: string | null;
 };
@@ -53,7 +52,6 @@ export default function NewRequestForm({
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [expectedResult, setExpectedResult] = useState(initial?.expectedResult ?? "");
   const [ownProgress, setOwnProgress] = useState(initial?.ownProgress ?? "");
-  const [problemArea, setProblemArea] = useState(initial?.problemArea ?? "");
   const [materialsUrl, setMaterialsUrl] = useState(initial?.materialsUrl ?? "");
   const [projectId, setProjectId] = useState(initial?.projectId ?? "");
   const [error, setError] = useState("");
@@ -95,7 +93,6 @@ export default function NewRequestForm({
           topic,
           expectedResult,
           ownProgress,
-          problemArea,
           materialsUrl,
           projectId: projectId || null,
         }),
@@ -163,7 +160,7 @@ export default function NewRequestForm({
               onChange={(e) => setExpectedResult(e.target.value)}
               className={styles.textarea}
               rows={4}
-              placeholder="Что должно измениться после разговора: определиться с методом, проверить гипотезу, получить оценку подхода"
+              placeholder="Напишите, с чем вы хотите уйти со встречи: выбрать метод, проверить гипотезу, получить оценку подхода. По этому полю эксперт решит, сможет ли он помочь"
             />
             <span className={styles.fieldHint}>
               Минимум {MIN_RESULT} символов. {counter(expectedResult, MIN_RESULT)}
@@ -181,22 +178,11 @@ export default function NewRequestForm({
               onChange={(e) => setOwnProgress(e.target.value)}
               className={styles.textarea}
               rows={8}
-              placeholder="Какую литературу посмотрели, что пробовали, какие подходы отбросили и почему"
+              placeholder="Что вы посмотрели, какие подходы попробовали и чем они закончились"
             />
             <span className={styles.fieldHint}>
               Минимум {MIN_PROGRESS} символов. {counter(ownProgress, MIN_PROGRESS)}
             </span>
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>Где возникли проблемы</label>
-            <textarea
-              value={problemArea}
-              onChange={(e) => setProblemArea(e.target.value)}
-              className={styles.textarea}
-              rows={4}
-              placeholder="Необязательно. Что конкретно не получилось или чему не нашли объяснения"
-            />
           </div>
         </section>
 
@@ -214,8 +200,12 @@ export default function NewRequestForm({
             />
             <span className={styles.fieldHint}>
               Необязательно. Презентация проекта, литобзор, ноутбук с кодом, черновик работы.
-              Откройте доступ по ссылке, иначе эксперт не сможет открыть папку
             </span>
+            {/* B2: студенты часто присылают закрытые ссылки — предупреждение не должно теряться */}
+            <div className={styles.linkWarning}>
+              Проверьте, что доступ открыт всем, у кого есть ссылка. Закрытую папку эксперт
+              не откроет и не сможет подготовиться к встрече.
+            </div>
           </div>
 
           {projects.length > 0 && (
@@ -248,9 +238,22 @@ export default function NewRequestForm({
 
         {error && <div className={styles.error}>{error}</div>}
 
+        {/* B1: студент заранее знает про модерацию и лимит встреч — отказ по времени
+            не воспринимается как отказ по существу */}
+        <div className={styles.submitNotice}>
+          <p>
+            Запрос сначала проверит модератор. Если из описания непонятны задача и ожидаемый
+            результат, модератор вернёт запрос на доработку с комментарием.
+          </p>
+          <p>
+            Каждый эксперт проводит не больше двух часовых встреч в месяц. Если у эксперта
+            закончились слоты, он отклонит запрос и напишет об этом в комментарии — тогда
+            отправьте запрос повторно в следующем месяце.
+          </p>
+        </div>
         <p className={styles.fieldHint} style={{ marginBottom: 16 }}>
-          Запрос сначала проверит модератор, затем его увидит эксперт. Эксперту видны анкета,
-          ваше имя и программа. Контакты сторон откроются только после того, как эксперт примет запрос.
+          Эксперту видны анкета, ваше имя и программа. Контакты откроются обеим сторонам, только
+          когда эксперт примет запрос.
         </p>
 
         <div className={styles.actions}>

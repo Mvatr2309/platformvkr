@@ -64,7 +64,7 @@ export async function PATCH(
     // Пока запрос был на доработке, эксперт мог скрыть карточку
     const expert = await prisma.expertProfile.findFirst({
       where: { id: req.expertId, ...CATALOG_WHERE },
-      select: { id: true },
+      select: { id: true, user: { select: { name: true } } },
     });
     if (!expert) {
       return NextResponse.json(
@@ -92,7 +92,9 @@ export async function PATCH(
       );
     }
 
-    await notifyModerators(id, session.user.name || "Студент", { resubmitted: true });
+    await notifyModerators(id, session.user.name || "Студент", expert.user.name || "эксперт", {
+      resubmitted: true,
+    });
 
     return NextResponse.json({ status: "NEW" });
   } catch {

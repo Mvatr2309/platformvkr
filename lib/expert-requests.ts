@@ -34,7 +34,9 @@ export type RequestFormFields = {
   topic: string;
   expectedResult: string;
   ownProgress: string;
-  problemArea: string | null;
+  /** Поле убрано из формы (B2): дублировало «затруднение» из «Что хочу обсудить».
+   *  undefined — не прислано: при повторной отправке старый ответ сохраняется */
+  problemArea?: string | null;
   materialsUrl: string | null;
   projectId: string | null;
 };
@@ -49,7 +51,6 @@ export function parseRequestForm(
   const topic = String(data.topic || "").trim();
   const expectedResult = String(data.expectedResult || "").trim();
   const ownProgress = String(data.ownProgress || "").trim();
-  const problemArea = String(data.problemArea || "").trim();
   const materialsUrl = String(data.materialsUrl || "").trim();
 
   if (topic.length < MIN_TOPIC) {
@@ -67,7 +68,8 @@ export function parseRequestForm(
       topic,
       expectedResult,
       ownProgress,
-      problemArea: problemArea || null,
+      problemArea:
+        data.problemArea === undefined ? undefined : String(data.problemArea || "").trim() || null,
       materialsUrl: materialsUrl || null,
       projectId: data.projectId ? String(data.projectId) : null,
     },
@@ -127,27 +129,44 @@ export async function safeMail(to: string, subject: string, html: string) {
 /**
  * Новый запрос — всем модераторам, то есть всем админам (08.13).
  * Исправленный после доработки запрос возвращается в ту же очередь (M1).
+ * Кроме уведомления — письмо (N1): основной канал — почта, на платформу модераторы
+ * заходят не каждый день.
  */
 export async function notifyModerators(
   requestId: string,
   studentName: string,
+  expertName: string,
   opts: { resubmitted?: boolean } = {}
 ) {
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN" },
-    select: { id: true },
+    select: { id: true, email: true },
   });
+  const title = opts.resubmitted ? "Запрос исправлен после доработки" : "Новый запрос на консультацию";
   await notifyMany(
     admins.map((a) => a.id),
     {
       type: "EXPERT_REQUEST_NEW",
-      title: opts.resubmitted ? "Запрос исправлен после доработки" : "Новый запрос на консультацию",
+      title,
       message: opts.resubmitted
         ? `${studentName} исправил запрос по вашему комментарию. Нужна повторная проверка.`
         : `${studentName} отправил запрос. Нужна проверка перед передачей эксперту.`,
       link: `/expert/admin/requests`,
     }
   );
+  const html = mailShell(
+    title,
+    `<p style="color:#333;font-size:15px;">${
+      opts.resubmitted
+        ? `${escapeHtml(studentName)} исправил запрос эксперту ${escapeHtml(expertName)} по вашему комментарию. Проверьте анкету ещё раз.`
+        : `${escapeHtml(studentName)} отправил запрос эксперту ${escapeHtml(expertName)}. Проверьте анкету.`
+    }</p>`,
+    "/expert/admin/requests",
+    "Открыть очередь модерации"
+  );
+  for (const a of admins) {
+    await safeMail(a.email, title, html);
+  }
 }
 
 /** Запрос одобрен модератором — эксперту (08.14) */
@@ -172,6 +191,40 @@ export async function notifyExpertApproved(
        <p style="color:#555;font-size:14px;">Откройте анкету и примите решение: принять или отклонить.</p>`,
       "/expert/inbox",
       "Открыть запросы"
+    )
+  );
+}
+
+/**
+ * Запрос одобрен модератором — студенту (N1). Снимает тревогу «что с запросом»:
+ * студент знает, что запрос у эксперта и ответ придёт на почту.
+ */
+export async function notifyStudentApproved(
+  studentUserId: string,
+  studentEmail: string,
+  expertName: string,
+  moderatorComment: string | null
+) {
+  await notify({
+    userId: studentUserId,
+    type: "EXPERT_REQUEST_APPROVED",
+    title: "Запрос передан эксперту",
+    message: `${expertName} получил ваш запрос и примет решение.`,
+    link: "/expert/my-requests",
+  });
+  await safeMail(
+    studentEmail,
+    "Запрос прошёл модерацию",
+    mailShell(
+      "Запрос прошёл модерацию",
+      `<p style="color:#333;font-size:15px;">Модератор проверил ваш запрос и передал его эксперту ${escapeHtml(expertName)}. Эксперт примет запрос или откажет с причиной — ответ придёт на почту.</p>${
+        moderatorComment
+          ? `<p style="color:#333;font-size:15px;">Комментарий модератора:</p>
+       <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;white-space:pre-line;">${escapeHtml(moderatorComment)}</div>`
+          : ""
+      }`,
+      "/expert/my-requests",
+      "Мои запросы"
     )
   );
 }
@@ -227,7 +280,7 @@ export async function notifyStudentRejected(
        <p style="color:#555;font-size:14px;">${
          byWhom === "модератором"
            ? "Если вопрос остаётся, отправьте новый запрос с учётом причины."
-           : "Можно выбрать другого эксперта в каталоге или написать этому эксперту позже."
+           : "Можно выбрать другого эксперта в каталоге или отправить запрос этому эксперту в следующем месяце."
        }</p>`,
       "/expert/my-requests",
       "Мои запросы"
@@ -254,7 +307,7 @@ export async function notifyContactsExchanged(params: {
     userId: params.studentUserId,
     type: "EXPERT_REQUEST_ACCEPTED",
     title: "Запрос принят",
-    message: `${params.expertName} принял ваш запрос. Контакт: ${params.expertContact}`,
+    message: `${params.expertName} принял ваш запрос. Напишите ему первым: ${params.expertContact}`,
     link: "/expert/my-requests",
   });
   await safeMail(
@@ -262,11 +315,11 @@ export async function notifyContactsExchanged(params: {
     "Эксперт принял ваш запрос",
     mailShell(
       "Эксперт принял ваш запрос",
-      `<p style="color:#333;font-size:15px;"><strong>${escapeHtml(params.expertName)}</strong> готов вас проконсультировать.</p>
+      `<p style="color:#333;font-size:15px;"><strong>${escapeHtml(params.expertName)}</strong> принял ваш запрос. Напишите ему первым и договоритесь о времени встречи.</p>
        <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;">
          <strong>Контакт эксперта:</strong> ${escapeHtml(params.expertContact)}
        </div>
-       <p style="color:#555;font-size:14px;">Напишите первым и договоритесь о времени. Через неделю мы спросим, как прошла встреча.</p>`,
+       <p style="color:#555;font-size:14px;">Через неделю мы попросим вас оценить, насколько встреча была полезной.</p>`,
       "/expert/my-requests",
       "Мои запросы"
     )
@@ -276,19 +329,19 @@ export async function notifyContactsExchanged(params: {
     userId: params.expertUserId,
     type: "EXPERT_REQUEST_ACCEPTED",
     title: "Вы приняли запрос",
-    message: `Контакт студента ${params.studentName}: ${params.studentContact}`,
+    message: `Вы приняли запрос ${params.studentName}. Студент напишет вам сам, чтобы договориться о встрече.`,
     link: "/expert/inbox",
   });
   await safeMail(
     params.expertEmail,
-    "Контакты студента",
+    "Вы приняли запрос — студент напишет вам сам",
     mailShell(
       "Вы приняли запрос",
-      `<p style="color:#333;font-size:15px;">Студент <strong>${escapeHtml(params.studentName)}</strong> ждёт вашей консультации.</p>
+      `<p style="color:#333;font-size:15px;">Вы приняли запрос, и студент <strong>${escapeHtml(params.studentName)}</strong> получил ваши контакты. Студент напишет вам сам, чтобы договориться о времени встречи.</p>
        <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;">
          <strong>Контакт студента:</strong> ${escapeHtml(params.studentContact)}
        </div>
-       <p style="color:#555;font-size:14px;">Через неделю мы спросим у вас обоих, состоялась ли встреча.</p>`,
+       <p style="color:#555;font-size:14px;">Через неделю мы попросим вас оценить, как прошла встреча.</p>`,
       "/expert/inbox",
       "Открыть запросы"
     )

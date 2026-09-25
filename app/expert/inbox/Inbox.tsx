@@ -103,8 +103,15 @@ export default function Inbox() {
           <span className={`${styles.badge} ${styles[st.cls]}`}>{st.label}</span>
         </div>
 
+        {/* E2: эксперт сразу понимает, что первым пишет студент */}
         {r.student.contact && (
           <div className={styles.contacts}>
+            {r.status === "CONTACTS_SENT" && (
+              <p className={styles.contactsLead}>
+                Вы приняли запрос, и студент получил ваши контакты. Студент напишет вам сам, чтобы
+                договориться о времени встречи. Через неделю мы попросим вас оценить, как прошла встреча.
+              </p>
+            )}
             <strong>Контакт студента:</strong> {r.student.contact}
           </div>
         )}

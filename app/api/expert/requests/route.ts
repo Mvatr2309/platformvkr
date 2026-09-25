@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
 
-    await notifyModerators(created.id, session.user.name || "Студент");
+    await notifyModerators(created.id, session.user.name || "Студент", expert.user.name || "эксперт");
 
     return NextResponse.json({ id: created.id }, { status: 201 });
   } catch {

@@ -6,7 +6,7 @@
 // заведённый через «Создание аккаунтов», удаляется. Письма уходят на *@test.local.
 
 import { PrismaClient } from "@prisma/client";
-import { login, anon, suite } from "./lib.mjs";
+import { login, anon, suite, visibleHtml } from "./lib.mjs";
 
 const SUPERVISOR = "test.supervisor2@test.local"; // полный профиль НР, роли эксперта нет
 const SUPERVISOR_EXPERT = "test.supervisor@test.local"; // уже с карточкой эксперта
@@ -36,6 +36,12 @@ const bulk = (emails, withExpertRole) =>
 
 try {
   if (hadCard) await dropCard();
+
+  T.section("Экран «Принять участие» (A3)");
+  const joinPage = visibleHtml((await supervisor.page("/expert/join")).html);
+  T.check("научник без роли видит текст до нажатия", joinPage.includes("Вы пока не эксперт экспертной трубы") && joinPage.includes("до двух часовых встреч в месяц"));
+  T.check("экран объясняет, что будет после нажатия", joinPage.includes("мы заполним её из вашего профиля") && joinPage.includes("без модерации") && joinPage.includes("Скрыть её можно в любой момент"));
+  T.check("лишнего абзаца про смешивание запросов нет", !joinPage.includes("не смешиваются"));
 
   T.section("«Внешние эксперты»: почта уже занята — кто это");
   const inv = await invite(SUPERVISOR);

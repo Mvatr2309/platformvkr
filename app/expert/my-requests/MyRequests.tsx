@@ -114,11 +114,16 @@ export default function MyRequests() {
                 </div>
               )}
 
+              {/* B3: инициатива за студентом, и он заранее знает про оценку встречи */}
               {r.expertContact && (
                 <div className={styles.contacts}>
+                  {r.status === "CONTACTS_SENT" && (
+                    <p className={styles.contactsLead}>
+                      Эксперт принял ваш запрос. Напишите ему первым и договоритесь о времени
+                      встречи. Через неделю мы попросим вас оценить, насколько встреча была полезной.
+                    </p>
+                  )}
                   <strong>Контакт эксперта:</strong> {r.expertContact}
-                  <br />
-                  Напишите первым и договоритесь о времени.
                 </div>
               )}
 

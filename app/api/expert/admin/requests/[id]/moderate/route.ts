@@ -3,6 +3,7 @@ import { requireAdmin, isGuardError } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
 import {
   notifyExpertApproved,
+  notifyStudentApproved,
   notifyStudentRejected,
   notifyStudentReturned,
 } from "@/lib/expert-requests";
@@ -63,7 +64,7 @@ export async function POST(
       id: true,
       status: true,
       student: { select: { user: { select: { id: true, name: true, email: true } } } },
-      expert: { select: { userId: true, user: { select: { email: true } } } },
+      expert: { select: { userId: true, user: { select: { email: true, name: true } } } },
     },
   });
 
@@ -99,6 +100,8 @@ export async function POST(
   const student = req.student.user;
   if (action === "approve") {
     await notifyExpertApproved(req.expert.userId, req.expert.user.email, student.name || "Студент");
+    // N1: студент узнаёт, что запрос у эксперта, — с комментарием модератора, если он есть
+    await notifyStudentApproved(student.id, student.email, req.expert.user.name || "Эксперт", comment || null);
   } else if (action === "return") {
     await notifyStudentReturned(student.id, student.email, comment);
   } else {

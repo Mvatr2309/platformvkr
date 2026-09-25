@@ -314,3 +314,9 @@
   color: var(--color-text-primary);
   white-space: pre-line;
 }
+
+/* B3, E2: пояснение над контактом после принятия запроса */
+.contactsLead {
+  margin: 0 0 var(--space-sm);
+  line-height: 1.5;
+}

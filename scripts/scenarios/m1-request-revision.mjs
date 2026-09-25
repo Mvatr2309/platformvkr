@@ -42,7 +42,7 @@ const form = (mark) => ({
   topic: `${mark} Хочу обсудить выбор метода для сопоставления схем табличных данных. `.repeat(8),
   expectedResult: `${mark} Выбрать метод и понять, как проверить гипотезу на наших данных.`.padEnd(100, "."),
   ownProgress: `${mark} Прочитал обзоры, попробовал два подхода на небольшой выборке, оба дали слабый результат. `.repeat(6),
-  problemArea: "",
+  // «Где возникли проблемы» форма больше не отправляет (B2)
   materialsUrl: "https://example.com/folder",
 });
 
@@ -132,6 +132,9 @@ try {
   const forExpert = (await expert.json("/api/expert/requests")).body.find((r) => r.id === id);
   T.check("эксперт видит запрос после одобрения", Boolean(forExpert));
   T.check("эксперту комментарий модератора не отдаётся", forExpert && !("moderatorComment" in forExpert));
+  const approvedNote = (await student.json("/api/notifications?space=expert&limit=50")).body.notifications
+    .find((n) => n.title === "Запрос передан эксперту");
+  T.check("студенту пришло «Запрос передан эксперту» (N1)", approvedNote?.type === "EXPERT_REQUEST_APPROVED" && approvedNote.message.includes("получил ваш запрос"));
 
   T.section("Одобрение без комментария после возврата");
   const second = await create(student, expert2Card.id, "s2");
@@ -144,6 +147,15 @@ try {
   await moderate(s2id, "approve", "");
   const s2 = await requestOf(student, s2id);
   T.check("одобрение без комментария стирает комментарий прошлого возврата", s2.status === "APPROVED_BY_MODERATOR" && s2.moderatorComment === null);
+
+  T.section("Тексты формы запроса (B1, B2)");
+  const formPage = visibleHtml((await student.page(`/expert/requests/new?expertId=${expertCard.id}`)).html);
+  T.check("предупреждение о модерации и возврате", formPage.includes("Запрос сначала проверит модератор. Если из описания непонятны задача"));
+  T.check("предупреждение о двух встречах в месяц без «пометки»", formPage.includes("не больше двух часовых встреч в месяц") && formPage.includes("напишет об этом в комментарии") && !formPage.includes("пометкой"));
+  T.check("предупреждение о доступе по ссылке отдельным блоком", /class="[^"]*linkWarning[^"]*"[^>]*>\s*Проверьте, что доступ открыт всем/.test(formPage));
+  T.check("подсказка «Что уже сделал» — про шаги студента", formPage.includes("Что вы посмотрели, какие подходы попробовали и чем они закончились"));
+  T.check("подсказка «Какой результат жду» — с чем уйти со встречи", formPage.includes("По этому полю эксперт решит, сможет ли он помочь"));
+  T.check("поля «Где возникли проблемы» в форме нет", !formPage.includes("Где возникли проблемы"));
 
   T.section("Отклонение модератором");
   const third = await create(otherStudent, expertCard.id, "r1");
@@ -168,6 +180,18 @@ try {
   T.check("запрос остался NEW, эксперт его не видит", (await requestOf(otherStudent, aid)).status === "NEW" && !(await expert2.json("/api/expert/requests")).body.some((r) => r.id === aid));
   const v1 = (await queueCard(aid)).updatedAt;
   T.check("снова вернуть с актуальной версией", (await moderate(aid, "return", "Всё ещё нужно уточнить данные.", v1)).status === 200);
+
+  T.section("Старый ответ «Где возникли проблемы» не стирается");
+  const legacy = await otherStudent.send("POST", "/api/expert/requests", { expertId: expertCard.id, ...form("p1"), problemArea: "Старый ответ из прежней формы" });
+  if (legacy.status === 201) createdIds.push(legacy.body.id);
+  T.check("запрос со старым полем принят сервером", legacy.status === 201, `статус ${legacy.status} ${legacy.body?.error || ""}`);
+  if (legacy.status === 201) {
+    await moderate(legacy.body.id, "return", "Уточните результат.");
+    await otherStudent.send("PATCH", `/api/expert/requests/${legacy.body.id}`, form("p2"));
+    const kept = await prisma.expertRequest.findUnique({ where: { id: legacy.body.id }, select: { problemArea: true, topic: true } });
+    T.check("повторная отправка без поля сохраняет старый ответ", kept.problemArea === "Старый ответ из прежней формы" && kept.topic.startsWith("p2 "));
+    await moderate(legacy.body.id, "reject", "Сценарий: закрываем.");
+  }
 
   T.section("Ветки повторной отправки");
   await admin.send("PUT", "/api/expert/admin/access", { cohort: OTHER_COHORT, isOpen: false });

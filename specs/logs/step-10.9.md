@@ -1071,3 +1071,22 @@
 **Спека:** новый раздел 3.5, API (раздел 7), таблица легаси.
 
 **Файлы:** `lib/expert-role.ts`, `lib/expert-requests.ts`, `app/api/expert/join/route.ts`, `app/api/expert/admin/grant-role/route.ts`, `app/api/expert/profile/route.ts`, `app/api/admin/invitations/route.ts`, `app/api/admin/invitations/bulk/route.ts`, `app/admin/invitations/page.tsx`, `app/expert/admin/ExpertInviteForm.tsx`, `app/expert/ExpertProfileForm.tsx`, `app/expert/expert-form.module.css`, `scripts/scenarios/a2-expert-role.mjs`, `scripts/scenarios/README.md`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #55 — FR-08, требования v2: тексты A3, B1, B2, B3, E2 и письма N1
+
+**Дата:** 25.09.2026
+**От кого:** Тагир Миннахметов — тексты согласованы поштучно (15 пунктов)
+
+**Решения пользователя:** из A3 убран абзац «Роль добавляется к текущей…»; в B1 нет «пометки „нет времени“» — эксперт просто отклоняет и пишет причину в комментарии (формулировка черновика требований не подтвердилась); поле «Где возникли проблемы» убрать; письмо модераторам о новом запросе — делать (и об исправленном после доработки).
+
+**Реализация:**
+- **A3** `app/expert/join/page.tsx` — экран «Принять участие»: безвозмездно, до двух часовых встреч в месяц, карточка из профиля, каталог без модерации, скрыть можно в любой момент.
+- **B1, B2** `app/expert/requests/NewRequestForm.tsx` + стили — над кнопкой выделенные предупреждения о модерации с возвратом и о лимите встреч; подсказки «Что уже сделал» (про шаги студента) и «Какой результат жду» (черновик требований, открытый вопрос 2 к Саше); предупреждение о доступе по ссылке отдельным цветным блоком у поля; поле «Где возникли проблемы» убрано. Сервер поле по-прежнему принимает: если его не прислали, при повторной отправке старый ответ сохраняется (`parseRequestForm`); у старых запросов он виден модератору и эксперту.
+- **B3, E2** `MyRequests.tsx`, `Inbox.tsx` — пояснение над контактом, пока запрос в `CONTACTS_SENT`: студенту «напишите первым», эксперту «студент напишет вам сам», обоим — через неделю попросим оценить.
+- **N1 и письма** `lib/expert-requests.ts`, `moderate/route.ts`, `requests/route.ts`, `requests/[id]/route.ts` — новое письмо и уведомление студенту «Запрос прошёл модерацию» (с комментарием модератора, если есть); письмо всем админам о новом и об исправленном запросе; тексты писем и уведомлений о принятии для студента и эксперта (тема эксперту — «Вы приняли запрос — студент напишет вам сам»); последняя строка письма об отказе эксперта — «отправить запрос этому эксперту в следующем месяце».
+
+**Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно, eslint по изменённым файлам — чисто. Сценарии: M1 — 62 (добавлены уведомление студенту при одобрении, тексты формы B1/B2 в разметке, отсутствие убранного поля, сохранение старого ответа при повторной отправке), A2 — 42 (текст экрана A3), утечки — 45, A1 — 119, все зелёные. Тексты «Мои запросы» и «Входящие» рисуются на клиенте после загрузки — сверены по коду; тексты писем сверены по коду, доставка локально не проверяется.
+
+**Спека:** 08.12 (состав анкеты), модель 5.3 (`problemArea`), раздел 8 (таблица писем, тексты B3/E2/A3).
+
+**Файлы:** `app/expert/join/page.tsx`, `app/expert/requests/NewRequestForm.tsx`, `app/expert/requests/[id]/edit/page.tsx`, `app/expert/expert-form.module.css`, `app/expert/my-requests/MyRequests.tsx`, `app/expert/inbox/Inbox.tsx`, `app/expert/requests/requests.module.css`, `lib/expert-requests.ts`, `app/api/expert/admin/requests/[id]/moderate/route.ts`, `app/api/expert/requests/route.ts`, `app/api/expert/requests/[id]/route.ts`, `scripts/scenarios/m1-request-revision.mjs`, `scripts/scenarios/a2-expert-role.mjs`, `specs/08-FR-08-expert-pipeline.md`.
