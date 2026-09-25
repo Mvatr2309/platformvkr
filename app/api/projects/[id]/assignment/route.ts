@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // PUT /api/projects/[id]/assignment — НР подтверждает или отклоняет назначение (04.03)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

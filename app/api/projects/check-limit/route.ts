@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // GET /api/projects/check-limit — проверка лимита перед созданием проекта
 export async function GET() {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

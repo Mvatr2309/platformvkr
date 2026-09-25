@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireAdmin, isGuardError } from "@/lib/api-guard";
 import { knowledgeVisibilityWhere } from "@/lib/knowledge";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // GET /api/knowledge — список материалов с фильтрами (07.01, 07.02, 07.03).
 // Обычный режим — только корневые материалы (главы и страницы книг в каталог не попадают);
 // при поиске находятся и страницы внутри книг.
 export async function GET(request: NextRequest) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const guard = await requireAuth();

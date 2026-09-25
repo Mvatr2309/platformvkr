@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
 import { requireAuth, isGuardError } from "@/lib/api-guard";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 function revalidateProject(id: string) {
   revalidatePath("/projects");
@@ -18,7 +18,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   // C1: маршрут отдаёт email и контакты участников — закрываем от анонимного доступа.
@@ -101,7 +101,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();
@@ -289,7 +289,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // Максимальный размер команды: автор + 2 тиммейта = 3 участника (научный руководитель не считается).
 export const MAX_TEAM_MEMBERS = 3;
@@ -12,7 +12,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();
@@ -129,7 +129,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

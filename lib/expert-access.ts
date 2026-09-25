@@ -167,17 +167,24 @@ export async function isPlatformClosedForStudent(
 }
 
 /**
- * Гейт API «Платформы ВКР» для студента закрытого потока (A1).
- * Возвращает 403, если вызывает студент, которому платформа закрыта, иначе null —
- * и обработчик продолжает со своими проверками. Другие роли и анонимные вызовы
- * не трогает: их правила остаются в самих обработчиках.
- * Страницы платформы клиентские и берут данные через API, поэтому именно этот
- * гейт не даёт увидеть научников и проекты в обход заглушки.
+ * Гейт API «Платформы ВКР» (A1, 08.02) — зеркало canEnterVkrSpace для API.
+ * Возвращает 403 студенту закрытого потока и внешнему эксперту, иначе null —
+ * и обработчик продолжает со своими проверками. Анонимные вызовы, админа и научника
+ * не трогает: их правила остаются в самих обработчиках (публичный каталог 01.08).
+ * Страницы платформы клиентские и берут данные через API, а middleware к /api
+ * не применяется, поэтому именно этот гейт не даёт увидеть данные в обход заглушки.
  */
-export async function denyClosedCohortStudent(): Promise<NextResponse | null> {
+export async function denyVkrClosed(): Promise<NextResponse | null> {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id || !(await isPlatformClosedForStudent(user.id, user.role))) return null;
+  if (!user?.id) return null;
+  if (user.role === UserRole.EXPERT) {
+    return NextResponse.json(
+      { error: "Платформа ВКР недоступна внешним экспертам" },
+      { status: 403 }
+    );
+  }
+  if (!(await isPlatformClosedForStudent(user.id, user.role))) return null;
   return NextResponse.json(
     { error: "Платформа ВКР ещё не открыта для вашего потока" },
     { status: 403 }

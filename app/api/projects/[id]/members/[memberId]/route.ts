@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // DELETE /api/projects/[id]/members/[memberId] — удаление участника из проекта
 // Права:
@@ -14,7 +14,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

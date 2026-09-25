@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, isGuardError } from "@/lib/api-guard";
 import { isInside } from "@/lib/upload-validation";
 import { isArticleVisible } from "@/lib/knowledge";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // Файлы базы знаний лежат в приватной папке вне public/ и раздаются только через этот роут
 const PRIVATE_DIR = path.join(process.cwd(), "uploads", "knowledge");
@@ -18,7 +18,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string; fileId: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const { id, fileId } = await params;

@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { ProjectStatus } from "@prisma/client";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // GET /api/projects — каталог проектов с фильтрами (02.05, 02.07)
 export async function GET(request: NextRequest) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const { searchParams } = request.nextUrl;
@@ -23,9 +24,14 @@ export async function GET(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
 
-  // По умолчанию показываем открытые, если не запрошены свои
+  // По умолчанию показываем открытые, если не запрошены свои.
+  // Другой статус в каталоге выбирает только админ: ручка доступна без входа (01.08),
+  // а черновики и проекты на модерации с контактами авторов не публичны.
+  // Значение сверяем со справочником статусов, иначе Prisma падает с 500.
   if (my !== "true") {
-    where.status = status || "OPEN";
+    const adminStatus =
+      viewerRole === "ADMIN" && (Object.values(ProjectStatus) as string[]).includes(status);
+    where.status = adminStatus ? status : "OPEN";
   }
 
   if (projectType) where.projectType = projectType;
@@ -98,7 +104,7 @@ export async function GET(request: NextRequest) {
 // POST /api/projects — создание проекта (02.01)
 // НР не создают проекты — свои темы они публикуют в профиле («Предлагаемые темы»)
 export async function POST(request: NextRequest) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const session = await auth();

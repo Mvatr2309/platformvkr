@@ -6,11 +6,12 @@ import { sendMail } from "@/lib/mail";
 // Вызывается по расписанию (cron) или вручную админом.
 // Параметр daysAhead — за сколько дней напоминать (по умолчанию 3).
 export async function POST(request: NextRequest) {
-  // Простая защита: секрет или админ-сессия
+  // Защита: секрет из окружения или админская сессия. Секрет должен быть задан —
+  // иначе пустой параметр совпал бы с пустой переменной. Как в джобе обратной связи трубы.
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get("secret");
 
-  if (secret !== process.env.CRON_SECRET && secret !== "admin") {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     // Также проверим сессию
     const { auth } = await import("@/lib/auth");
     const session = await auth();

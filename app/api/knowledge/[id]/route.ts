@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireAdmin, isGuardError } from "@/lib/api-guard";
 import { isArticleVisible } from "@/lib/knowledge";
-import { denyClosedCohortStudent } from "@/lib/expert-access";
+import { denyVkrClosed } from "@/lib/expert-access";
 
 // GET /api/knowledge/[id] — детали материала (только авторизованные).
 // Для глав/страниц книги видимость проверяется по корню; в ответе — дерево книги для оглавления.
@@ -11,7 +11,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const vkrDenied = await denyClosedCohortStudent();
+  const vkrDenied = await denyVkrClosed();
   if (vkrDenied) return vkrDenied;
 
   const guard = await requireAuth();
