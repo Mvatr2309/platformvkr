@@ -56,6 +56,9 @@ export default function InvitationsPage() {
   const [emailsText, setEmailsText] = useState("");
   const [role, setRole] = useState<"SUPERVISOR" | "STUDENT">("SUPERVISOR");
   const [cohort, setCohort] = useState("");
+  // A2: новый научник сразу получает и роль эксперта; существующим научникам она добавляется
+  const [withExpertRole, setWithExpertRole] = useState(false);
+  const [grantedRoles, setGrantedRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -123,6 +126,7 @@ export default function InvitationsPage() {
     setError("");
     setSuccess("");
     setSkipResults([]);
+    setGrantedRoles([]);
 
     if (parsedEmails.length === 0) {
       setError("Вставьте хотя бы один e-mail");
@@ -142,6 +146,7 @@ export default function InvitationsPage() {
           emails: parsedEmails,
           role,
           cohort: role === "STUDENT" ? cohort : undefined,
+          withExpertRole: role === "SUPERVISOR" && withExpertRole,
         }),
       });
 
@@ -153,6 +158,7 @@ export default function InvitationsPage() {
 
       const created: CreatedAccount[] = [];
       const skips: SkipResult[] = [];
+      const granted: string[] = [];
       type RawResult = { email: string; status: string; password?: string; reason?: string; error?: string };
       for (const r of (data.results as RawResult[])) {
         if ((r.status === "created" || r.status === "created_mail_error") && r.password) {
@@ -160,15 +166,20 @@ export default function InvitationsPage() {
           if (r.status === "created_mail_error") {
             skips.push({ email: r.email, status: "created_mail_error", error: r.error });
           }
+        } else if (r.status === "role_granted") {
+          granted.push(r.email);
         } else if (r.status === "skipped" || r.status === "invalid") {
           skips.push({ email: r.email, status: r.status, reason: r.reason });
         }
       }
+      setGrantedRoles(granted);
 
       setCreatedAccounts((prev) => [...prev, ...created]);
       setSkipResults(skips);
       setSuccess(
-        `Готово. Создано: ${data.summary.created}, пропущено: ${data.summary.skipped}, невалидных: ${data.summary.invalid}` +
+        `Готово. Создано: ${data.summary.created}` +
+        (data.summary.rolesGranted > 0 ? `, роль эксперта открыта существующим: ${data.summary.rolesGranted}` : "") +
+        `, пропущено: ${data.summary.skipped}, невалидных: ${data.summary.invalid}` +
         (data.summary.mailErrors > 0 ? `, письмо не ушло: ${data.summary.mailErrors}` : "")
       );
       setEmailsText("");
@@ -235,7 +246,11 @@ export default function InvitationsPage() {
             <label className={styles.label}>Роль (одна на всю партию)</label>
             <select
               value={role}
-              onChange={(e) => { setRole(e.target.value as "SUPERVISOR" | "STUDENT"); if (e.target.value !== "STUDENT") setCohort(""); }}
+              onChange={(e) => {
+                setRole(e.target.value as "SUPERVISOR" | "STUDENT");
+                if (e.target.value !== "STUDENT") setCohort("");
+                if (e.target.value !== "SUPERVISOR") setWithExpertRole(false);
+              }}
               className={styles.input}
             >
               <option value="SUPERVISOR">Научный руководитель</option>
@@ -256,6 +271,16 @@ export default function InvitationsPage() {
               </select>
             </div>
           )}
+          {role === "SUPERVISOR" && (
+            <label className={styles.field} style={{ flexDirection: "row", alignItems: "center", gap: 8, fontSize: 14 }}>
+              <input
+                type="checkbox"
+                checked={withExpertRole}
+                onChange={(e) => setWithExpertRole(e.target.checked)}
+              />
+              Сразу открыть роль эксперта
+            </label>
+          )}
           <button type="submit" className={styles.button} disabled={loading || parsedEmails.length === 0}>
             {loading
               ? "Создание..."
@@ -268,6 +293,24 @@ export default function InvitationsPage() {
 
       {error && <p className={styles.error}>{error}</p>}
       {success && <p className={styles.success}>{success}</p>}
+
+      {role === "SUPERVISOR" && withExpertRole && (
+        <p style={{ fontSize: 12, color: "#666", marginTop: -8, marginBottom: 16 }}>
+          Одна учётная запись на обе роли. Научникам, которые уже есть на платформе, роль эксперта
+          добавится без нового аккаунта и пароля — им уйдёт письмо «Вам открыт раздел».
+        </p>
+      )}
+
+      {grantedRoles.length > 0 && (
+        <div style={{ background: "#EAF7EE", border: "1px solid #B7E0C4", padding: 12, marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>
+            Роль эксперта открыта существующим научникам ({grantedRoles.length}):
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: "#555" }}>
+            {grantedRoles.map((email) => <li key={email}>{email}</li>)}
+          </ul>
+        </div>
+      )}
 
       {skipResults.length > 0 && (
         <div style={{ background: "#FFF8E1", border: "1px solid #f0d97a", padding: 12, marginBottom: 16 }}>

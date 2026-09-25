@@ -1045,3 +1045,29 @@
 **Не исправлялось:** опровергнутые находки; ветка студента в базе знаний проверена только на пустом наборе — в базе нет материалов для студентов.
 
 **Файлы:** `app/api/projects/[id]/activities/route.ts`, `app/api/expert/admin/requests/[id]/moderate/route.ts`, `app/api/expert/admin/requests/route.ts`, `app/api/expert/jobs/feedback/route.ts`, `app/api/events/route.ts`, `app/api/notifications/route.ts`, `lib/expert-requests.ts`, `app/expert/admin/ModerationQueue.tsx`, `app/expert/requests/[id]/edit/page.tsx`, `app/expert/requests/NewRequestForm.tsx`, `app/expert/requests/requests.module.css`, `app/notifications/notifications.module.css`, `scripts/scenarios/*`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #54 — FR-08, требования v2, A2: одна учётная запись с ролями научника и эксперта
+
+**Дата:** 25.09.2026
+**От кого:** Тагир Миннахметов, по требованиям заказчика (`specs/08-FR-08-requirements-v2.md`, A2, P0)
+
+**Запрос:** админ заводит научника сразу с ролью эксперта и добавляет роль эксперта существующему научнику без ошибки о занятой почте; научник переключается между разделами без повторного входа; внешний эксперт научником не становится.
+
+**Решения пользователя:** почту студента во «Внешних экспертах» запрещаем с понятным сообщением; существующим научникам в «Создании аккаунтов» с галочкой роль эксперта выдаём.
+
+**Как было:** роль эксперта = наличие `ExpertProfile`, так что обе роли на одной почте уже поддерживались («Принять участие»). Но приглашение из «Внешних экспертов» на почту научника падало с 409 «уже зарегистрирован», а «Создание аккаунтов» не умело выдавать роль эксперта. Ответ на открытый вопрос 1 требований: миграция не нужна.
+
+**Реализация:**
+- `lib/expert-role.ts` (новый) — общая логика: `isCardComplete` (правило минимума в одном месте), `supervisorCardPrefill`, `isCardUntouched`, `grantExpertRole` (идемпотентно, защищено от гонки), `mailExpertRoleGranted`. `mailShell` и `escapeHtml` экспортированы из `lib/expert-requests.ts`.
+- `app/api/expert/join/route.ts` — «Принять участие» через общий `grantExpertRole`, поведение прежнее.
+- `app/api/expert/admin/grant-role/route.ts` (новый) — админ открывает роль научнику: карточка из профиля, письмо. Студенту, внешнему эксперту, админу и тому, у кого роль уже есть, — 409 с понятным текстом; нет такой почты — 404.
+- `app/api/admin/invitations/route.ts` — при занятой почте 409 теперь с ролью, ФИО и признаком роли эксперта.
+- `app/expert/admin/ExpertInviteForm.tsx` — для почты научника подтверждение «Открыть роль эксперта» вместо ошибки; для студента, эксперта и прочих — понятное сообщение; в списке экспертов пометка «научный руководитель».
+- `app/api/admin/invitations/bulk/route.ts`, `app/admin/invitations/page.tsx` — галочка «Сразу открыть роль эксперта» для научников: новым — одна учётная запись на обе роли и строка про трубу в письме с доступами; существующим научникам — роль без нового аккаунта (итог «роль эксперта открыта существующим»).
+- `app/api/expert/profile/route.ts`, `app/expert/ExpertProfileForm.tsx` — пустой карточке научника подсказываются поля из профиля НР, с пометкой; в базу подсказка попадает только сохранением.
+
+**Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно, eslint по изменённым файлам — чисто. Новый сценарий `scripts/scenarios/a2-expert-role.mjs`: 39 проверок, все зелёные. Регресс: утечки — 45, M1 — 53, A1 — 119. База после прогона в исходном состоянии. Формы админки (подтверждение во «Внешних экспертах», галочка) проверены по коду и через API, в браузере не смотрелись.
+
+**Спека:** новый раздел 3.5, API (раздел 7), таблица легаси.
+
+**Файлы:** `lib/expert-role.ts`, `lib/expert-requests.ts`, `app/api/expert/join/route.ts`, `app/api/expert/admin/grant-role/route.ts`, `app/api/expert/profile/route.ts`, `app/api/admin/invitations/route.ts`, `app/api/admin/invitations/bulk/route.ts`, `app/admin/invitations/page.tsx`, `app/expert/admin/ExpertInviteForm.tsx`, `app/expert/ExpertProfileForm.tsx`, `app/expert/expert-form.module.css`, `scripts/scenarios/a2-expert-role.mjs`, `scripts/scenarios/README.md`, `specs/08-FR-08-expert-pipeline.md`.

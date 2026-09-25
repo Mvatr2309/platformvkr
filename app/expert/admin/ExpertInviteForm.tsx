@@ -6,20 +6,36 @@ import styles from "../expert-form.module.css";
 // FR-08: приглашение внешних экспертов (08.06).
 // Аккаунт создаёт существующий /api/admin/invitations — он же генерирует
 // пароль и отправляет письмо. Здесь только кнопка и список уже приглашённых.
+// A2: если почта принадлежит научному руководителю, второй аккаунт не нужен —
+// форма предлагает открыть ему роль эксперта на той же почте.
 
 type Invited = {
   id: string;
   email: string;
   name: string;
+  role: string;
   cardCompleted: boolean;
   hiddenByOwner: boolean;
 };
+
+type Existing = { role: string; name: string | null; isExpert: boolean };
+
+/** Что сказать админу про уже зарегистрированную почту, если роль выдать нельзя */
+function existingMessage(ex: Existing): string {
+  if (ex.role === "STUDENT") return "Это студент платформы — роль эксперта студентам не выдаётся";
+  if (ex.role === "EXPERT") return "Это уже внешний эксперт";
+  if (ex.role === "SUPERVISOR" && ex.isExpert) return "У этого научного руководителя роль эксперта уже есть";
+  return "Этот пользователь уже зарегистрирован, роль эксперта ему не выдаётся";
+}
 
 export default function ExpertInviteForm() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<{ email: string; password: string; emailError?: string } | null>(null);
+  // Почта научного руководителя: ждём подтверждения, что открываем ему роль эксперта
+  const [supervisor, setSupervisor] = useState<{ email: string; name: string | null } | null>(null);
+  const [granted, setGranted] = useState<{ name: string | null; cardCompleted: boolean } | null>(null);
   const [list, setList] = useState<Invited[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +58,8 @@ export default function ExpertInviteForm() {
     e.preventDefault();
     setError("");
     setCreated(null);
+    setSupervisor(null);
+    setGranted(null);
     if (!email.trim()) {
       setError("Укажите e-mail");
       return;
@@ -55,7 +73,14 @@ export default function ExpertInviteForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Не удалось создать аккаунт");
+        const ex: Existing | undefined = data.existing;
+        if (res.status === 409 && ex?.role === "SUPERVISOR" && !ex.isExpert) {
+          setSupervisor({ email: email.trim(), name: ex.name });
+        } else if (res.status === 409 && ex) {
+          setError(existingMessage(ex));
+        } else {
+          setError(data.error || "Не удалось создать аккаунт");
+        }
         return;
       }
       setCreated({
@@ -67,6 +92,32 @@ export default function ExpertInviteForm() {
       load();
     } catch {
       setError("Не удалось создать аккаунт");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function grantRole() {
+    if (!supervisor) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/expert/admin/grant-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: supervisor.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Не удалось открыть роль эксперта");
+        return;
+      }
+      setGranted({ name: data.name, cardCompleted: data.cardCompleted });
+      setSupervisor(null);
+      setEmail("");
+      load();
+    } catch {
+      setError("Не удалось открыть роль эксперта");
     } finally {
       setBusy(false);
     }
@@ -96,6 +147,31 @@ export default function ExpertInviteForm() {
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
+
+          {supervisor && (
+            <div className={styles.banner} role="status">
+              <strong>{supervisor.name || supervisor.email}</strong> — научный руководитель на
+              платформе. Второй аккаунт не нужен: откройте ему роль эксперта на этой же почте.
+              Карточку заполним из его профиля, на почту уйдёт письмо «Вам открыт раздел».
+              <div className={styles.actions}>
+                <button type="button" disabled={busy} className={styles.submitButton} onClick={grantRole}>
+                  {busy ? "Открываем…" : "Открыть роль эксперта"}
+                </button>
+                <button type="button" disabled={busy} className={styles.linkButton} onClick={() => setSupervisor(null)}>
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
+
+          {granted && (
+            <div className={styles.success}>
+              Роль эксперта открыта{granted.name ? `: ${granted.name}` : ""}. Письмо отправлено.{" "}
+              {granted.cardCompleted
+                ? "Карточка из профиля научного руководителя уже в каталоге."
+                : "Карточка появится в каталоге, когда будет заполнен обязательный минимум."}
+            </div>
+          )}
 
           {created && (
             <div className={styles.success}>
@@ -131,7 +207,10 @@ export default function ExpertInviteForm() {
               key={e.id}
               style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--color-border)", fontSize: 14 }}
             >
-              <span style={{ flex: 1 }}>{e.name || e.email}</span>
+              <span style={{ flex: 1 }}>
+                {e.name || e.email}
+                {e.role === "SUPERVISOR" && <span className={styles.fieldHint}> · научный руководитель</span>}
+              </span>
               <span className={styles.fieldHint} style={{ margin: 0 }}>
                 {!e.cardCompleted
                   ? "карточка не заполнена"

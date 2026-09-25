@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { requireAdmin, isGuardError } from "@/lib/api-guard";
 import { isStudentEmailAllowed, STUDENT_EMAIL_DOMAIN } from "@/lib/student-email";
+import { grantExpertRole, mailExpertRoleGranted } from "@/lib/expert-role";
 
 function generatePassword(length = 10) {
   return crypto.randomBytes(length).toString("base64url").slice(0, length);
@@ -15,6 +16,7 @@ const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 type ResultItem =
   | { email: string; status: "created"; password: string }
   | { email: string; status: "created_mail_error"; password: string; error: string }
+  | { email: string; status: "role_granted"; cardCompleted: boolean }
   | { email: string; status: "skipped"; reason: string }
   | { email: string; status: "invalid"; reason: string };
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
   const guard = await requireAdmin();
   if (isGuardError(guard)) return guard;
 
-  let body: { emails?: unknown; role?: unknown; cohort?: unknown };
+  let body: { emails?: unknown; role?: unknown; cohort?: unknown; withExpertRole?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -40,6 +42,9 @@ export async function POST(request: NextRequest) {
 
   const userRole = body.role === "STUDENT" ? "STUDENT" : "SUPERVISOR";
   const cohort = typeof body.cohort === "string" ? body.cohort.trim() : "";
+  // A2: научнику сразу открыть и роль эксперта — одна учётная запись на обе роли.
+  // Уже зарегистрированным научникам из списка роль эксперта добавляется.
+  const withExpertRole = userRole === "SUPERVISOR" && body.withExpertRole === true;
 
   // Нормализуем + дедуп
   const seen = new Set<string>();
@@ -71,9 +76,20 @@ export async function POST(request: NextRequest) {
 
   for (const { email } of queue) {
     try {
-      const existingUser = await prisma.user.findUnique({ where: { email } });
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, name: true, role: true, expert: { select: { id: true } } },
+      });
       if (existingUser) {
-        results.push({ email, status: "skipped", reason: "уже зарегистрирован" });
+        if (withExpertRole && existingUser.role === "SUPERVISOR" && !existingUser.expert) {
+          const { created, cardCompleted } = await grantExpertRole(existingUser.id);
+          if (created) await mailExpertRoleGranted(email, existingUser.name, cardCompleted);
+          results.push({ email, status: "role_granted", cardCompleted });
+        } else if (withExpertRole && existingUser.role === "SUPERVISOR") {
+          results.push({ email, status: "skipped", reason: "уже научный руководитель и эксперт" });
+        } else {
+          results.push({ email, status: "skipped", reason: "уже зарегистрирован" });
+        }
         continue;
       }
       const existingInvitation = await prisma.invitation.findFirst({
@@ -105,6 +121,12 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Профиля научника ещё нет — карточка эксперта создаётся пустой, её поля
+      // подскажет /api/expert/profile, когда профиль будет заполнен
+      if (withExpertRole) {
+        await grantExpertRole(user.id);
+      }
+
       await prisma.invitation.create({
         data: { email, sentById: guard.session.user.id, status: "ACCEPTED" },
       });
@@ -118,7 +140,11 @@ export async function POST(request: NextRequest) {
             <p style="margin: 0 0 8px 0;"><strong>Логин:</strong> ${email}</p>
             <p style="margin: 0;"><strong>Пароль:</strong> ${password}</p>
           </div>
-          <p>После входа необходимо заполнить профиль — без этого доступ к платформе будет ограничен.</p>
+          <p>После входа необходимо заполнить профиль — без этого доступ к платформе будет ограничен.</p>${
+            withExpertRole
+              ? `<p>Вам также открыт раздел «Экспертная труба»: эксперты безвозмездно консультируют студентов по своим темам. После профиля проверьте карточку эксперта — мы подскажем её поля из профиля. Переключиться между разделами можно в меню, без повторного входа.</p>`
+              : ""
+          }
           <p>
             <a href="${platformUrl}/login"
                style="display: inline-block; background: #E8375A; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: 600;">
@@ -149,6 +175,7 @@ export async function POST(request: NextRequest) {
     created: results.filter((r) => r.status === "created" || r.status === "created_mail_error").length,
     skipped: results.filter((r) => r.status === "skipped").length,
     invalid: results.filter((r) => r.status === "invalid").length,
+    rolesGranted: results.filter((r) => r.status === "role_granted").length,
     mailErrors: results.filter((r) => r.status === "created_mail_error").length,
   };
 

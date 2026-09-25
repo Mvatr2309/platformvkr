@@ -66,6 +66,8 @@ export default function ExpertProfileForm() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  // A2: пустая карточка научника, которому роль открыл админ, — поля подсказаны из профиля НР
+  const [suggested, setSuggested] = useState(false);
 
   useEffect(() => {
     fetch("/api/expert/profile")
@@ -89,6 +91,23 @@ export default function ExpertProfileForm() {
             hiddenByOwner: Boolean(data.profile.hiddenByOwner),
           });
           setCardCompleted(Boolean(data.profile.cardCompleted));
+        }
+        if (data.suggestion) {
+          const sg = data.suggestion;
+          setCard((prev) => ({
+            ...prev,
+            workplace: sg.workplace || "",
+            position: sg.position || "",
+            academicTitle: sg.academicTitle || "",
+            academicDegree: sg.academicDegree || "",
+            resumeUrl: sg.resumeUrl,
+            photoUrl: sg.photoUrl,
+            expertise: sg.expertise || [],
+            directions: sg.directions || [],
+            projectTypes: sg.projectTypes || [],
+            contact: sg.contact || "",
+          }));
+          setSuggested(true);
         }
       })
       .catch(() => setError("Не удалось загрузить карточку"))
@@ -188,6 +207,7 @@ export default function ExpertProfileForm() {
       }
       setCardCompleted(Boolean(data.cardCompleted));
       setSuccess("Карточка сохранена");
+      setSuggested(false);
       // Признак роли и заполненности профиля перечитываются из БД
       await updateSession();
     } catch {
@@ -206,6 +226,13 @@ export default function ExpertProfileForm() {
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Карточка эксперта</h1>
+
+      {suggested && (
+        <div className={styles.revisionNote} role="status">
+          Карточку заполнили из вашего профиля научного руководителя. Проверьте поля, допишите
+          темы и контакты и нажмите «Сохранить» — до сохранения студенты карточку не видят.
+        </div>
+      )}
 
       {!cardCompleted && (
         <div className={styles.banner}>

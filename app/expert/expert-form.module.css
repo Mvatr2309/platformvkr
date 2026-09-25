@@ -335,3 +335,23 @@
   color: var(--color-text-primary);
   white-space: pre-line;
 }
+
+/* A2: второстепенное действие рядом с основной кнопкой */
+.linkButton {
+  padding: 12px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-royal-blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.linkButton:hover:not(:disabled) {
+  color: var(--color-coral);
+}
+
+.linkButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -99,7 +99,8 @@ export function escapeHtml(value: string) {
 
 const platformUrl = () => process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
 
-function mailShell(title: string, body: string, linkPath: string, linkLabel: string) {
+/** Оболочка писем трубы: заголовок, текст и кнопка со ссылкой внутрь платформы */
+export function mailShell(title: string, body: string, linkPath: string, linkLabel: string) {
   return `
     <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px;">
       <h2 style="color: #003092; margin-bottom: 16px;">${title}</h2>

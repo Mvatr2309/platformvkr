@@ -124,11 +124,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: STUDENT_EMAIL_ERROR }, { status: 400 });
     }
 
-    // Проверяем, не зарегистрирован ли уже пользователь с таким email
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    // Проверяем, не зарегистрирован ли уже пользователь с таким email.
+    // A2: кто он — админ видит сразу. Научнику «Внешние эксперты» предлагают
+    // выдать роль эксперта на той же почте вместо второго аккаунта.
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { role: true, name: true, expert: { select: { id: true } } },
+    });
     if (existingUser) {
       return NextResponse.json(
-        { error: "Пользователь с таким e-mail уже зарегистрирован" },
+        {
+          error: "Пользователь с таким e-mail уже зарегистрирован",
+          existing: {
+            role: existingUser.role,
+            name: existingUser.name,
+            isExpert: Boolean(existingUser.expert),
+          },
+        },
         { status: 409 }
       );
     }

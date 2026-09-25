@@ -2,26 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/types/roles";
+import { isCardComplete, isCardUntouched, supervisorCardPrefill } from "@/lib/expert-role";
 
 // FR-08: карточка эксперта (08.08, 08.09).
 // Источник: specs/08-FR-08-expert-pipeline.md (раздел 5.2)
-
-/** Обязательный минимум для попадания карточки в каталог */
-function isCardComplete(data: {
-  workplace?: string | null;
-  position?: string | null;
-  resumeUrl?: string | null;
-  expertise?: string[] | null;
-  contact?: string | null;
-}): boolean {
-  return Boolean(
-    data.workplace?.trim() &&
-      data.position?.trim() &&
-      data.resumeUrl?.trim() &&
-      (data.expertise?.length ?? 0) > 0 &&
-      data.contact?.trim()
-  );
-}
 
 /** Роли, которым карточка эксперта вообще положена */
 function canHaveCard(role: string): boolean {
@@ -51,8 +35,18 @@ export async function GET() {
     );
   }
 
+  // A2: админ мог выдать роль эксперта научнику, когда у того ещё не было профиля, —
+  // карточка создалась пустой. Если профиль НР уже заполнен, подсказываем его поля.
+  // В базу ничего не пишем: подсказка сохраняется только кнопкой «Сохранить».
+  let suggestion = null;
+  if (session.user.role === UserRole.SUPERVISOR && isCardUntouched(profile)) {
+    const prefill = await supervisorCardPrefill(session.user.id);
+    if (prefill && !isCardUntouched(prefill)) suggestion = prefill;
+  }
+
   return NextResponse.json({
     profile,
+    suggestion,
     name: session.user.name ?? "",
     role: session.user.role,
   });
