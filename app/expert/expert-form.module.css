@@ -290,3 +290,31 @@
   background: #F7F8FB;
   border: 1px solid var(--color-border);
 }
+
+/* A1: «Доступ по потокам» — две независимые галочки на поток */
+.accessRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 140px 140px 110px;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.accessHead {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 560px) {
+  .accessRow {
+    grid-template-columns: 1fr 72px 72px;
+  }
+  .accessRow > :last-child {
+    display: none;
+  }
+}

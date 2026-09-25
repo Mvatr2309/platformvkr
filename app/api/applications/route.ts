@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 const MAX_ACTIVE_APPLICATIONS = 5; // 05.04
 const MAX_SUPERVISION_REQUESTS_PER_PROJECT = 3; // сколько НР можно предлагать один проект одновременно
@@ -10,6 +11,9 @@ const MAX_SUPERVISION_REQUESTS_PER_PROJECT = 3; // сколько НР можн�
 // GET /api/applications — мои заявки (студент), заявки на мои проекты (НР/автор), модерация (админ)
 // ?as=author — заявки на проекты где я автор (для студентов-авторов)
 export async function GET(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
@@ -221,6 +225,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/applications — подача заявки студентом (05.01) или НР (supervisor matching)
 export async function POST(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user || !["STUDENT", "SUPERVISOR"].includes(session.user.role)) {
     return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });

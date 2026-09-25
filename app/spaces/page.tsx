@@ -75,7 +75,11 @@ export default async function SpacesPage() {
             description="Проекты, научные руководители, заявки, календарь и база знаний."
             state={access.vkr.state}
             href={access.vkr.href}
-            lockedNote="Раздел доступен студентам и научным руководителям платформы."
+            lockedNote={
+              access.role === "STUDENT"
+                ? "Раздел ещё не открыт для вашего потока."
+                : "Раздел доступен студентам и научным руководителям платформы."
+            }
             actionLabel="Перейти"
           />
           <Tile

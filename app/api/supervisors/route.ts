@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/supervisors — каталог подтверждённых НР с фильтрами и поиском (01.07, 01.09)
 export async function GET(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { searchParams } = request.nextUrl;
   const search = searchParams.get("search") || "";
   const direction = searchParams.get("direction") || "";

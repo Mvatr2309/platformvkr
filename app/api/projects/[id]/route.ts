@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { sendMail } from "@/lib/mail";
 import { requireAuth, isGuardError } from "@/lib/api-guard";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 function revalidateProject(id: string) {
   revalidatePath("/projects");
@@ -17,6 +18,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   // C1: маршрут отдаёт email и контакты участников — закрываем от анонимного доступа.
   // Каталог /projects и так требует авторизации; здесь дублируем проверку на уровне API.
   const guard = await requireAuth();
@@ -97,6 +101,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
@@ -282,6 +289,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });

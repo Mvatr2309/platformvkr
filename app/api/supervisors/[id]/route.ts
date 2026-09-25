@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/supervisors/[id] — публичная карточка НР (01.08)
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { id } = await params;
 
   const profile = await prisma.supervisorProfile.findUnique({

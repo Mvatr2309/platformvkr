@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import styles from "../expert-form.module.css";
 
-// FR-08: админ отмечает, каким потокам открыта экспертная труба (08.07).
+// FR-08: админ отмечает, что открыто каждому потоку (08.07, A1).
+// Экспертная труба и «Платформа ВКР» открываются независимо друг от друга.
 // Потоки берутся из существующего справочника cohorts.
 
-type Row = { cohort: string; isOpen: boolean; students: number };
+type Row = { cohort: string; isOpen: boolean; platformOpen: boolean; students: number };
+type Flag = "isOpen" | "platformOpen";
 
 export default function CohortAccessPanel() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -35,18 +37,20 @@ export default function CohortAccessPanel() {
     load();
   }, []);
 
-  async function toggle(cohort: string, isOpen: boolean) {
-    setBusy(cohort);
+  async function toggle(cohort: string, flag: Flag, value: boolean) {
+    setBusy(`${cohort}:${flag}`);
     setError("");
     try {
       const res = await fetch("/api/expert/admin/access", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cohort, isOpen }),
+        body: JSON.stringify({ cohort, [flag]: value }),
       });
       if (!res.ok) throw new Error();
-      setRows((prev) => prev.map((r) => (r.cohort === cohort ? { ...r, isOpen } : r)));
-      setOrphans((prev) => prev.map((r) => (r.cohort === cohort ? { ...r, isOpen } : r)));
+      const apply = (prev: Row[]) =>
+        prev.map((r) => (r.cohort === cohort ? { ...r, [flag]: value } : r));
+      setRows(apply);
+      setOrphans(apply);
     } catch {
       setError("Не удалось сохранить");
     } finally {
@@ -56,45 +60,74 @@ export default function CohortAccessPanel() {
 
   if (loading) return <div className={styles.loading}>Загружаем потоки…</div>;
 
-  const openCount = [...rows, ...orphans].filter((r) => r.isOpen).length;
-  const studentsWithAccess = [...rows, ...orphans]
-    .filter((r) => r.isOpen)
-    .reduce((sum, r) => sum + r.students, 0);
+  const all = [...rows, ...orphans];
+  const summary = (flag: Flag) => {
+    const open = all.filter((r) => r[flag]);
+    return `${open.length} (${open.reduce((sum, r) => sum + r.students, 0)} студентов)`;
+  };
+
+  const renderRow = (r: Row) => (
+    <div key={r.cohort} className={styles.accessRow}>
+      <span>{r.cohort}</span>
+      <label className={styles.checkboxLabel}>
+        <input
+          type="checkbox"
+          checked={r.isOpen}
+          disabled={busy === `${r.cohort}:isOpen`}
+          onChange={(e) => toggle(r.cohort, "isOpen", e.target.checked)}
+          aria-label={`Экспертная труба — ${r.cohort}`}
+        />
+      </label>
+      <label className={styles.checkboxLabel}>
+        <input
+          type="checkbox"
+          checked={r.platformOpen}
+          disabled={busy === `${r.cohort}:platformOpen`}
+          onChange={(e) => toggle(r.cohort, "platformOpen", e.target.checked)}
+          aria-label={`Платформа ВКР — ${r.cohort}`}
+        />
+      </label>
+      <span className={styles.fieldHint} style={{ margin: 0 }}>{r.students} студентов</span>
+    </div>
+  );
+
+  const head = (
+    <div className={`${styles.accessRow} ${styles.accessHead}`}>
+      <span>Поток</span>
+      <span>Экспертная труба</span>
+      <span>Платформа ВКР</span>
+      <span />
+    </div>
+  );
 
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Доступ по потокам</h1>
 
       <p className={styles.fieldHint} style={{ marginBottom: 24, fontSize: 14 }}>
-        Отметьте потоки, которым открыта экспертная труба. Изменение действует сразу,
-        отдельной даты открытия нет. Студенты закрытых потоков видят раздел с замком.
+        Отметьте, что открыто каждому потоку. Экспертная труба и платформа ВКР открываются
+        независимо: поток может видеть трубу и не видеть платформу. Изменение действует сразу,
+        отдельной даты открытия нет. Новый поток закрыт, пока вы не откроете его здесь.
+        Студенты закрытого потока видят раздел с замком.
       </p>
 
       {error && <div className={styles.error}>{error}</div>}
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
-          Открыто потоков: {openCount} — это {studentsWithAccess} студентов
+          Труба открыта потокам: {summary("isOpen")}. Платформа ВКР: {summary("platformOpen")}
         </h2>
 
-        {rows.length === 0 && (
+        {rows.length === 0 ? (
           <p className={styles.fieldHint}>
             В справочнике «Потоки» нет значений. Добавьте их в разделе «Справочники» админки платформы.
           </p>
+        ) : (
+          <>
+            {head}
+            {rows.map(renderRow)}
+          </>
         )}
-
-        {rows.map((r) => (
-          <label key={r.cohort} className={styles.checkboxLabel} style={{ display: "flex", padding: "10px 0", borderBottom: "1px solid var(--color-border)" }}>
-            <input
-              type="checkbox"
-              checked={r.isOpen}
-              disabled={busy === r.cohort}
-              onChange={(e) => toggle(r.cohort, e.target.checked)}
-            />
-            <span style={{ flex: 1 }}>{r.cohort}</span>
-            <span className={styles.fieldHint} style={{ margin: 0 }}>{r.students} студентов</span>
-          </label>
-        ))}
       </section>
 
       {orphans.length > 0 && (
@@ -105,18 +138,8 @@ export default function CohortAccessPanel() {
             значение переименовали после присвоения. Доступ им можно открыть и так, но лучше
             привести значения в порядок.
           </p>
-          {orphans.map((r) => (
-            <label key={r.cohort} className={styles.checkboxLabel} style={{ display: "flex", padding: "10px 0", borderBottom: "1px solid var(--color-border)" }}>
-              <input
-                type="checkbox"
-                checked={r.isOpen}
-                disabled={busy === r.cohort}
-                onChange={(e) => toggle(r.cohort, e.target.checked)}
-              />
-              <span style={{ flex: 1 }}>{r.cohort}</span>
-              <span className={styles.fieldHint} style={{ margin: 0 }}>{r.students} студентов</span>
-            </label>
-          ))}
+          {head}
+          {orphans.map(renderRow)}
         </section>
       )}
 
@@ -124,8 +147,8 @@ export default function CohortAccessPanel() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Студентов без потока: {withoutCohort}</h2>
           <p className={styles.fieldHint}>
-            Пустой поток означает, что доступа к трубе у студента нет и открыть его нечем.
-            Проставьте таким студентам поток в списке студентов админки платформы.
+            Пустой поток означает, что студенту закрыты и труба, и платформа ВКР, а открыть
+            их нечем. Проставьте таким студентам поток в списке студентов админки платформы.
           </p>
         </section>
       )}

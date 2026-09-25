@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole, isGuardError } from "@/lib/api-guard";
 import { UserRole } from "@/types/roles";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // Поля карточки НР — те же, что в каталоге /supervisors
 const CARD_SELECT = {
@@ -30,6 +31,9 @@ async function getStudentId(userId: string): Promise<string | null> {
 
 // GET /api/favorites — избранные НР текущего студента
 export async function GET() {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const guard = await requireRole(UserRole.STUDENT);
   if (isGuardError(guard)) return guard;
 
@@ -51,6 +55,9 @@ export async function GET() {
 
 // POST /api/favorites { supervisorId } — добавить в избранное
 export async function POST(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const guard = await requireRole(UserRole.STUDENT);
   if (isGuardError(guard)) return guard;
 

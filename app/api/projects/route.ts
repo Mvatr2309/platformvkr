@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/projects — каталог проектов с фильтрами (02.05, 02.07)
 export async function GET(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { searchParams } = request.nextUrl;
   const search = searchParams.get("search") || "";
   const projectType = searchParams.get("projectType") || "";
@@ -94,6 +98,9 @@ export async function GET(request: NextRequest) {
 // POST /api/projects — создание проекта (02.01)
 // НР не создают проекты — свои темы они публикуют в профиле («Предлагаемые темы»)
 export async function POST(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });

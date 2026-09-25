@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyMany } from "@/lib/notify";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/events — список событий с фильтрами (06.02)
 export async function GET(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
@@ -55,6 +59,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/events — создание события (06.01)
 export async function POST(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });

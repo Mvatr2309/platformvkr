@@ -119,9 +119,10 @@ export default function StudentProfilePage() {
       });
       if (res.ok) {
         await updateSession();
-        // Если профиль заполняется впервые — перенаправляем на платформу
+        // Если профиль заполняется впервые — на экран выбора: платформа ВКР
+        // может быть ещё закрыта для потока студента, а труба — открыта (A1)
         if (!session?.user?.profileCompleted) {
-          window.location.href = "/my-projects";
+          window.location.href = "/spaces";
           return;
         }
         setMessage("Профиль сохранён");

@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole, isGuardError } from "@/lib/api-guard";
 import { UserRole } from "@/types/roles";
 import { prisma } from "@/lib/prisma";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/students/search?q=... — поиск зарегистрированных студентов по имени/почте
 // для подбора участников команды. Доступ: студент (автор), НР, админ.
 export async function GET(request: NextRequest) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const guard = await requireRole(UserRole.STUDENT, UserRole.SUPERVISOR, UserRole.ADMIN);
   if (isGuardError(guard)) return guard;
 

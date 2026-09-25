@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 const STARTUP_TEAM_LIMIT = 3; // Максимум участников команды: автор + 2 тиммейта (без НР)
 
@@ -12,6 +13,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });

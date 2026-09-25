@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireProjectAccess, isGuardError } from "@/lib/api-guard";
 import { validateUpload, isInside } from "@/lib/upload-validation";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // Приватное хранилище вне public/ — файлы раздаются только через download-роут с проверкой прав
 const UPLOAD_DIR = path.join(process.cwd(), "uploads", "projects");
@@ -28,6 +29,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { id } = await params;
   const guard = await requireProjectAccess(id);
   if (isGuardError(guard)) return guard;
@@ -45,6 +49,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { id } = await params;
   const guard = await requireProjectAccess(id, { write: true });
   if (isGuardError(guard)) return guard;
@@ -155,6 +162,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const { id } = await params;
   const guard = await requireProjectAccess(id, { write: true });
   if (isGuardError(guard)) return guard;

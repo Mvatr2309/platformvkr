@@ -629,11 +629,13 @@ model ExpertRequestFeedback {
   @@index([requestId])
 }
 
-// Какие потоки студентов видят экспертную трубу (08.07).
+// Какие потоки студентов видят экспертную трубу (08.07) и «Платформу ВКР» (A1).
 // Значение cohort совпадает со значением справочника cohorts.
+// Нет записи или флаг снят — закрыто: новый поток закрыт, пока админ его не откроет.
 model ExpertPipelineCohortAccess {
-  id        String   @id @default(cuid())
-  cohort    String   @unique
-  isOpen    Boolean  @default(false)
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  cohort       String   @unique
+  isOpen       Boolean  @default(false) // Экспертная труба
+  platformOpen Boolean  @default(false) // Платформа ВКР (A1)
+  updatedAt    DateTime @updatedAt
 }

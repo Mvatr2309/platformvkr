@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole, isGuardError } from "@/lib/api-guard";
 import { UserRole } from "@/types/roles";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // DELETE /api/favorites/[supervisorId] — убрать НР из избранного
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ supervisorId: string }> }
 ) {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const guard = await requireRole(UserRole.STUDENT);
   if (isGuardError(guard)) return guard;
 

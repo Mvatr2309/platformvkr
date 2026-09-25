@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { denyClosedCohortStudent } from "@/lib/expert-access";
 
 // GET /api/projects/check-limit — проверка лимита перед созданием проекта
 export async function GET() {
+  const vkrDenied = await denyClosedCohortStudent();
+  if (vkrDenied) return vkrDenied;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
