@@ -84,8 +84,12 @@ export async function ownProjectOrNull(projectId: string | null, studentId: stri
   return member ? projectId : null;
 }
 
-/** Текст пользователя в HTML письма — экранируем, чтобы он не стал разметкой */
-function escapeHtml(value: string) {
+/**
+ * Текст пользователя в HTML письма — экранируем, чтобы он не стал разметкой.
+ * Любая подстановка ФИО, контакта, причины или комментария в письмо идёт через него:
+ * иначе эксперт или студент вставит ссылку в официальное письмо платформы.
+ */
+export function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -163,7 +167,7 @@ export async function notifyExpertApproved(
     "Новый запрос на консультацию",
     mailShell(
       "Новый запрос на консультацию",
-      `<p style="color:#333;font-size:15px;">${studentName} отправил вам запрос на консультацию. Запрос уже проверен модератором.</p>
+      `<p style="color:#333;font-size:15px;">${escapeHtml(studentName)} отправил вам запрос на консультацию. Запрос уже проверен модератором.</p>
        <p style="color:#555;font-size:14px;">Откройте анкету и примите решение: принять или отклонить.</p>`,
       "/expert/inbox",
       "Открыть запросы"
@@ -218,8 +222,12 @@ export async function notifyStudentRejected(
     mailShell(
       `Запрос отклонён ${byWhom}`,
       `<p style="color:#333;font-size:15px;">Причина:</p>
-       <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;">${reason}</div>
-       <p style="color:#555;font-size:14px;">Вы можете доработать запрос и отправить его снова.</p>`,
+       <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;white-space:pre-line;">${escapeHtml(reason)}</div>
+       <p style="color:#555;font-size:14px;">${
+         byWhom === "модератором"
+           ? "Если вопрос остаётся, отправьте новый запрос с учётом причины."
+           : "Можно выбрать другого эксперта в каталоге или написать этому эксперту позже."
+       }</p>`,
       "/expert/my-requests",
       "Мои запросы"
     )
@@ -253,9 +261,9 @@ export async function notifyContactsExchanged(params: {
     "Эксперт принял ваш запрос",
     mailShell(
       "Эксперт принял ваш запрос",
-      `<p style="color:#333;font-size:15px;"><strong>${params.expertName}</strong> готов вас проконсультировать.</p>
+      `<p style="color:#333;font-size:15px;"><strong>${escapeHtml(params.expertName)}</strong> готов вас проконсультировать.</p>
        <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;">
-         <strong>Контакт эксперта:</strong> ${params.expertContact}
+         <strong>Контакт эксперта:</strong> ${escapeHtml(params.expertContact)}
        </div>
        <p style="color:#555;font-size:14px;">Напишите первым и договоритесь о времени. Через неделю мы спросим, как прошла встреча.</p>`,
       "/expert/my-requests",
@@ -275,9 +283,9 @@ export async function notifyContactsExchanged(params: {
     "Контакты студента",
     mailShell(
       "Вы приняли запрос",
-      `<p style="color:#333;font-size:15px;">Студент <strong>${params.studentName}</strong> ждёт вашей консультации.</p>
+      `<p style="color:#333;font-size:15px;">Студент <strong>${escapeHtml(params.studentName)}</strong> ждёт вашей консультации.</p>
        <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;">
-         <strong>Контакт студента:</strong> ${params.studentContact}
+         <strong>Контакт студента:</strong> ${escapeHtml(params.studentContact)}
        </div>
        <p style="color:#555;font-size:14px;">Через неделю мы спросим у вас обоих, состоялась ли встреча.</p>`,
       "/expert/inbox",

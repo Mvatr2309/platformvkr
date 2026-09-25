@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 // GET /api/expert/admin/requests — очередь модерации (08.13).
 // По умолчанию новые; ?status=ALL показывает всё, чтобы видеть историю решений.
+// Порядок — по последнему изменению: исправленный после доработки запрос поднимается
+// наверх (M1). updatedAt отдаётся и как версия для атомарного решения модератора.
 export async function GET(request: NextRequest) {
   const guard = await requireAdmin();
   if (isGuardError(guard)) return guard;
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const requests = await prisma.expertRequest.findMany({
     where: status === "ALL" ? {} : { status: status as never },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" },
     take: 200,
     select: {
       id: true,
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
       directionSnapshot: true,
       courseSnapshot: true,
       createdAt: true,
+      updatedAt: true,
       moderatedAt: true,
       project: { select: { id: true, title: true } },
       student: { select: { user: { select: { name: true } } } },

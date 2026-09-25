@@ -70,6 +70,7 @@
   font-size: 13px;
   color: var(--color-text-secondary);
   line-height: 1.4;
+  white-space: pre-line;
 }
 
 .copyBtn {

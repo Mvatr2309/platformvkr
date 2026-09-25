@@ -54,6 +54,15 @@ function createClient() {
   return client;
 }
 
+/**
+ * HTML без <script>: Next кладёт пропсы клиентских компонентов в скрипты страницы,
+ * поэтому текст в сыром HTML есть, даже если на экране его нет. Проверки того, что
+ * видит человек, ищут только в разметке.
+ */
+export function visibleHtml(html) {
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+}
+
 export function anon() {
   return createClient();
 }

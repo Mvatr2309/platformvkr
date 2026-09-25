@@ -11,13 +11,14 @@ import {
 import { isPlatformClosedForStudent } from "@/lib/expert-access";
 
 /**
- * Условие выборки пространства для пользователя. Студенту закрытого потока из
- * уведомлений платформы остаются только ответы поддержки (A1): платформа ему
- * закрыта, а обращения открыты. 403 здесь не подходит — сайдбар и переключатель
- * запрашивают счётчики на каждой странице.
+ * Условие выборки пространства для пользователя. Студенту закрытого потока (A1) и
+ * внешнему эксперту (08.02) из уведомлений платформы остаются только ответы поддержки:
+ * платформа им закрыта, а обращения открыты. 403 здесь не подходит — сайдбар и
+ * переключатель запрашивают счётчики на каждой странице.
  */
 async function spaceScope(userId: string, role: string | undefined) {
-  const platformClosed = await isPlatformClosedForStudent(userId, role);
+  const platformClosed =
+    role === "EXPERT" || (await isPlatformClosedForStudent(userId, role));
   return (space: NotificationSpace) =>
     space === "vkr" && platformClosed
       ? { AND: [spaceWhere("vkr"), SUPPORT_REPLY_WHERE] }

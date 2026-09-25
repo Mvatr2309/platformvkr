@@ -103,10 +103,11 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Уведомление о новом дедлайне — всем пользователям, кроме создателя
+  // Уведомление о новом дедлайне — всем пользователям, кроме создателя.
+  // Внешнему эксперту платформа закрыта (08.02), её дедлайны ему не шлём
   if (event.eventType === "DEADLINE") {
     const recipients = await prisma.user.findMany({
-      where: { id: { not: session.user.id } },
+      where: { id: { not: session.user.id }, role: { not: "EXPERT" } },
       select: { id: true },
     });
     const formatRu = (d: Date) => d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });

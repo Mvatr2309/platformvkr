@@ -130,6 +130,7 @@
   border: 1px solid #F3B6C2;
   font-size: 14px;
   color: #8E1F33;
+  white-space: pre-line;
 }
 
 .link {

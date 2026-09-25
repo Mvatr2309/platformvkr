@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
-import { safeMail } from "@/lib/expert-requests";
+import { safeMail, escapeHtml } from "@/lib/expert-requests";
 
 // POST /api/expert/jobs/feedback — отложенные задачи экспертной трубы (08.16, 08.17, 08.20).
 // Источник: specs/08-FR-08-expert-pipeline.md (раздел 9)
@@ -25,7 +25,8 @@ function daysAgo(n: number): Date {
 
 const platformUrl = () => process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
 
-function feedbackMail(who: "student" | "expert", otherName: string, link: string) {
+function feedbackMail(who: "student" | "expert", rawName: string, link: string) {
+  const otherName = escapeHtml(rawName);
   const intro =
     who === "student"
       ? `Неделю назад вы получили контакты эксперта <strong>${otherName}</strong>.`

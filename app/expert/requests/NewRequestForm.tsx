@@ -103,12 +103,13 @@ export default function NewRequestForm({
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Не удалось отправить запрос");
+        setSending(false);
         return;
       }
+      // Кнопку не разблокируем: до перехода повторный клик дал бы ложную ошибку 409
       router.push("/expert/my-requests");
     } catch {
       setError("Не удалось отправить запрос");
-    } finally {
       setSending(false);
     }
   }

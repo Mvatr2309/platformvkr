@@ -6,6 +6,8 @@ import styles from "../requests/requests.module.css";
 // FR-08: очередь модерации запросов (08.13, M1).
 // Модератор — существующая роль ADMIN. Три действия: одобрить (комментарий по желанию),
 // вернуть на доработку и отклонить (комментарий обязателен). Комментарий видит студент.
+// Запрос на доработке можно только отклонить — чтобы он не застревал. С решением уходит
+// updatedAt карточки: сервер откажет, если студент успел переписать анкету.
 
 type Req = {
   id: string;
@@ -20,6 +22,7 @@ type Req = {
   directionSnapshot: string;
   courseSnapshot: number;
   createdAt: string;
+  updatedAt: string;
   project: { id: string; title: string } | null;
   student: { user: { name: string } };
   expert: { position: string; workplace: string; user: { name: string } };
@@ -46,8 +49,9 @@ export default function ModerationQueue() {
   const [comments, setComments] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // silent — перезагрузка после решения: без экрана «Загружаем…», прокрутка не сбрасывается
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(`/api/expert/admin/requests?status=${tab}`);
       if (res.ok) {
@@ -66,7 +70,8 @@ export default function ModerationQueue() {
     load();
   }, [load]);
 
-  async function decide(id: string, action: "approve" | "return" | "reject") {
+  async function decide(r: Req, action: "approve" | "return" | "reject") {
+    const id = r.id;
     const comment = (comments[id] || "").trim();
     if (action !== "approve" && !comment) {
       setErrors((e) => ({
@@ -84,15 +89,17 @@ export default function ModerationQueue() {
       const res = await fetch(`/api/expert/admin/requests/${id}/moderate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, comment }),
+        body: JSON.stringify({ action, comment, updatedAt: r.updatedAt }),
       });
       const data = await res.json();
       if (!res.ok) {
         setErrors((e) => ({ ...e, [id]: data.error || "Не удалось сохранить решение" }));
+        // Запрос мог измениться — подтягиваем актуальное состояние карточки
+        if (res.status === 409) await load(true);
         return;
       }
       setComments((c) => ({ ...c, [id]: "" }));
-      await load();
+      await load(true);
     } catch {
       setErrors((e) => ({ ...e, [id]: "Не удалось сохранить решение" }));
     } finally {
@@ -149,6 +156,8 @@ export default function ModerationQueue() {
                   </div>
                   <div className={styles.cardMeta}>
                     Отправлен {new Date(r.createdAt).toLocaleDateString("ru-RU")}
+                    {r.status === "NEW" && r.moderatorComment &&
+                      `, исправлен ${new Date(r.updatedAt).toLocaleDateString("ru-RU")}`}
                   </div>
                 </div>
                 <span className={`${styles.badge} ${styles[st.cls]}`}>{st.label}</span>
@@ -193,48 +202,70 @@ export default function ModerationQueue() {
                   {r.moderatorComment}
                 </div>
               )}
-              {r.moderatorComment && r.status !== "NEW" && (
-                <div className={styles.reason}>
-                  <strong>Комментарий модератора:</strong> {r.moderatorComment}
+              {r.moderatorComment && r.status === "NEEDS_REVISION" && (
+                <div className={styles.revision}>
+                  <strong>Вернули на доработку:</strong> {r.moderatorComment}
                 </div>
               )}
+              {r.moderatorComment && r.status === "REJECTED_BY_MODERATOR" && (
+                <div className={styles.reason}>
+                  <strong>Причина отклонения:</strong> {r.moderatorComment}
+                </div>
+              )}
+              {r.moderatorComment &&
+                !["NEW", "NEEDS_REVISION", "REJECTED_BY_MODERATOR"].includes(r.status) && (
+                  <div className={styles.moderatorNote}>
+                    <strong>Комментарий при одобрении:</strong> {r.moderatorComment}
+                  </div>
+                )}
               {r.expertComment && (
                 <div className={styles.reason}>
                   <strong>Причина отказа эксперта:</strong> {r.expertComment}
                 </div>
               )}
 
-              {r.status === "NEW" && (
+              {(r.status === "NEW" || r.status === "NEEDS_REVISION") && (
                 <>
                   <textarea
                     value={comments[r.id] || ""}
                     onChange={(e) => setComments((c) => ({ ...c, [r.id]: e.target.value }))}
                     className={styles.reasonInput}
                     rows={3}
-                    placeholder="Комментарий для студента. При одобрении — по желанию, при возврате и отклонении — обязательно"
+                    aria-label="Комментарий модератора для студента"
+                    aria-invalid={Boolean(errors[r.id])}
+                    aria-describedby={errors[r.id] ? `moderation-error-${r.id}` : undefined}
+                    placeholder={
+                      r.status === "NEW"
+                        ? "Комментарий для студента. При одобрении — по желанию, при возврате и отклонении — обязательно"
+                        : "Причина отклонения — студент её увидит. Например: запрос давно не исправлен"
+                    }
                   />
                   <div className={styles.actions}>
-                    <button
-                      type="button"
-                      className={styles.acceptButton}
-                      disabled={busy === r.id}
-                      onClick={() => decide(r.id, "approve")}
-                    >
-                      {busy === r.id ? "Сохраняем…" : "Одобрить и передать эксперту"}
-                    </button>
+                    {r.status === "NEW" && (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.acceptButton}
+                          disabled={busy === r.id}
+                          onClick={() => decide(r, "approve")}
+                        >
+                          {busy === r.id ? "Сохраняем…" : "Одобрить и передать эксперту"}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.rejectButton}
+                          disabled={busy === r.id}
+                          onClick={() => decide(r, "return")}
+                        >
+                          Вернуть на доработку
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       className={styles.rejectButton}
                       disabled={busy === r.id}
-                      onClick={() => decide(r.id, "return")}
-                    >
-                      Вернуть на доработку
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.rejectButton}
-                      disabled={busy === r.id}
-                      onClick={() => decide(r.id, "reject")}
+                      onClick={() => decide(r, "reject")}
                     >
                       Отклонить
                     </button>
@@ -242,7 +273,11 @@ export default function ModerationQueue() {
                 </>
               )}
 
-              {errors[r.id] && <div className={styles.error}>{errors[r.id]}</div>}
+              {errors[r.id] && (
+                <div id={`moderation-error-${r.id}`} role="alert" className={styles.error}>
+                  {errors[r.id]}
+                </div>
+              )}
             </div>
           );
         })

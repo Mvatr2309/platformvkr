@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkCatalogAccess } from "@/lib/expert-catalog";
+import { checkCatalogAccess, getCatalogCard } from "@/lib/expert-catalog";
 import { UserRole } from "@/types/roles";
 import NewRequestForm from "../../NewRequestForm";
+import styles from "../../../expert.module.css";
 
 // FR-08: исправление запроса, возвращённого модератором на доработку (M1).
 // Та же анкета, что при отправке, заполненная текущими ответами.
@@ -52,6 +54,26 @@ export default async function EditRequestPage({
   // Чужой запрос или запрос не на доработке — к списку, где виден его статус
   if (!req || req.student.userId !== session.user.id || req.status !== "NEEDS_REVISION") {
     redirect("/expert/my-requests");
+  }
+
+  // Эксперт скрыл карточку: исправленный запрос сервер не примет, поэтому сразу
+  // объясняем, а не даём переписать анкету впустую
+  if (!(await getCatalogCard(req.expert.id))) {
+    return (
+      <main className={styles.stubPage}>
+        <div className={styles.stubCard}>
+          <h1 className={styles.stubTitle}>Эксперт сейчас не принимает запросы</h1>
+          <p className={styles.stubText}>
+            {req.expert.user.name || "Эксперт"} скрыл карточку — например, ушёл в отпуск. Запрос
+            останется на доработке: когда эксперт вернётся, вы сможете его исправить и отправить.
+            Если ждать не хочется, выберите другого эксперта в каталоге.
+          </p>
+          <Link href="/expert/catalog" className={styles.stubLink}>
+            Открыть каталог
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (
