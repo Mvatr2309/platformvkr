@@ -14,7 +14,7 @@ export async function GET() {
   const guard = await requireAdmin();
   if (isGuardError(guard)) return guard;
 
-  const [cohortValues, access, grouped, noCohortCount] = await Promise.all([
+  const [cohortValues, access, grouped] = await Promise.all([
     prisma.dictionaryValue.findMany({
       where: { dictionary: { type: "cohorts" } },
       orderBy: { sortOrder: "asc" },
@@ -27,35 +27,38 @@ export async function GET() {
       by: ["cohort"],
       _count: { _all: true },
     }),
-    // Пустая когорта = доступа нет. Такие студенты не должны потеряться молча.
-    prisma.studentProfile.count({ where: { cohort: "" } }),
   ]);
 
-  const accessMap = new Map(access.map((a) => [a.cohort, a]));
-  const countMap = new Map(grouped.map((g) => [g.cohort, g._count._all]));
+  // Поток сравниваем без пробелов по краям — так же, как при записи флагов и при
+  // проверке доступа студента. Иначе у значения «Поток2026 » панель показала бы
+  // «закрыто», хотя студентам открыто.
+  const accessMap = new Map(access.map((a) => [a.cohort.trim(), a]));
+  const countMap = new Map<string, number>();
+  for (const g of grouped) {
+    const key = g.cohort.trim();
+    countMap.set(key, (countMap.get(key) ?? 0) + g._count._all);
+  }
+  // Пустая когорта = доступа нет. Такие студенты не должны потеряться молча.
+  const noCohortCount = countMap.get("") ?? 0;
 
   // Нет записи — закрыто и то и другое (A1)
   const flags = (cohort: string) => ({
-    isOpen: accessMap.get(cohort)?.isOpen ?? false,
-    platformOpen: accessMap.get(cohort)?.platformOpen ?? false,
+    isOpen: accessMap.get(cohort.trim())?.isOpen ?? false,
+    platformOpen: accessMap.get(cohort.trim())?.platformOpen ?? false,
   });
 
   const cohorts = cohortValues.map((c) => ({
     cohort: c.value,
     ...flags(c.value),
-    students: countMap.get(c.value) ?? 0,
+    students: countMap.get(c.value.trim()) ?? 0,
   }));
 
   // Значения, которых нет в справочнике, но которые стоят у студентов —
   // например, справочник переименовали уже после присвоения когорты
-  const known = new Set(cohortValues.map((c) => c.value));
-  const orphan = grouped
-    .filter((g) => g.cohort !== "" && !known.has(g.cohort))
-    .map((g) => ({
-      cohort: g.cohort,
-      ...flags(g.cohort),
-      students: g._count._all,
-    }));
+  const known = new Set(cohortValues.map((c) => c.value.trim()));
+  const orphan = [...countMap]
+    .filter(([cohort]) => cohort !== "" && !known.has(cohort))
+    .map(([cohort, students]) => ({ cohort, ...flags(cohort), students }));
 
   return NextResponse.json({
     cohorts,

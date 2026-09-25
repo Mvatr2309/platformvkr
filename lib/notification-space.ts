@@ -16,6 +16,15 @@ export const EXPERT_NOTIFICATION_TYPES = [
   "EXPERT_FEEDBACK_REQUEST",
 ] as const;
 
+/**
+ * Ответы поддержки по обращениям (A1). Лежат в пространстве платформы, но обращения
+ * открыты и студенту закрытого потока — из уведомлений платформы ему остаются только они.
+ */
+export const SUPPORT_REPLY_WHERE = {
+  type: "SYSTEM" as const,
+  link: { startsWith: "/inquiries" },
+};
+
 export function parseSpace(value: string | null | undefined): NotificationSpace {
   return value === "expert" ? "expert" : "vkr";
 }

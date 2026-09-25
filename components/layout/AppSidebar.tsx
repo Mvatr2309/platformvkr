@@ -23,6 +23,22 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
   const user = session?.user;
   const role = user?.role as string | undefined;
 
+  // A1: студенту закрытого потока платформа закрыта — в её сайдбаре остаются
+  // профиль, уведомления и обращения. null — состояние ещё не загружено: пока
+  // показываем полное меню, чтобы у открытых потоков пункты не мигали.
+  const [vkrLocked, setVkrLocked] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (role !== "STUDENT") return;
+    let cancelled = false;
+    fetch("/api/expert/access")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d) setVkrLocked(d.vkr?.state === "LOCKED");
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [role]);
+
   // FR-08: счётчик считает уведомления только текущего пространства (08.22)
   const notifSpace = pathname.startsWith("/expert") ? "expert" : "vkr";
 
@@ -42,7 +58,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
           const apps = await appsRes.json();
           setPendingAppsCount(Array.isArray(apps) ? apps.filter((a: { status: string }) => a.status === "PENDING").length : 0);
         }
-      } else if (role === "STUDENT") {
+      } else if (role === "STUDENT" && vkrLocked === false) {
         const authorRes = await fetch("/api/applications?as=author");
         if (authorRes.ok) {
           const authorApps = await authorRes.json();
@@ -50,7 +66,7 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         }
       }
     } catch { /* ignore */ }
-  }, [user, role, notifSpace]);
+  }, [user, role, notifSpace, vkrLocked]);
 
   // Onboarding check — once on mount + on navigation, no polling
   useEffect(() => {
@@ -252,7 +268,13 @@ export default function AppSidebar({ children }: { children: React.ReactNode }) 
         <SpaceSwitcher />
 
         <nav className={styles.nav}>
-          {role === "STUDENT" && (
+          {role === "STUDENT" && vkrLocked === true && (
+            <div className={styles.navGroup}>
+              <a href="/profile/student" className={navClass("/profile/student")}>Профиль</a>
+            </div>
+          )}
+
+          {role === "STUDENT" && vkrLocked !== true && (
             <>
               <div className={styles.navGroup}>
                 <div className={styles.navGroupTitle}>

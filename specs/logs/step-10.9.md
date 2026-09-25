@@ -932,3 +932,23 @@
 **Следствие «закрыто по умолчанию»:** студенты, зарегистрировавшиеся сами через `/register`, получают пустой поток — у них закрыты и труба, и платформа, пока админ не проставит поток.
 
 **Файлы:** `prisma/schema.prisma`, `prisma/migrations/20260925120000_cohort_platform_access/migration.sql`, `lib/expert-access.ts`, `components/layout/VkrGate.tsx`, `components/layout/vkrgate.module.css`, `app/{projects,supervisors,applications,calendar,knowledge,my-projects,nir,notifications}/layout.tsx`, 21 файл `app/api/{applications,events,favorites,knowledge,projects,students,supervisors}/**/route.ts`, `app/api/expert/admin/access/route.ts`, `app/expert/admin/CohortAccessPanel.tsx`, `app/expert/expert-form.module.css`, `app/spaces/page.tsx`, `app/profile/student/page.tsx`, `scripts/scenarios/*`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #49 — A1, доводка по проверке субагентами
+
+**Дата:** 25.09.2026
+**От кого:** Тагир Миннахметов — «делаем все» по итогам проверки A1 (запись #48)
+
+**Запрос:** закрыть пробелы реализации A1, найденные проверкой: платформенные уведомления, поток с пробелами в админке, навигация закрытого студента, правило для страниц.
+
+**Реализация:**
+- `app/api/notifications/route.ts` — студенту закрытого потока в пространстве платформы только ответы поддержки (`SUPPORT_REPLY_WHERE` в `lib/notification-space.ts`: `SYSTEM` со ссылкой на `/inquiries`). То же в счётчиках, в бейдже соседнего пространства и в «прочитать все». 403 не подходит: сайдбар и переключатель запрашивают счётчики на каждой странице.
+- `app/notifications/layout.tsx` удалён: страница уведомлений открыта, фильтрует API. Иначе ответы поддержки закрытому студенту было бы не прочитать.
+- `lib/expert-access.ts` — `isPlatformClosedForStudent` для мест, где ответ сужается, а не запрещается; `denyClosedCohortStudent` использует его же.
+- `app/api/onboarding/route.ts` — закрытому потоку пустые шаги: все шаги студента ведут в платформу, чек-лист не показывается.
+- `components/layout/AppSidebar.tsx` — у закрытого потока в сайдбаре платформы только «Профиль», «Уведомления», «Обращения», без опроса заявок. Пока состояние не загружено, показывается полное меню, чтобы у открытых потоков пункты не мигали.
+- `app/api/expert/admin/access/route.ts` — поток сравнивается без пробелов по краям, как при записи и при проверке студента; студенты без потока считаются по той же нормализации.
+- `components/layout/VkrGate.tsx` + спека 4.1 — правило: layout в Next не граница доступа, в разделах платформы только клиентские страницы, серверная страница с данными обязана сама вызвать `canEnterVkrSpace()`.
+
+**Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно, eslint — новых замечаний нет (7 ошибок в `AppSidebar.tsx` были и до правки). Сценарий A1 расширен до 119 проверок, все зелёные: уведомления (виден ответ поддержки, скрыт дедлайн, бейдж, «прочитать все», открытие платформы возвращает дедлайн), онбординг, поток с пробелом. Сайдбар проверен по коду, визуально не смотрелся — он рендерится на клиенте.
+
+**Файлы:** `app/api/notifications/route.ts`, `app/api/onboarding/route.ts`, `app/api/expert/admin/access/route.ts`, `app/notifications/layout.tsx` (удалён), `components/layout/AppSidebar.tsx`, `components/layout/VkrGate.tsx`, `lib/expert-access.ts`, `lib/notification-space.ts`, `scripts/scenarios/a1-cohort-platform-access.mjs`, `specs/08-FR-08-expert-pipeline.md`.

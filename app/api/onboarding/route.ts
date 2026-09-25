@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isPlatformClosedForStudent } from "@/lib/expert-access";
 
 // GET /api/onboarding — проверяет прогресс онбординга
 export async function GET() {
@@ -10,6 +11,11 @@ export async function GET() {
   }
 
   const { role, id: userId } = session.user;
+
+  // A1: все шаги онбординга студента ведут в платформу — закрытому потоку их не показываем
+  if (await isPlatformClosedForStudent(userId, role)) {
+    return NextResponse.json({ role, steps: [] });
+  }
 
   if (role === "STUDENT") {
     const student = await prisma.studentProfile.findUnique({

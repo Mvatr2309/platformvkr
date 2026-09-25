@@ -153,6 +153,20 @@ export async function canEnterVkrSpace(): Promise<{ authed: boolean; allowed: bo
 }
 
 /**
+ * Закрыта ли «Платформа ВКР» студенту по его потоку (A1). Для других ролей — false:
+ * их доступ решают свои правила. Нужна там, где вместо 403 ответ сужается,
+ * например в уведомлениях и онбординге.
+ */
+export async function isPlatformClosedForStudent(
+  userId: string,
+  role: string | undefined
+): Promise<boolean> {
+  if (role !== UserRole.STUDENT) return false;
+  const { platformOpen } = await getStudentCohortAccess(userId);
+  return !platformOpen;
+}
+
+/**
  * Гейт API «Платформы ВКР» для студента закрытого потока (A1).
  * Возвращает 403, если вызывает студент, которому платформа закрыта, иначе null —
  * и обработчик продолжает со своими проверками. Другие роли и анонимные вызовы
@@ -163,9 +177,7 @@ export async function canEnterVkrSpace(): Promise<{ authed: boolean; allowed: bo
 export async function denyClosedCohortStudent(): Promise<NextResponse | null> {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id || user.role !== UserRole.STUDENT) return null;
-  const { platformOpen } = await getStudentCohortAccess(user.id);
-  if (platformOpen) return null;
+  if (!user?.id || !(await isPlatformClosedForStudent(user.id, user.role))) return null;
   return NextResponse.json(
     { error: "Платформа ВКР ещё не открыта для вашего потока" },
     { status: 403 }

@@ -26,7 +26,6 @@ const PAGES = [
   "/my-projects",
   "/nir",
   "/nir/3",
-  "/notifications",
 ];
 
 const T = suite("A1: доступ к «Платформе ВКР» по потокам");
@@ -167,6 +166,53 @@ try {
   const after = await prisma.studentProfile.findUnique({ where: { id: lockedUser.student.id }, select: { cohort: true } });
   T.check("студент не может сменить себе поток через профиль", after.cohort === LOCKED_COHORT, `поток стал ${after.cohort}`);
   T.check("и платформа по-прежнему закрыта", isDenied(await lockedStudent.json("/api/supervisors")));
+
+  T.section("Уведомления и онбординг закрытого потока");
+  const lockedUserId = (await prisma.user.findUnique({ where: { email: LOCKED_STUDENT }, select: { id: true } })).id;
+  const mk = (data) => prisma.notification.create({ data: { userId: lockedUserId, read: false, message: "A1-сценарий", ...data } });
+  const deadline = await mk({ type: "DEADLINE_REMINDER", title: "A1: дедлайн платформы", link: "/calendar" });
+  const support = await mk({ type: "SYSTEM", title: "A1: ответ поддержки", link: "/inquiries" });
+  const expertN = await mk({ type: "EXPERT_REQUEST_APPROVED", title: "A1: уведомление трубы", link: "/expert/my-requests" });
+  try {
+    const vkr = (await lockedStudent.json("/api/notifications?space=vkr&limit=100")).body;
+    const ids = vkr.notifications.map((n) => n.id);
+    T.check("платформенные уведомления: ответ поддержки виден", ids.includes(support.id));
+    T.check("платформенные уведомления: дедлайн платформы скрыт", !ids.includes(deadline.id));
+    T.check("платформенные уведомления: только ответы поддержки", vkr.notifications.every((n) => n.type === "SYSTEM" && n.link?.startsWith("/inquiries")));
+    const exp = (await lockedStudent.json("/api/notifications?space=expert&limit=100")).body;
+    T.check("уведомления трубы не сужаются", exp.notifications.some((n) => n.id === expertN.id));
+    T.check("бейдж соседнего пространства не считает дедлайн", exp.otherUnreadCount === vkr.unreadCount, `${exp.otherUnreadCount} vs ${vkr.unreadCount}`);
+    await lockedStudent.send("PATCH", "/api/notifications", { all: true, space: "vkr" });
+    const [d2, s2] = await Promise.all([
+      prisma.notification.findUnique({ where: { id: deadline.id }, select: { read: true } }),
+      prisma.notification.findUnique({ where: { id: support.id }, select: { read: true } }),
+    ]);
+    T.check("«прочитать все» задевает только разрешённое", s2.read === true && d2.read === false);
+    const notifPage = await lockedStudent.page("/notifications");
+    T.check("страница уведомлений открывается без заглушки", notifPage.status === 200 && !notifPage.html.includes(VKR_STUB));
+    const onb = (await lockedStudent.json("/api/onboarding")).body;
+    T.check("онбординг закрытого потока: шагов нет", Array.isArray(onb.steps) && onb.steps.length === 0);
+    const onbOpen = (await openStudent.json("/api/onboarding")).body;
+    T.check("онбординг открытого потока: шаги есть", Array.isArray(onbOpen.steps) && onbOpen.steps.length > 0);
+    await setAccess(LOCKED_COHORT, { platformOpen: true });
+    const vkrOpen = (await lockedStudent.json("/api/notifications?space=vkr&limit=100")).body;
+    T.check("платформу открыли — дедлайн снова виден", vkrOpen.notifications.some((n) => n.id === deadline.id));
+    await setAccess(LOCKED_COHORT, { platformOpen: false });
+  } finally {
+    await prisma.notification.deleteMany({ where: { id: { in: [deadline.id, support.id, expertN.id] } } });
+  }
+
+  T.section("Поток с пробелами по краям");
+  await setLockedCohort(`${LOCKED_COHORT} `);
+  const trimmed = (await admin.json("/api/expert/admin/access")).body;
+  T.check("панель не выносит «Поток2026 » в потоки вне справочника", !trimmed.orphanCohorts.some((r) => r.cohort.trim() === LOCKED_COHORT));
+  const trimmedRow = trimmed.cohorts.find((r) => r.cohort === LOCKED_COHORT);
+  T.check("панель считает такого студента в своём потоке", trimmedRow?.students >= 1, `students=${trimmedRow?.students}`);
+  T.check("флаги в панели совпадают с тем, что видит студент", trimmedRow?.platformOpen === false && (await lockedStudent.json("/api/expert/access")).body.vkr.state === "LOCKED");
+  await setAccess(LOCKED_COHORT, { platformOpen: true });
+  T.check("открыли — студенту с пробелом в потоке платформа открылась", (await lockedStudent.json("/api/expert/access")).body.vkr.state === "OPEN");
+  await setAccess(LOCKED_COHORT, { platformOpen: false });
+  await setLockedCohort(LOCKED_COHORT);
 
   T.section("Поток 2025: всё как раньше");
   await expectPlatformOpen(openStudent, "открытый поток");
