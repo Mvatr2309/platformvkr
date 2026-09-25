@@ -952,3 +952,32 @@
 **Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно, eslint — новых замечаний нет (7 ошибок в `AppSidebar.tsx` были и до правки). Сценарий A1 расширен до 119 проверок, все зелёные: уведомления (виден ответ поддержки, скрыт дедлайн, бейдж, «прочитать все», открытие платформы возвращает дедлайн), онбординг, поток с пробелом. Сайдбар проверен по коду, визуально не смотрелся — он рендерится на клиенте.
 
 **Файлы:** `app/api/notifications/route.ts`, `app/api/onboarding/route.ts`, `app/api/expert/admin/access/route.ts`, `app/notifications/layout.tsx` (удалён), `components/layout/AppSidebar.tsx`, `components/layout/VkrGate.tsx`, `lib/expert-access.ts`, `lib/notification-space.ts`, `scripts/scenarios/a1-cohort-platform-access.mjs`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #50 — FR-08, требования v2, M1: возврат на доработку и комментарий модератора
+
+**Дата:** 25.09.2026
+**От кого:** Тагир Миннахметов, по требованиям заказчика (`specs/08-FR-08-requirements-v2.md`, M1, P0)
+
+**Запрос:** у модератора три действия вместо двух — одобрить, вернуть на доработку, отклонить — и комментарий. Студент исправляет возвращённый запрос и отправляет снова.
+
+**Решения пользователя:** комментарий при одобрении показывается студенту (эксперту — нет); при возврате и отклонении обязателен.
+
+**Реализация:**
+- `prisma/schema.prisma` + миграция `20260925140000_expert_request_revision` — статус `NEEDS_REVISION` и тип уведомления `EXPERT_REQUEST_RETURNED`. Данные не трогаются.
+- `lib/expert-requests.ts` — `NEEDS_REVISION` в защите от дубля: студент исправляет запрос, а не заводит новый; `EXPERT_VISIBLE_STATUSES` — явный список статусов для входящих эксперта вместо «всё, кроме»; `parseRequestForm` и `ownProjectOrNull` — общая проверка анкеты для отправки и повторной отправки; `notifyStudentReturned` — уведомление и письмо с комментарием (текст экранируется); `notifyModerators` различает новый и исправленный запрос.
+- `lib/notification-space.ts` — `EXPERT_REQUEST_RETURNED` отнесён к трубе: иначе уведомление ушло бы в платформу, закрытую первокурснику.
+- `app/api/expert/admin/requests/[id]/moderate/route.ts` — действие `return` с обязательным комментарием; комментарий при одобрении по желанию, пустой затирает комментарий прошлого возврата.
+- `app/api/expert/requests/[id]/route.ts` (новый) — `PATCH`: только автор, только из `NEEDS_REVISION`, те же проверки анкеты, эксперт должен быть в каталоге, обновляется снимок программы и курса, условный переход защищает от двойной отправки. Запрос возвращается в `NEW`, модератор видит прошлый комментарий.
+- `app/api/expert/requests/route.ts` — входящие эксперта по явному списку статусов; при дубле к эксперту с запросом на доработке — подсказка исправить его.
+- `app/expert/requests/[id]/edit/page.tsx` (новая) + `NewRequestForm.tsx` — та же анкета в режиме исправления: заполнена текущими ответами, сверху комментарий модератора.
+- `MyRequests.tsx` — статус «На доработке», комментарий и кнопка «Исправить запрос»; комментарий при одобрении.
+- `ModerationQueue.tsx` — поле комментария и три кнопки; ошибка теперь видна при любом действии (раньше только в форме отказа — кандидат в M2); у исправленного запроса — прошлый комментарий.
+- `MetricsPanel.tsx` — подпись нового статуса.
+
+**Проверка:** `npx tsc --noEmit` — чисто, `npm run build` — успешно, eslint по изменённым файлам — чисто. Новый сценарий `scripts/scenarios/m1-request-revision.mjs`: 32 проверки, все зелёные — обязательность комментария, права, статусы, уведомление в пространстве трубы, эксперт не видит и не может принять запрос до одобрения, защита от дубля, страница исправления (своя и чужая), повторная отправка и её повтор, возврат в очередь с прошлым комментарием, комментарий одобрения виден студенту и не отдаётся эксперту, одобрение без комментария стирает старый. Регресс A1 — 119 из 119. Созданные сценарием данные удаляются.
+
+**Заметка:** локально настроен реальный SMTP — сценарии отправляют письма на адреса `@test.local`, они не доставляются, но могут приходить отказы на ящик отправителя.
+
+**Спека:** статусная машина (раздел 6), что видят эксперт и студент, API (раздел 7), уведомления (раздел 8, 8.1).
+
+**Файлы:** `prisma/schema.prisma`, `prisma/migrations/20260925140000_expert_request_revision/migration.sql`, `lib/expert-requests.ts`, `lib/notification-space.ts`, `app/api/expert/admin/requests/[id]/moderate/route.ts`, `app/api/expert/requests/route.ts`, `app/api/expert/requests/[id]/route.ts`, `app/expert/requests/[id]/edit/page.tsx`, `app/expert/requests/NewRequestForm.tsx`, `app/expert/my-requests/MyRequests.tsx`, `app/expert/admin/ModerationQueue.tsx`, `app/expert/admin/MetricsPanel.tsx`, `app/expert/expert-form.module.css`, `app/expert/requests/requests.module.css`, `scripts/scenarios/m1-request-revision.mjs`, `scripts/scenarios/README.md`, `specs/08-FR-08-expert-pipeline.md`.

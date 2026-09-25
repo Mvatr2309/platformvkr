@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, isGuardError } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
-import { notifyExpertApproved, notifyStudentRejected } from "@/lib/expert-requests";
+import {
+  notifyExpertApproved,
+  notifyStudentRejected,
+  notifyStudentReturned,
+} from "@/lib/expert-requests";
 
-// POST /api/expert/admin/requests/[id]/moderate — решение модератора (08.13).
-// При отклонении причина обязательна: студент видит её в своём кабинете.
+// POST /api/expert/admin/requests/[id]/moderate — решение модератора (08.13, M1).
+// Три действия: одобрить (комментарий по желанию), вернуть на доработку и отклонить
+// (комментарий обязателен). Комментарий видит студент в своём кабинете.
 
 export async function POST(
   request: NextRequest,
@@ -65,11 +70,33 @@ export async function POST(
     return NextResponse.json({ status: "REJECTED_BY_MODERATOR" });
   }
 
+  if (action === "return") {
+    if (!comment) {
+      return NextResponse.json(
+        { error: "Напишите комментарий — студент увидит, что исправить" },
+        { status: 400 }
+      );
+    }
+    await prisma.expertRequest.update({
+      where: { id },
+      data: {
+        status: "NEEDS_REVISION",
+        moderatorComment: comment,
+        moderatedById: guard.session.user.id,
+        moderatedAt: now,
+      },
+    });
+    await notifyStudentReturned(req.student.user.id, req.student.user.email, comment);
+    return NextResponse.json({ status: "NEEDS_REVISION" });
+  }
+
   if (action === "approve") {
     await prisma.expertRequest.update({
       where: { id },
       data: {
         status: "APPROVED_BY_MODERATOR",
+        // Комментарий при одобрении по желанию и адресован студенту (M1).
+        // Пустой затирает комментарий прошлого возврата: он уже не актуален.
         moderatorComment: comment || null,
         moderatedById: guard.session.user.id,
         moderatedAt: now,

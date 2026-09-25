@@ -449,6 +449,7 @@ enum NotificationType {
   EXPERT_REQUEST_NEW        // Новый запрос — модератору
   EXPERT_REQUEST_APPROVED   // Одобрен модератором — эксперту
   EXPERT_REQUEST_REJECTED   // Отклонён модератором или экспертом — студенту
+  EXPERT_REQUEST_RETURNED   // Возвращён модератором на доработку — студенту (M1)
   EXPERT_REQUEST_ACCEPTED   // Принят, контакты — студенту и эксперту
   EXPERT_FEEDBACK_REQUEST   // Запрос обратной связи и напоминание
 }
@@ -550,6 +551,7 @@ model ExpertProfile {
 
 enum ExpertRequestStatus {
   NEW                     // Новый — ждёт модератора
+  NEEDS_REVISION          // На доработке — модератор вернул студенту с комментарием (M1)
   APPROVED_BY_MODERATOR   // Одобрен модератором — ждёт эксперта
   REJECTED_BY_MODERATOR   // Отклонён модератором (терминальный)
   REJECTED_BY_EXPERT      // Отклонён экспертом (терминальный)
@@ -582,7 +584,7 @@ model ExpertRequest {
   courseSnapshot    Int
 
   status            ExpertRequestStatus @default(NEW)
-  moderatorComment  String?  // Причина отклонения — обязательна при REJECTED_BY_MODERATOR
+  moderatorComment  String?  // Комментарий модератора студенту: обязателен при возврате и отклонении, по желанию при одобрении (M1)
   expertComment     String?  // Причина отказа эксперта
 
   moderatedById     String?

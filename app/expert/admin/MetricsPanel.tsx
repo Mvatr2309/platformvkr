@@ -17,6 +17,7 @@ type Metrics = {
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "На проверке у модератора",
+  NEEDS_REVISION: "На доработке у студента",
   APPROVED_BY_MODERATOR: "Ждут решения эксперта",
   REJECTED_BY_MODERATOR: "Отклонены модератором",
   REJECTED_BY_EXPERT: "Отклонены экспертом",

@@ -6,6 +6,7 @@ import styles from "../expert-form.module.css";
 
 // FR-08: анкета запроса на консультацию (08.12).
 // Пороги длины отсекают запросы «просто поговорить» и разгружают модератора.
+// С requestId та же анкета служит для исправления запроса, возвращённого на доработку (M1).
 
 const MIN_TOPIC = 500;
 const MIN_RESULT = 80;
@@ -20,24 +21,41 @@ type Expert = {
 
 type Project = { id: string; title: string };
 
+type Initial = {
+  topic: string;
+  expectedResult: string;
+  ownProgress: string;
+  problemArea: string | null;
+  materialsUrl: string | null;
+  projectId: string | null;
+};
+
 export default function NewRequestForm({
   expert,
   projects,
   direction,
   course,
+  requestId,
+  initial,
+  moderatorComment,
 }: {
   expert: Expert;
   projects: Project[];
   direction: string;
   course: number;
+  /** Исправление запроса на доработке (M1) */
+  requestId?: string;
+  initial?: Initial;
+  moderatorComment?: string | null;
 }) {
   const router = useRouter();
-  const [topic, setTopic] = useState("");
-  const [expectedResult, setExpectedResult] = useState("");
-  const [ownProgress, setOwnProgress] = useState("");
-  const [problemArea, setProblemArea] = useState("");
-  const [materialsUrl, setMaterialsUrl] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const isRevision = Boolean(requestId);
+  const [topic, setTopic] = useState(initial?.topic ?? "");
+  const [expectedResult, setExpectedResult] = useState(initial?.expectedResult ?? "");
+  const [ownProgress, setOwnProgress] = useState(initial?.ownProgress ?? "");
+  const [problemArea, setProblemArea] = useState(initial?.problemArea ?? "");
+  const [materialsUrl, setMaterialsUrl] = useState(initial?.materialsUrl ?? "");
+  const [projectId, setProjectId] = useState(initial?.projectId ?? "");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -69,8 +87,8 @@ export default function NewRequestForm({
 
     setSending(true);
     try {
-      const res = await fetch("/api/expert/requests", {
-        method: "POST",
+      const res = await fetch(isRevision ? `/api/expert/requests/${requestId}` : "/api/expert/requests", {
+        method: isRevision ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           expertId: expert.id,
@@ -97,8 +115,20 @@ export default function NewRequestForm({
 
   return (
     <div className={styles.wrapper}>
-      <a href={`/expert/catalog/${expert.id}`} className={styles.backLink}>← К карточке эксперта</a>
-      <h1 className={styles.title}>Запрос на консультацию</h1>
+      {isRevision ? (
+        <a href="/expert/my-requests" className={styles.backLink}>← К моим запросам</a>
+      ) : (
+        <a href={`/expert/catalog/${expert.id}`} className={styles.backLink}>← К карточке эксперта</a>
+      )}
+      <h1 className={styles.title}>{isRevision ? "Исправление запроса" : "Запрос на консультацию"}</h1>
+
+      {isRevision && moderatorComment && (
+        <div className={styles.revisionNote}>
+          <strong>Модератор вернул запрос на доработку:</strong>
+          <p>{moderatorComment}</p>
+          <span>Исправьте анкету и отправьте её снова — запрос вернётся на проверку.</span>
+        </div>
+      )}
 
       <div className={styles.recipient}>
         <strong>{expert.name}</strong>
@@ -224,7 +254,7 @@ export default function NewRequestForm({
 
         <div className={styles.actions}>
           <button type="submit" disabled={sending} className={styles.submitButton}>
-            {sending ? "Отправляем…" : "Отправить запрос"}
+            {sending ? "Отправляем…" : isRevision ? "Отправить исправленный запрос" : "Отправить запрос"}
           </button>
         </div>
       </form>

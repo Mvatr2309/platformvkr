@@ -282,3 +282,34 @@
   color: var(--color-deep-blue);
   margin: var(--space-xs) 0 var(--space-sm);
 }
+
+/* M1: запрос на доработке и комментарий модератора при одобрении */
+.revision {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #FFF6E5;
+  border: 1px solid #F2D49B;
+  font-size: 14px;
+  color: #6B4300;
+  white-space: pre-line;
+}
+
+.revision .actions {
+  margin-top: var(--space-md);
+  white-space: normal;
+}
+
+.revision .acceptButton {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.moderatorNote {
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  background: #EEF2FB;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: pre-line;
+}

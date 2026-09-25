@@ -318,3 +318,20 @@
     display: none;
   }
 }
+
+/* M1: комментарий модератора над анкетой, возвращённой на доработку */
+.revisionNote {
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  background: #FFF6E5;
+  border: 1px solid #F2D49B;
+  font-size: 14px;
+  color: #6B4300;
+}
+
+.revisionNote p {
+  margin: var(--space-xs) 0 var(--space-sm);
+  font-size: 15px;
+  color: var(--color-text-primary);
+  white-space: pre-line;
+}

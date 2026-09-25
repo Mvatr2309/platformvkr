@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import FeedbackForm from "../requests/FeedbackForm";
 import styles from "../requests/requests.module.css";
 
-// FR-08: исходящие запросы студента (08.13, 08.15).
+// FR-08: исходящие запросы студента (08.13, 08.15, M1).
 // Контакт эксперта приходит с сервера только по принятым запросам.
+// Запрос на доработке студент исправляет и отправляет снова (M1).
 
 type Req = {
   id: string;
@@ -32,6 +33,7 @@ type Req = {
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   NEW: { label: "На проверке у модератора", cls: "badgeNew" },
+  NEEDS_REVISION: { label: "На доработке", cls: "badgeWait" },
   APPROVED_BY_MODERATOR: { label: "Ждём решения эксперта", cls: "badgeWait" },
   REJECTED_BY_MODERATOR: { label: "Отклонён модератором", cls: "badgeNo" },
   REJECTED_BY_EXPERT: { label: "Отклонён экспертом", cls: "badgeNo" },
@@ -120,11 +122,31 @@ export default function MyRequests() {
                 </div>
               )}
 
+              {r.status === "NEEDS_REVISION" && (
+                <div className={styles.revision}>
+                  <strong>Модератор вернул запрос на доработку:</strong> {r.moderatorComment}
+                  <div className={styles.actions}>
+                    <a href={`/expert/requests/${r.id}/edit`} className={styles.acceptButton}>
+                      Исправить запрос
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {r.moderatorComment && r.status === "REJECTED_BY_MODERATOR" && (
                 <div className={styles.reason}>
                   <strong>Причина отклонения модератором:</strong> {r.moderatorComment}
                 </div>
               )}
+
+              {/* Комментарий при одобрении адресован студенту (M1). На повторной проверке
+                  (NEW) в поле лежит комментарий прошлого возврата — его не повторяем */}
+              {r.moderatorComment &&
+                !["NEW", "NEEDS_REVISION", "REJECTED_BY_MODERATOR"].includes(r.status) && (
+                  <div className={styles.moderatorNote}>
+                    <strong>Комментарий модератора:</strong> {r.moderatorComment}
+                  </div>
+                )}
 
               {r.expertComment && (
                 <div className={styles.reason}>

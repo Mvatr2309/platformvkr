@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import styles from "../requests/requests.module.css";
 
-// FR-08: очередь модерации запросов (08.13).
-// Модератор — существующая роль ADMIN. При отклонении причина обязательна.
+// FR-08: очередь модерации запросов (08.13, M1).
+// Модератор — существующая роль ADMIN. Три действия: одобрить (комментарий по желанию),
+// вернуть на доработку и отклонить (комментарий обязателен). Комментарий видит студент.
 
 type Req = {
   id: string;
@@ -26,6 +27,7 @@ type Req = {
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   NEW: { label: "Новый", cls: "badgeNew" },
+  NEEDS_REVISION: { label: "На доработке у студента", cls: "badgeWait" },
   APPROVED_BY_MODERATOR: { label: "Одобрен, ждёт эксперта", cls: "badgeWait" },
   REJECTED_BY_MODERATOR: { label: "Отклонён вами", cls: "badgeNo" },
   REJECTED_BY_EXPERT: { label: "Отклонён экспертом", cls: "badgeNo" },
@@ -40,9 +42,9 @@ export default function ModerationQueue() {
   const [tab, setTab] = useState<"NEW" | "ALL">("NEW");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [rejecting, setRejecting] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
+  // Комментарий и ошибка — свои у каждой карточки: ошибка видна при любом действии
+  const [comments, setComments] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,25 +66,35 @@ export default function ModerationQueue() {
     load();
   }, [load]);
 
-  async function decide(id: string, action: "approve" | "reject") {
+  async function decide(id: string, action: "approve" | "return" | "reject") {
+    const comment = (comments[id] || "").trim();
+    if (action !== "approve" && !comment) {
+      setErrors((e) => ({
+        ...e,
+        [id]:
+          action === "return"
+            ? "Напишите комментарий — студент увидит, что исправить"
+            : "Напишите причину отклонения — студент её увидит",
+      }));
+      return;
+    }
     setBusy(id);
-    setError("");
+    setErrors((e) => ({ ...e, [id]: "" }));
     try {
       const res = await fetch(`/api/expert/admin/requests/${id}/moderate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, comment: action === "reject" ? reason : undefined }),
+        body: JSON.stringify({ action, comment }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Не удалось сохранить решение");
+        setErrors((e) => ({ ...e, [id]: data.error || "Не удалось сохранить решение" }));
         return;
       }
-      setRejecting(null);
-      setReason("");
+      setComments((c) => ({ ...c, [id]: "" }));
       await load();
     } catch {
-      setError("Не удалось сохранить решение");
+      setErrors((e) => ({ ...e, [id]: "Не удалось сохранить решение" }));
     } finally {
       setBusy(null);
     }
@@ -92,8 +104,8 @@ export default function ModerationQueue() {
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Модерация запросов</h1>
       <p className={styles.subtitle}>
-        Проверьте запрос перед передачей эксперту. При отклонении причина обязательна —
-        студент увидит её в своём кабинете.
+        Проверьте запрос перед передачей эксперту. Комментарий увидит студент: при одобрении
+        он по желанию, при возврате на доработку и отклонении обязателен.
       </p>
 
       <div className={styles.tabs}>
@@ -175,7 +187,13 @@ export default function ModerationQueue() {
                 </div>
               )}
 
-              {r.moderatorComment && (
+              {r.moderatorComment && r.status === "NEW" && (
+                <div className={styles.revision}>
+                  <strong>Запрос исправлен после доработки. Прошлый комментарий:</strong>{" "}
+                  {r.moderatorComment}
+                </div>
+              )}
+              {r.moderatorComment && r.status !== "NEW" && (
                 <div className={styles.reason}>
                   <strong>Комментарий модератора:</strong> {r.moderatorComment}
                 </div>
@@ -188,6 +206,13 @@ export default function ModerationQueue() {
 
               {r.status === "NEW" && (
                 <>
+                  <textarea
+                    value={comments[r.id] || ""}
+                    onChange={(e) => setComments((c) => ({ ...c, [r.id]: e.target.value }))}
+                    className={styles.reasonInput}
+                    rows={3}
+                    placeholder="Комментарий для студента. При одобрении — по желанию, при возврате и отклонении — обязательно"
+                  />
                   <div className={styles.actions}>
                     <button
                       type="button"
@@ -201,37 +226,23 @@ export default function ModerationQueue() {
                       type="button"
                       className={styles.rejectButton}
                       disabled={busy === r.id}
-                      onClick={() => setRejecting(rejecting === r.id ? null : r.id)}
+                      onClick={() => decide(r.id, "return")}
+                    >
+                      Вернуть на доработку
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.rejectButton}
+                      disabled={busy === r.id}
+                      onClick={() => decide(r.id, "reject")}
                     >
                       Отклонить
                     </button>
                   </div>
-
-                  {rejecting === r.id && (
-                    <>
-                      <textarea
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        className={styles.reasonInput}
-                        rows={3}
-                        placeholder="Причина отклонения — студент её увидит"
-                      />
-                      <div className={styles.actions}>
-                        <button
-                          type="button"
-                          className={styles.acceptButton}
-                          disabled={busy === r.id || !reason.trim()}
-                          onClick={() => decide(r.id, "reject")}
-                        >
-                          Отправить отказ
-                        </button>
-                      </div>
-                    </>
-                  )}
                 </>
               )}
 
-              {error && rejecting === r.id && <div className={styles.error}>{error}</div>}
+              {errors[r.id] && <div className={styles.error}>{errors[r.id]}</div>}
             </div>
           );
         })

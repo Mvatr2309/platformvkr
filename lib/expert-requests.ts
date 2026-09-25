@@ -11,8 +11,87 @@ export const MIN_TOPIC = 500;
 export const MIN_RESULT = 80;
 export const MIN_PROGRESS = 500;
 
-/** Статусы, в которых запрос считается необработанным: дубль к тому же эксперту не создаём (08.21) */
-export const UNHANDLED_STATUSES = ["NEW", "APPROVED_BY_MODERATOR"] as const;
+/**
+ * Статусы, в которых запрос считается необработанным: дубль к тому же эксперту не создаём (08.21).
+ * Запрос на доработке тоже в их числе — студент исправляет его, а не заводит новый (M1).
+ */
+export const UNHANDLED_STATUSES = ["NEW", "NEEDS_REVISION", "APPROVED_BY_MODERATOR"] as const;
+
+/**
+ * Что видит эксперт во входящих. Явный список, а не «всё, кроме»: запросы на модерации
+ * и на доработке эксперту не видны (08.14, M1), и новый статус не должен открыться
+ * ему случайно.
+ */
+export const EXPERT_VISIBLE_STATUSES = [
+  "APPROVED_BY_MODERATOR",
+  "REJECTED_BY_EXPERT",
+  "CONTACTS_SENT",
+  "AWAITING_FEEDBACK",
+  "CLOSED",
+] as const;
+
+export type RequestFormFields = {
+  topic: string;
+  expectedResult: string;
+  ownProgress: string;
+  problemArea: string | null;
+  materialsUrl: string | null;
+  projectId: string | null;
+};
+
+/**
+ * Разбор и проверка анкеты запроса (08.12). Общая для отправки и для повторной
+ * отправки после доработки (M1), чтобы пороги не разошлись.
+ */
+export function parseRequestForm(
+  data: Record<string, unknown>
+): { error: string } | { fields: RequestFormFields } {
+  const topic = String(data.topic || "").trim();
+  const expectedResult = String(data.expectedResult || "").trim();
+  const ownProgress = String(data.ownProgress || "").trim();
+  const problemArea = String(data.problemArea || "").trim();
+  const materialsUrl = String(data.materialsUrl || "").trim();
+
+  if (topic.length < MIN_TOPIC) {
+    return { error: `Опишите вопрос подробнее — минимум ${MIN_TOPIC} символов` };
+  }
+  if (expectedResult.length < MIN_RESULT) {
+    return { error: `Опишите ожидаемый результат — минимум ${MIN_RESULT} символов` };
+  }
+  if (ownProgress.length < MIN_PROGRESS) {
+    return { error: `Расскажите, что уже сделали сами — минимум ${MIN_PROGRESS} символов` };
+  }
+
+  return {
+    fields: {
+      topic,
+      expectedResult,
+      ownProgress,
+      problemArea: problemArea || null,
+      materialsUrl: materialsUrl || null,
+      projectId: data.projectId ? String(data.projectId) : null,
+    },
+  };
+}
+
+/** Проект к запросу можно приложить только свой — чужой молча отбрасываем */
+export async function ownProjectOrNull(projectId: string | null, studentId: string) {
+  if (!projectId) return null;
+  const member = await prisma.projectMember.findFirst({
+    where: { projectId, studentId },
+    select: { id: true },
+  });
+  return member ? projectId : null;
+}
+
+/** Текст пользователя в HTML письма — экранируем, чтобы он не стал разметкой */
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 const platformUrl = () => process.env.NEXTAUTH_URL || "https://vkr-platform.ru";
 
@@ -40,8 +119,15 @@ export async function safeMail(to: string, subject: string, html: string) {
   }
 }
 
-/** Новый запрос — всем модераторам, то есть всем админам (08.13) */
-export async function notifyModerators(requestId: string, studentName: string) {
+/**
+ * Новый запрос — всем модераторам, то есть всем админам (08.13).
+ * Исправленный после доработки запрос возвращается в ту же очередь (M1).
+ */
+export async function notifyModerators(
+  requestId: string,
+  studentName: string,
+  opts: { resubmitted?: boolean } = {}
+) {
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN" },
     select: { id: true },
@@ -50,8 +136,10 @@ export async function notifyModerators(requestId: string, studentName: string) {
     admins.map((a) => a.id),
     {
       type: "EXPERT_REQUEST_NEW",
-      title: "Новый запрос на консультацию",
-      message: `${studentName} отправил запрос. Нужна проверка перед передачей эксперту.`,
+      title: opts.resubmitted ? "Запрос исправлен после доработки" : "Новый запрос на консультацию",
+      message: opts.resubmitted
+        ? `${studentName} исправил запрос по вашему комментарию. Нужна повторная проверка.`
+        : `${studentName} отправил запрос. Нужна проверка перед передачей эксперту.`,
       link: `/expert/admin/requests`,
     }
   );
@@ -79,6 +167,33 @@ export async function notifyExpertApproved(
        <p style="color:#555;font-size:14px;">Откройте анкету и примите решение: принять или отклонить.</p>`,
       "/expert/inbox",
       "Открыть запросы"
+    )
+  );
+}
+
+/** Возврат на доработку — студенту, с комментарием модератора (M1) */
+export async function notifyStudentReturned(
+  studentUserId: string,
+  studentEmail: string,
+  comment: string
+) {
+  await notify({
+    userId: studentUserId,
+    type: "EXPERT_REQUEST_RETURNED",
+    title: "Запрос вернули на доработку",
+    message: comment,
+    link: "/expert/my-requests",
+  });
+  await safeMail(
+    studentEmail,
+    "Запрос на консультацию вернули на доработку",
+    mailShell(
+      "Запрос вернули на доработку",
+      `<p style="color:#333;font-size:15px;">Модератор проверил ваш запрос и просит его дополнить:</p>
+       <div style="background:#f0f4ff;padding:16px;margin:12px 0;color:#333;white-space:pre-line;">${escapeHtml(comment)}</div>
+       <p style="color:#555;font-size:14px;">Исправьте запрос и отправьте его снова — он вернётся на проверку. Эксперт увидит запрос после одобрения.</p>`,
+      "/expert/my-requests",
+      "Исправить запрос"
     )
   );
 }

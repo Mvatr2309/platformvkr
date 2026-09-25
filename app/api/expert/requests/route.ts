@@ -5,10 +5,10 @@ import { UserRole } from "@/types/roles";
 import { getSpacesAccess } from "@/lib/expert-access";
 import { CATALOG_WHERE } from "@/lib/expert-catalog";
 import {
-  MIN_TOPIC,
-  MIN_RESULT,
-  MIN_PROGRESS,
   UNHANDLED_STATUSES,
+  EXPERT_VISIBLE_STATUSES,
+  parseRequestForm,
+  ownProjectOrNull,
   notifyModerators,
 } from "@/lib/expert-requests";
 
@@ -84,7 +84,7 @@ export async function GET() {
     return NextResponse.json(withContacts);
   }
 
-  // Эксперт — входящие. До решения модератора запросы эксперту не видны (08.14)
+  // Эксперт — входящие. До решения модератора и на доработке запросы эксперту не видны (08.14, M1)
   const card = await prisma.expertProfile.findUnique({
     where: { userId: session.user.id },
     select: { id: true },
@@ -96,8 +96,7 @@ export async function GET() {
   const requests = await prisma.expertRequest.findMany({
     where: {
       expertId: card.id,
-      status: { not: "NEW" },
-      NOT: { status: "REJECTED_BY_MODERATOR" },
+      status: { in: [...EXPERT_VISIBLE_STATUSES] },
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -162,34 +161,15 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const expertId = String(data.expertId || "");
-    const topic = String(data.topic || "").trim();
-    const expectedResult = String(data.expectedResult || "").trim();
-    const ownProgress = String(data.ownProgress || "").trim();
-    const problemArea = String(data.problemArea || "").trim();
-    const materialsUrl = String(data.materialsUrl || "").trim();
-    const projectId = data.projectId ? String(data.projectId) : null;
 
     if (!expertId) {
       return NextResponse.json({ error: "Эксперт не выбран" }, { status: 400 });
     }
-    if (topic.length < MIN_TOPIC) {
-      return NextResponse.json(
-        { error: `Опишите вопрос подробнее — минимум ${MIN_TOPIC} символов` },
-        { status: 400 }
-      );
+    const form = parseRequestForm(data);
+    if ("error" in form) {
+      return NextResponse.json({ error: form.error }, { status: 400 });
     }
-    if (expectedResult.length < MIN_RESULT) {
-      return NextResponse.json(
-        { error: `Опишите ожидаемый результат — минимум ${MIN_RESULT} символов` },
-        { status: 400 }
-      );
-    }
-    if (ownProgress.length < MIN_PROGRESS) {
-      return NextResponse.json(
-        { error: `Расскажите, что уже сделали сами — минимум ${MIN_PROGRESS} символов` },
-        { status: 400 }
-      );
-    }
+    const { fields } = form;
 
     const student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
@@ -216,35 +196,26 @@ export async function POST(request: NextRequest) {
         expertId: expert.id,
         status: { in: [...UNHANDLED_STATUSES] },
       },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (pending) {
       return NextResponse.json(
-        { error: "Вы уже отправили этому эксперту запрос — дождитесь решения по нему" },
+        {
+          error:
+            pending.status === "NEEDS_REVISION"
+              ? "Запрос этому эксперту вернули на доработку — исправьте его в «Мои запросы»"
+              : "Вы уже отправили этому эксперту запрос — дождитесь решения по нему",
+        },
         { status: 409 }
       );
-    }
-
-    // Проект можно приложить только свой
-    let linkedProjectId: string | null = null;
-    if (projectId) {
-      const member = await prisma.projectMember.findFirst({
-        where: { projectId, studentId: student.id },
-        select: { id: true },
-      });
-      if (member) linkedProjectId = projectId;
     }
 
     const created = await prisma.expertRequest.create({
       data: {
         studentId: student.id,
         expertId: expert.id,
-        topic,
-        expectedResult,
-        ownProgress,
-        problemArea: problemArea || null,
-        materialsUrl: materialsUrl || null,
-        projectId: linkedProjectId,
+        ...fields,
+        projectId: await ownProjectOrNull(fields.projectId, student.id),
         // Снимок профиля: курс и программа со временем меняются
         directionSnapshot: student.direction,
         courseSnapshot: student.course,
