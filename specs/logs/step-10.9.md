@@ -1090,3 +1090,18 @@
 **Спека:** 08.12 (состав анкеты), модель 5.3 (`problemArea`), раздел 8 (таблица писем, тексты B3/E2/A3).
 
 **Файлы:** `app/expert/join/page.tsx`, `app/expert/requests/NewRequestForm.tsx`, `app/expert/requests/[id]/edit/page.tsx`, `app/expert/expert-form.module.css`, `app/expert/my-requests/MyRequests.tsx`, `app/expert/inbox/Inbox.tsx`, `app/expert/requests/requests.module.css`, `lib/expert-requests.ts`, `app/api/expert/admin/requests/[id]/moderate/route.ts`, `app/api/expert/requests/route.ts`, `app/api/expert/requests/[id]/route.ts`, `scripts/scenarios/m1-request-revision.mjs`, `scripts/scenarios/a2-expert-role.mjs`, `specs/08-FR-08-expert-pipeline.md`.
+
+## Запись #56 — Фикс: длинный текст без пробелов вылезал за карточку запроса
+
+**Дата:** 25.09.2026
+**От кого:** Тагир Миннахметов — при проверке в браузере: «Модерация запросов» → «Все запросы», заявка «Тест Студент Открыт → Анна Видимая», текст выходит за рамки окна
+
+**Причина:** в анкете демо-заявки от 23.09 поле «Что хочу обсудить» — 616 символов одним словом (адрес почты, вставленный подряд, чтобы набрать минимум). Браузер переносит только по пробелам, а в стилях трубы нигде не было `overflow-wrap`. Не только тестовые данные: длинная ссылка или строка без пробелов в анкете, комментарии, контакте или карточке эксперта ломала вёрстку так же — у модератора, эксперта и студента.
+
+**Реализация:** `overflow-wrap: anywhere` в блоках с текстом пользователя: анкета, причины и комментарии, плашки «На доработке» и «Комментарий при одобрении», контакты (`requests.module.css`); текст уведомления (`notifications.module.css`); «С какими темами могу помочь», теги экспертизы, описание в карточке каталога (`catalog.module.css`); комментарий модератора над анкетой исправления (`expert-form.module.css`). Текст с пробелами переносится как раньше.
+
+**Проверка:** `npm run build` — успешно, правило есть в собранных стилях. Визуально — у пользователя в браузере.
+
+**Не входит:** данные демо-заявки (тестовые); защита от «набивки» минимума одним словом — такие запросы отсеивает модератор.
+
+**Файлы:** `app/expert/requests/requests.module.css`, `app/notifications/notifications.module.css`, `app/expert/catalog/catalog.module.css`, `app/expert/expert-form.module.css`.

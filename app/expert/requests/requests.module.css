@@ -112,6 +112,7 @@
   color: var(--color-text-primary);
   margin: 0;
   white-space: pre-line;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 .contacts {
@@ -121,6 +122,7 @@
   border: 1px solid #B7E0C4;
   font-size: 14px;
   color: #1E6B38;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 .reason {
@@ -131,6 +133,7 @@
   font-size: 14px;
   color: #8E1F33;
   white-space: pre-line;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 .link {
@@ -293,6 +296,7 @@
   font-size: 14px;
   color: #6B4300;
   white-space: pre-line;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 .revision .actions {
@@ -313,6 +317,7 @@
   font-size: 14px;
   color: var(--color-text-primary);
   white-space: pre-line;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 /* B3, E2: пояснение над контактом после принятия запроса */

@@ -334,6 +334,7 @@
   font-size: 15px;
   color: var(--color-text-primary);
   white-space: pre-line;
+  overflow-wrap: anywhere; /* длинное слово или ссылка без пробелов не вылезает за карточку */
 }
 
 /* A2: второстепенное действие рядом с основной кнопкой */
